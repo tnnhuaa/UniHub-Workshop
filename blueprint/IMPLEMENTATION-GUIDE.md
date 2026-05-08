@@ -69,7 +69,7 @@
 ## 5. Workers & Async Jobs (RabbitMQ)
 
 - Workers consume từ RabbitMQ queue; job handlers phải **idempotent**.
-- Persist **job status** vào DB (`csv_import_batches`, `ai_summary_jobs`, `notification_deliveries`, etc.) để audit + retry.
+- Persist **job status** vào DB (`CsvLog` mapped to `csv_import_batches`, `ai_summary_jobs`, `notification_deliveries`, etc.) để audit + retry.
 - Không để job chứa side-effect không retryable:
   - ✅ OK: ghi log, send email (với dedupe key), update DB
   - ❌ NOT OK: modify file system cục bộ, API call không có retry logic

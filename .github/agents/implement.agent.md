@@ -1,16 +1,5 @@
 ---
-tools:
-  [
-    vscode,
-    execute,
-    read,
-    agent,
-    edit,
-    search,
-    web,
-    browser,
-    todo,
-  ]
+tools: [vscode, execute, read, agent, edit, search, web, browser, todo]
 description: Implementer agent for UniHub Workshop — strict implementation workflow for NestJS (Fastify) + Prisma + Zod. Produces dependency-ordered tasks and enforces SOLID/DRY checklist via blueprint/IMPLEMENTATION-GUIDE.md.
 name: "[repo] UniHub Implementer (NestJS + Prisma)"
 model: GPT-5.2-Codex (copilot)
@@ -31,6 +20,7 @@ This agent is **project-specific for UniHub Workshop**. Follow strictly when imp
 # Technology Stack & Constraints
 
 ## Backend Stack
+
 - **Framework**: NestJS + Fastify (TypeScript)
 - **ORM**: Prisma (PostgreSQL)
 - **Validation**: Zod for DTOs
@@ -40,6 +30,7 @@ This agent is **project-specific for UniHub Workshop**. Follow strictly when imp
 - **Storage**: Object Storage (S3-compatible) for PDFs, AI artifacts
 
 ## Architecture
+
 - **Style**: Modular monolith + background workers
 - **Pattern**: Adapter pattern for external integrations (Payment, LLM, Notification, Storage)
 - **Reference**: `blueprint/IMPLEMENTATION-GUIDE.md` for service responsibilities, checklist
@@ -69,6 +60,7 @@ This agent is **project-specific for UniHub Workshop**. Follow strictly when imp
 **Objective**: Understand requirements, identify scope, ask clarifying questions if needed.
 
 ### Steps
+
 1. Read `blueprint/` (proposal.md, design.md, specs/), `REQUIREMENTS.md`, `blueprint/IMPLEMENTATION-GUIDE.md`
 2. Identify impacted modules, DB schema changes, new adapters, test coverage
 3. **If ambiguities exist**: ask targeted questions and **STOP** (do not proceed to Phase 1)
@@ -76,6 +68,7 @@ This agent is **project-specific for UniHub Workshop**. Follow strictly when imp
 5. Publish TODO list via `manage_todo_list` before making file changes
 
 ### Output
+
 - Clear scope, no open questions
 - Documented plan with task dependencies
 - Actionable TODO list
@@ -87,6 +80,7 @@ This agent is **project-specific for UniHub Workshop**. Follow strictly when imp
 **Objective**: Implement code and documentation per the plan.
 
 ### Steps
+
 1. **Per-task implementation**:
    - Backup changed files to `.copilot_temp/` (copy strategy)
    - Follow repo conventions (naming, structure, error handling)
@@ -102,6 +96,7 @@ This agent is **project-specific for UniHub Workshop**. Follow strictly when imp
 3. **Commit strategy**: Stage changes logically but do not commit yet
 
 ### Output
+
 - Fully implemented, tested, locally staged code
 - Tests passing
 - Documentation drafted
@@ -113,36 +108,46 @@ This agent is **project-specific for UniHub Workshop**. Follow strictly when imp
 **Objective**: Verify correctness, tests pass, no regressions, checklist satisfied.
 
 ### Installation & Code Generation
+
 ```bash
 pnpm install
 npx prisma generate
 ```
 
 ### Type Checking
+
 ```bash
 pnpm type:check  # or: npx tsc -p tsconfig.json --noEmit
 ```
+
 Must pass with 0 errors, 0 warnings.
 
 ### Linting & Format Check
+
 ```bash
 pnpm lint  # or: npx eslint . --max-warnings=0
 ```
 
 ### Unit & Integration Tests
+
 ```bash
 pnpm test
 ```
+
 Must pass. Include tests for new features.
 
 ### Concurrency Tests (for registration/payment/seat features)
+
 ```bash
 pnpm test:concurrency:seat-allocation
 ```
+
 Expected: ≥100 concurrent requests → only capacity count succeed (e.g., 60/100 if capacity=60).
 
 ### Checklist Verification
+
 Assert each item from `blueprint/IMPLEMENTATION-GUIDE.md` §10:
+
 - [ ] Registration/payment flow passes idempotency tests
 - [ ] Seat allocation tests under concurrency pass
 - [ ] Offline check-in sync dedupe tests pass
@@ -155,6 +160,7 @@ Assert each item from `blueprint/IMPLEMENTATION-GUIDE.md` §10:
 - [ ] Tests and docs complete
 
 ### Output
+
 - All tests pass
 - No type errors
 - MUST FOLLOW rules satisfied
@@ -167,6 +173,7 @@ Assert each item from `blueprint/IMPLEMENTATION-GUIDE.md` §10:
 **Objective**: Create completion report, propose commit message, prepare for user review.
 
 ### Steps
+
 1. **Generate completion report** at `docs/reports/{number:03d}-{feature}-completion-report.md`:
    - Determine next number from existing `docs/reports/` files
    - List all completed steps, verification commands run
@@ -174,6 +181,7 @@ Assert each item from `blueprint/IMPLEMENTATION-GUIDE.md` §10:
    - Include any deviations from plan + workarounds
 
 2. **Stage all changes**:
+
    ```bash
    git add -A
    ```
@@ -188,6 +196,7 @@ Assert each item from `blueprint/IMPLEMENTATION-GUIDE.md` §10:
    - **Wait for user approval** before committing (no auto-commit)
 
 ### Output
+
 - Completion report in `docs/reports/`
 - Proposed commit message
 - Ready for user review
@@ -206,6 +215,7 @@ Assert each item from `blueprint/IMPLEMENTATION-GUIDE.md` §10:
 # Verification Checklist (Pre-Phase 3)
 
 **Must pass** before Phase 3:
+
 - ✅ Idempotency tests pass (duplicate payment → cached response)
 - ✅ Seat-allocation concurrency test passes (no oversell under load)
 - ✅ Offline check-in dedupe test passes (server accepts first, rejects duplicate)
@@ -220,11 +230,13 @@ Assert each item from `blueprint/IMPLEMENTATION-GUIDE.md` §10:
 # Permission & Confirmation Policy
 
 ## No Confirmation Needed
+
 - CRUD file/folder operations within workspace
 - Local verification (install, test, lint, build)
 - Local git operations (add, status)
 
 ## Requires Explicit User Confirmation
+
 - External operations (npm publish, docker push, git push, deploy)
 - Destructive operations (clean, reset --hard, delete important files)
 - Operations requiring credentials/secrets

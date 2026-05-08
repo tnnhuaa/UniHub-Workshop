@@ -20,7 +20,7 @@ UniHub Workshop được thiết kế theo mô hình **modular monolith kết h�
 5. **Background Workers (NestJS Standalone Consumers)**: Xử lý từng loại job được publish qua RabbitMQ.
 6. **Object Storage**: Lưu PDF tải lên, artifacts được tạo từ AI.
 7. **Authentication (BetterAuth)**: Hybrid: session cho admin web, JWT cho mobile/API.
-8. **External Integrations**: 
+8. **External Integrations**:
    - Payment Gateway (sandbox/mock)
    - LLM API (AI Summary)
    - Student Management System (CSV batch import)
@@ -36,21 +36,21 @@ graph TB
     Students["Sinh viên<br/>(Students)"]
     Organizers["Ban tổ chức<br/>(Organizers)"]
     CheckinStaff["Nhân sự check-in<br/>(Check-in Staff)"]
-    
+
     UniHub["<b>UniHub Workshop</b><br/>Hệ thống quản lý workshop<br/>và đăng ký sự kiện"]
-    
+
     OldSystem["Hệ thống sinh viên cũ<br/>(Old Student System)<br/>Export CSV ban đêm"]
     PaymentGW["Cổng thanh toán<br/>(Payment Gateway)<br/>Sandbox/Mock"]
     LLMAPI["Mô hình ngôn ngữ<br/>(LLM API)<br/>AI Summary"]
-    
+
     Students -->|Xem & đăng ký workshop<br/>Check-in offline| UniHub
     Organizers -->|Quản lý workshop<br/>Tải PDF<br/>Xem thống kê| UniHub
     CheckinStaff -->|Quét QR check-in| UniHub
-    
+
     UniHub -->|Đọc CSV<br/>Sinh viên| OldSystem
     UniHub -->|Thanh toán| PaymentGW
     UniHub -->|Tóm tắt PDF| LLMAPI
-    
+
     style UniHub fill:#4A90E2,color:#fff
     style Students fill:#7ED321,color:#000
     style Organizers fill:#F5A623,color:#000
@@ -69,49 +69,49 @@ graph TB
         AdminWeb["Web Admin<br/>(React/Vue)"]
         MobileApp["Mobile App<br/>(React Native)"]
     end
-    
+
     subgraph API["API Layer"]
         NestJS["NestJS/Fastify<br/>Backend API<br/>- Routes<br/>- Controllers<br/>- Services<br/>- Auth<br/>- Rate Limit<br/>- Circuit Breaker"]
     end
-    
+
     subgraph Data["Data Layer"]
         PostgreSQL["PostgreSQL<br/>- Workshops<br/>- Registrations<br/>- Students<br/>- Check-ins"]
         Redis["Redis<br/>- Idempotency Keys<br/>- Rate Limit State<br/>- Session Cache<br/>- Temp Data"]
     end
-    
+
     subgraph Queue["Queue & Workers"]
         RabbitMQ["RabbitMQ<br/>Message Broker"]
         NotificationWorker["Worker:<br/>Thông báo<br/>(Email/App)"]
         AIWorker["Worker:<br/>AI Summary"]
         CSVWorker["Worker:<br/>CSV Sync"]
     end
-    
+
     subgraph External["External Services"]
         PaymentGW["Payment Gateway<br/>(Sandbox/Mock)"]
         LLMAPI["LLM API"]
         OldSystem["Old Student System<br/>(CSV Export)"]
         ObjectStorage["Object Storage<br/>(PDFs)"]
     end
-    
+
     StudentWeb -->|REST/WS| NestJS
     AdminWeb -->|REST/WS| NestJS
     MobileApp -->|REST/WS| NestJS
-    
+
     NestJS -->|Read/Write| PostgreSQL
     NestJS -->|Read/Write| Redis
     NestJS -->|Publish| RabbitMQ
-    
+
     RabbitMQ -->|Consume| NotificationWorker
     RabbitMQ -->|Consume| AIWorker
     RabbitMQ -->|Consume| CSVWorker
-    
+
     NotificationWorker -->|Send| External
     AIWorker -->|Call| LLMAPI
     CSVWorker -->|Read| OldSystem
-    
+
     NestJS -->|Call| PaymentGW
     NestJS -->|Upload/Download| ObjectStorage
-    
+
     style NestJS fill:#4A90E2,color:#fff
     style PostgreSQL fill:#FF6B6B,color:#fff
     style Redis fill:#FF6B6B,color:#fff
@@ -125,7 +125,7 @@ graph TB
 ```mermaid
 graph LR
     User["👤 Người dùng"]
-    
+
     subgraph CoreAPI["Core API (NestJS)"]
         Auth["Auth & RBAC"]
         WorkshopSvc["Workshop Service"]
@@ -134,47 +134,47 @@ graph LR
         CircuitBr["Circuit Breaker<br/>(Payment)"]
         Idempotency["Idempotency<br/>Check"]
     end
-    
+
     subgraph DB["Databases"]
         PostgreSQL["PostgreSQL<br/>(Transactional)"]
         Redis["Redis<br/>(Cache/Keys)"]
     end
-    
+
     subgraph AsyncJobs["Async Jobs (RabbitMQ)"]
         NotifJob["Notification<br/>Job"]
         AIJob["AI Summary<br/>Job"]
         CSVJob["CSV Sync<br/>Job"]
     end
-    
+
     subgraph External["External"]
         PaymentAPI["Payment API"]
         LLMAPI["LLM API"]
         CSVSource["CSV Source"]
     end
-    
+
     User -->|1. Request| RateLimit
     RateLimit -->|2. Route| Auth
     Auth -->|3. Auth & Authorize| WorkshopSvc
     WorkshopSvc -->|4. Read| PostgreSQL
-    
+
     RegSvc -->|Idempotency| Idempotency
     RegSvc -->|Transaction| PostgreSQL
     Idempotency -->|Store/Check| Redis
-    
+
     RegSvc -->|Call| CircuitBr
     CircuitBr -->|Attempt| PaymentAPI
     CircuitBr -->|On Success| PostgreSQL
-    
+
     WorkshopSvc -->|Publish| NotifJob
     NotifJob -->|Deliver| User
-    
+
     WorkshopSvc -->|Publish| AIJob
     AIJob -->|Process| LLMAPI
     AIJob -->|Update| PostgreSQL
-    
+
     CSVJob -->|Fetch| CSVSource
     CSVJob -->|Validate & Merge| PostgreSQL
-    
+
     style CoreAPI fill:#4A90E2,color:#fff
     style DB fill:#FF6B6B,color:#fff
     style AsyncJobs fill:#FFB13D,color:#000
@@ -188,11 +188,13 @@ graph LR
 ### Loại Database và Lý do
 
 **PostgreSQL (Primary / Source of Truth)**: Lưu toàn bộ dữ liệu nghiệp vụ và dữ liệu giao dịch:
+
 - Hỗ trợ ACID transaction đầy đủ, cần thiết cho tranh chấp chỗ ngồi, giữ chỗ tạm và xác nhận đăng ký.
 - Hỗ trợ unique constraint, foreign key, partial index và advisory lock để xử lý race condition rõ ràng.
 - Phù hợp với mô hình modular monolith, nơi phần lớn business logic chạy tập trung và cần nhất quán mạnh.
 
 **Redis (Secondary / Ephemeral State)**: Lưu trạng thái tạm thời và tối ưu hiệu năng:
+
 - `Idempotency keys` với TTL 24 giờ.
 - `Rate limit state` cho token bucket.
 - Cache ngắn hạn cho dữ liệu đọc nhiều.
@@ -200,6 +202,7 @@ graph LR
 - Metadata tạm cho deduplication hoặc sync control.
 
 Lưu ý:
+
 - **Dữ liệu check-in offline gốc nằm trên thiết bị mobile**, không nằm trong Redis. Server chỉ tiếp nhận và đối soát khi thiết bị đồng bộ lại.
 - **File PDF và artifact AI không lưu trực tiếp trong PostgreSQL**; database chỉ lưu metadata, còn nội dung file nằm trong Object Storage.
 
@@ -225,8 +228,8 @@ erDiagram
     BETTER_AUTH_USER ||--o{ BETTER_AUTH_VERIFICATION : requests
     BETTER_AUTH_USER ||--o{ NOTIFICATION_DELIVERIES : receives
     BETTER_AUTH_USER ||--o{ AUDIT_LOGS : triggers
-    CSV_IMPORT_BATCHES ||--o{ CSV_IMPORT_ERRORS : contains
-    
+    CSV_LOGS ||--o{ CSV_LOG_ERRORS : contains
+
     BETTER_AUTH_USER {
         string id PK
         string name
@@ -236,7 +239,7 @@ erDiagram
         datetime createdAt
         datetime updatedAt
     }
-    
+
     BETTER_AUTH_SESSION {
         string id PK
         string userId FK
@@ -247,7 +250,7 @@ erDiagram
         datetime createdAt
         datetime updatedAt
     }
-    
+
     BETTER_AUTH_ACCOUNT {
         string id PK
         string userId FK
@@ -263,7 +266,7 @@ erDiagram
         datetime createdAt
         datetime updatedAt
     }
-    
+
     BETTER_AUTH_VERIFICATION {
         string id PK
         string identifier
@@ -279,7 +282,7 @@ erDiagram
         string role
         datetime created_at
     }
-    
+
     STUDENTS {
         string mssv PK
         string email
@@ -293,7 +296,7 @@ erDiagram
         datetime updated_at
         datetime csv_synced_at
     }
-    
+
     WORKSHOPS {
         uuid id PK
         string title
@@ -311,7 +314,7 @@ erDiagram
         datetime created_at
         datetime updated_at
     }
-    
+
     REGISTRATIONS {
         uuid id PK
         string mssv FK
@@ -339,7 +342,7 @@ erDiagram
         datetime completed_at
         datetime created_at
     }
-    
+
     CHECKINS {
         uuid id PK
         string mssv FK
@@ -352,7 +355,7 @@ erDiagram
         string sync_status
         datetime created_at
     }
-    
+
     STAFF_WORKSHOP_ASSIGNMENTS {
         uuid id PK
         string staff_user_id FK
@@ -369,7 +372,7 @@ erDiagram
         string processing_status
         datetime uploaded_at
     }
-    
+
     AI_SUMMARY_JOBS {
         uuid id PK
         uuid document_id FK
@@ -401,7 +404,7 @@ erDiagram
         datetime created_at
     }
 
-    CSV_IMPORT_BATCHES {
+    CSV_LOGS {
         uuid id PK
         string file_name
         string checksum
@@ -414,7 +417,7 @@ erDiagram
         datetime finished_at
     }
 
-    CSV_IMPORT_ERRORS {
+    CSV_LOG_ERRORS {
         uuid id PK
         uuid batch_id FK
         int row_number
@@ -427,6 +430,7 @@ erDiagram
 ### SQL Schema (Các Entity quan trọng)
 
 **Ghi chú**:
+
 - Bảng BetterAuth (`better_auth_user`, `better_auth_session`, `better_auth_account`, `better_auth_verification`) được sinh từ BetterAuth CLI (`migrate` hoặc công cụ tương đương), không tự viết tay trong codebase nếu thư viện đã hỗ trợ.
 - Dưới đây là schema cốt lõi phía ứng dụng; agent có thể điều chỉnh naming convention khi implement thực tế nhưng phải giữ nguyên ràng buộc nghiệp vụ.
 
@@ -634,23 +638,26 @@ CREATE TABLE csv_import_errors (
 - `workshop_documents` chỉ lưu metadata file; file thật nằm ở Object Storage.
 - `notification_deliveries` lưu trạng thái gửi thông báo qua email/in-app và hỗ trợ dedupe khi worker retry.
 - `audit_logs` lưu vết các thao tác nhạy cảm như tạo/sửa/hủy workshop, phân công staff và đồng bộ check-in.
-- `csv_import_batches` và `csv_import_errors` tồn tại để hỗ trợ audit, báo cáo theo lô và truy vết lỗi nhập CSV.
-- **SOLID principle**: Schema tách rõ domain tables (workshops, registrations, checkins) khỏi auth tables (better_auth_*) để tránh coupling giữa authentication và business logic.
+- `CsvLog` (map sang bảng `csv_import_batches`) và `CsvLogError` (map sang `csv_import_errors`) tồn tại để hỗ trợ audit, báo cáo theo lô và truy vết lỗi nhập CSV.
+- **SOLID principle**: Schema tách rõ domain tables (workshops, registrations, checkins) khỏi auth tables (better*auth*\*) để tránh coupling giữa authentication và business logic.
 
 ### Luồng dữ liệu quan trọng ở tầng database
 
 #### Đăng ký workshop có phí
+
 - Bước kiểm tra còn chỗ, tạo registration, ghi payment pending và set `held_until` phải chạy trong transaction.
 - Có thể dùng `SELECT ... FOR UPDATE` hoặc `UPDATE ... WHERE registered_count < capacity` để chốt tranh chấp chỗ ngồi.
 - Chỉ khi `payments.status = success` thì `registrations.status` mới chuyển sang `registered`.
 
 #### Check-in offline
+
 - Dữ liệu gốc lưu cục bộ trên mobile.
 - Khi sync, backend đối chiếu `device_event_id`, `registration_id`, `staff_workshop_assignments` và trạng thái đăng ký hiện tại.
 - Nếu trùng hoặc không còn hợp lệ, bản ghi bị đánh dấu `rejected` hoặc `conflict`.
 
 #### CSV Sync theo lô
-- Worker đọc file CSV, ghi một dòng trong `csv_import_batches`, sau đó validate từng record.
+
+- Worker đọc file CSV, ghi một dòng trong `CsvLog` (bảng vật lý: `csv_import_batches`), sau đó validate từng record.
 - Dòng lỗi được lưu tại `csv_import_errors`, không làm sập cả lô.
 - Chính sách xung đột là `last-write-wins` cho dữ liệu sinh viên đến từ CSV.
 
@@ -663,6 +670,7 @@ CREATE TABLE csv_import_errors (
 Hệ thống có **3 roles chính**:
 
 #### 1. **Student (Sinh viên)**
+
 - Quyền:
   - Xem danh sách workshop (public, paginated)
   - Xem chi tiết workshop (bao gồm mô tả, AI Summary nếu có)
@@ -678,6 +686,7 @@ Hệ thống có **3 roles chính**:
 - Authentication: JWT hoặc session
 
 #### 2. **Organizer (Ban tổ chức)**
+
 - Quyền:
   - Tạo workshop mới
   - Sửa workshop (title, description, speaker, room, time, capacity, price)
@@ -697,6 +706,7 @@ Hệ thống có **3 roles chính**:
 - Authentication: Session (admin web) hoặc JWT (API)
 
 #### 3. **CheckinStaff (Nhân sự check-in)**
+
 - Quyền:
   - Quét QR code sinh viên
   - Xác nhận check-in
@@ -712,6 +722,7 @@ Hệ thống có **3 roles chính**:
 ### Cơ chế kiểm tra quyền
 
 **Middleware Authorization**:
+
 1. Middleware kiểm tra JWT/Session → extract role
 2. Middleware kiểm tra endpoint yêu cầu quyền nào
 3. So sánh role user với required role
@@ -729,14 +740,15 @@ Hệ thống có **3 roles chính**:
 
 **Cấu hình cho UniHub Workshop**:
 
-| Endpoint | Ngưỡng | Refill | Thời gian cửa sổ |
-|----------|--------|--------|------------------|
-| `GET /workshops` (public) | 100 requests/phút | 100/60s | Per user IP |
-| `POST /registrations` | 10 requests/phút | 10/60s | Per user (authenticated) |
-| `GET /admin/*` | 50 requests/phút | 50/60s | Per user (admin) |
-| `POST /checkins` (offline) | 1000 requests/phút (local) | Unlimited khi offline | Local device |
+| Endpoint                   | Ngưỡng                     | Refill                | Thời gian cửa sổ         |
+| -------------------------- | -------------------------- | --------------------- | ------------------------ |
+| `GET /workshops` (public)  | 100 requests/phút          | 100/60s               | Per user IP              |
+| `POST /registrations`      | 10 requests/phút           | 10/60s                | Per user (authenticated) |
+| `GET /admin/*`             | 50 requests/phút           | 50/60s                | Per user (admin)         |
+| `POST /checkins` (offline) | 1000 requests/phút (local) | Unlimited khi offline | Local device             |
 
 **Fallback khi rate limit vượt quá**:
+
 - Sinh viên nhận thông báo "Hệ thống quá tải, vui lòng thử lại sau 60 giây".
 - API trả về 429 status code với header `Retry-After: 60`.
 
@@ -753,6 +765,7 @@ Hệ thống có **3 roles chính**:
 3. **Half-Open** (thử kết nối): Sau 60 giây → thử 1 request test.
 
 **Cấu hình**:
+
 ```
 Failure Threshold: 5 lỗi liên tiếp hoặc 50% error rate
 Timeout: 5 giây per request
@@ -760,6 +773,7 @@ Open Duration: 60 giây
 ```
 
 **Graceful Degradation**:
+
 - **Workshop miễn phí**: vẫn cho đăng ký bình thường.
 - **Workshop có phí**: báo lỗi nhưng xem danh sách workshop vẫn hoạt động.
 
@@ -771,14 +785,15 @@ Open Duration: 60 giây
 
 **Cấu hình**:
 
-| Tham số | Giá trị | Ghi chú |
-|---------|--------|--------|
-| TTL Idempotency Key | 24 giờ | Đủ cho retry window |
-| Storage | Redis | Nhanh, in-memory |
-| Key Format | `idempotency:{key}` | Dễ query debug |
-| Collision Detection | UUID v4 | Xác suất collision ≈ 0 |
+| Tham số             | Giá trị             | Ghi chú                |
+| ------------------- | ------------------- | ---------------------- |
+| TTL Idempotency Key | 24 giờ              | Đủ cho retry window    |
+| Storage             | Redis               | Nhanh, in-memory       |
+| Key Format          | `idempotency:{key}` | Dễ query debug         |
+| Collision Detection | UUID v4             | Xác suất collision ≈ 0 |
 
 **Luồng xử lý**:
+
 ```
 1. Client gửi Idempotency-Key header
 2. Server kiểm tra Redis:
@@ -793,6 +808,7 @@ Open Duration: 60 giây
 Sau 10 phút nếu chưa thanh toán → chỗ trở thành available.
 
 **Triển khai**:
+
 - Khi đăng ký có phí → set `registration.held_until = NOW + 10 minutes`.
 - Database query: chỉ count `registered_count` những registration hoàn tất thanh toán hoặc đang giữ chỗ (held_until > NOW).
 - Background job mỗi 5 phút: tìm registration hết hạn giữ chỗ → cập nhật thành cancelled.
@@ -806,10 +822,12 @@ Sau 10 phút nếu chưa thanh toán → chỗ trở thành available.
 **Lựa chọn**: NestJS (TypeScript) chạy trên Fastify engine.
 
 **Các phương án khác**:
+
 1. **Express + Node.js thuần**: Đơn giản, nhưng thiếu cấu trúc → khó bảo trì, không có kiểu dữ liệu.
 2. **Spring Boot (Java)**: Mạnh và trưởng thành, nhưng nặng, khởi động chậm.
 
 **Đánh đổi của từng phương án**:
+
 - Express: Dễ học, linh hoạt | nhưng thiếu cấu trúc, không có kiểu dữ liệu
 - Spring Boot: Mature, doanh nghiệp | nhưng nặng, khởi động chậm, học tập khó
 - **NestJS + Fastify**: Cấu trúc rõ ràng, kiểu dữ liệu, HTTP nhanh | nhưng thiết lập phức tạp hơn Express
@@ -823,12 +841,14 @@ Sau 10 phút nếu chưa thanh toán → chỗ trở thành available.
 **Lựa chọn**: PostgreSQL làm primary, Redis cho cache/session/rate limiting.
 
 **Các phương án khác**:
+
 1. **MySQL + Redis**: Tương tự PostgreSQL, hỗ trợ ACID, nhưng PostgreSQL mạnh hơn về tính năng nâng cao.
 2. **MongoDB + Redis**: NoSQL, mở rộng ngang dễ, nhưng mất giao dịch ACID → rủi ro dữ liệu không nhất quán.
 3. **DynamoDB/Firebase**: Serverless, tự động mở rộng, nhưng bị khóa nhà cung cấp, chi phí cao, không phù hợp cho 12k người dùng.
 4. **PostgreSQL đơn thuần (không Redis)**: Đơn giản, nhưng chậm hơn, không tối ưu cho cache/session.
 
 **Đánh đổi của từng phương án**:
+
 - MySQL: Tương tự PG | ghi phân tán khó hơn PG
 - MongoDB: Mở rộng tự động | mất giao dịch, điều kiện chạy khó lớn
 - DynamoDB: Serverless | bị khóa, chi phí, độ phức tạp
@@ -844,12 +864,14 @@ Sau 10 phút nếu chưa thanh toán → chỗ trở thành available.
 **Lựa chọn**: RabbitMQ cho hàng đợi bất đồng bộ (thông báo, tóm tắt AI, đồng bộ CSV).
 
 **Các phương án khác**:
+
 1. **Kafka**: Dựa trên log, thông lượng cao, nhưng thiết lập phức tạp & bảo trì, quá mức cho workshop.
 2. **AWS SQS**: Quản lý hoàn toàn, nhưng bị khóa nhà cung cấp, độ trễ cao.
 3. **Redis Queue (Bull/BullMQ)**: Đơn giản, trong bộ nhớ, nhưng rủi ro mất dữ liệu nếu Redis sập.
 4. **BullMQ + PostgreSQL**: Bền, đơn giản, nhưng thông lượng thấp hơn.
 
 **Đánh đổi của từng phương án**:
+
 - Kafka: Thông lượng cao | phức tạp, overhead
 - SQS: Quản lý | bị khóa, độ trễ, chi phí
 - Redis Queue: Đơn giản | rủi ro mất dữ liệu, thông lượng
@@ -865,6 +887,7 @@ Sau 10 phút nếu chưa thanh toán → chỗ trở thành available.
 **Lựa chọn**: BetterAuth với chiến lược hybrid (cookie session cho web admin, JWT cho mobile/API).
 
 **Các phương án khác**:
+
 1. **Auth0**: Quản lý hoàn toàn, nhưng đắt, bị khóa nhà cung cấp.
 2. **Clerk**: Hiện đại, thân thiện lập trình viên, nhưng $$$, bị khóa.
 3. **NextAuth.js**: Tốt cho Next.js, nhưng linh hoạt hạn chế.
@@ -872,6 +895,7 @@ Sau 10 phút nếu chưa thanh toán → chỗ trở thành available.
 5. **Chỉ session có trạng thái**: Bảo vệ XSS dễ, nhưng không phù hợp mobile/API.
 
 **Đánh đổi của từng phương án**:
+
 - Auth0/Clerk: Quản lý | đắt, bị khóa
 - NextAuth.js: Tốt cho Next.js | cứng nhắc
 - Chỉ JWT: Đơn giản | vô hiệu hóa khó
@@ -887,12 +911,14 @@ Sau 10 phút nếu chưa thanh toán → chỗ trở thành available.
 **Lựa chọn**: Thuật toán Token Bucket trên Redis.
 
 **Các phương án khác**:
+
 1. **Cửa sổ cố định**: Bộ đếm request/phút, đơn giản, nhưng loạt yêu cầu ở ranh giới.
 2. **Cửa sổ trượt**: Bộ đếm giây, công bằng, nhưng overhead bộ nhớ.
 3. **Leaky Bucket Algorithm**: Tốc độ mượt, nhưng phức tạp, quá mức.
 4. **Không giới hạn**: Đơn giản, nhưng 12k request/10 phút sẽ làm sập server.
 
 **Đánh đổi của từng phương án**:
+
 - Cửa sổ cố định: Đơn giản | loạt ở ranh giới (tất cả request ở :59-:00)
 - Cửa sổ trượt: Công bằng, mượt | nặng bộ nhớ
 - Leaky Bucket: Mượt | phức tạp, quá mức
@@ -908,11 +934,13 @@ Sau 10 phút nếu chưa thanh toán → chỗ trở thành available.
 **Lựa chọn**: Mock payment gateway với mô hình adapter.
 
 **Các phương án khác**:
+
 1. **Cổng thanh toán thực (Stripe/VNPay)**: Sản xuất-sẵn, nhưng có chi phí, thiết lập phức tạp.
 2. **Không thanh toán**: Chỉ workshop miễn phí, nhưng giới hạn tính năng.
 3. **Logic thanh toán tùy chỉnh**: Toàn quyền điều khiển, nhưng không an toàn, rủi ro tuân thủ.
 
 **Đánh đổi của từng phương án**:
+
 - Cổng thực: Sản xuất | chi phí, độ phức tạp
 - Không thanh toán: Đơn giản | giới hạn
 - Logic tùy chỉnh: Điều khiển | không an toàn, trách nhiệm
@@ -927,11 +955,13 @@ Sau 10 phút nếu chưa thanh toán → chỗ trở thành available.
 **Lựa chọn**: Gọi LLM API bên ngoài (OpenAI, Anthropic, hoặc LLM địa phương).
 
 **Các phương án khác**:
+
 1. **LLM tự host (Ollama, LLaMA)**: Toàn quyền điều khiển, không chi phí API, nhưng cần GPU, bảo trì, chất lượng không được đảm bảo.
 2. **Mô hình LLM nhỏ cục bộ**: Nhanh, miễn phí, nhưng chất lượng hạn chế, vấn đề giấy phép.
 3. **Tóm tắt dựa trên quy tắc đơn giản**: Nhanh, rẻ, nhưng chất lượng thấp.
 
 **Đánh đổi của từng phương án**:
+
 - Tự lưu trữ: Điều khiển, không chi phí | GPU, bảo trì, rủi ro chất lượng
 - LLM nhỏ cục bộ: Nhanh | chất lượng, giấy phép
 - Dựa trên quy tắc: Nhanh, rẻ | chất lượng thấp
@@ -946,12 +976,14 @@ Sau 10 phút nếu chưa thanh toán → chỗ trở thành available.
 **Lựa chọn**: Chạy theo lô vào ban đêm tại thời điểm 01:00 & 04:00. Nếu có xung đột dữ liệu, giải quyết bằng cách ghi đè (lấy bản mới nhất từ CSV).
 
 **Các phương án khác**:
+
 1. **Đồng bộ thời gian thực**: Nhất quán cao, nhưng phức tạp, vấn đề thông lượng khi xung đột.
 2. **Nhập thủ công**: Được kích hoạt bởi người dùng, nhưng lỗi người dùng, dữ liệu trễ.
 3. **Giải quyết xung đột hợp nhất**: Công bằng, nhưng phức tạp, chậm.
 4. **Ghi đầu tiên thắng**: Bảo tồn gốc, nhưng dữ liệu cũ.
 
 **Đánh đổi của từng phương án**:
+
 - Thời gian thực: Nhất quán | phức tạp, xung đột khó
 - Thủ công: Đơn giản | lỗi người dùng, trễ
 - Hợp nhất xung đột: Công bằng | phức tạp, chậm
@@ -967,10 +999,12 @@ Sau 10 phút nếu chưa thanh toán → chỗ trở thành available.
 **Lựa chọn**: Dùng các bảng lõi của BetterAuth cho danh tính và session; các bảng nghiệp vụ (`students`, `user_roles`, `staff_workshop_assignments`, `registrations`, `payments`, `checkins`) được quản lý riêng.
 
 **Các phương án khác**:
+
 1. Gộp toàn bộ thông tin role và hồ sơ sinh viên trực tiếp vào bảng user auth.
 2. Tự viết bảng auth/session riêng thay vì dùng BetterAuth schema.
 
 **Đánh đổi của từng phương án**:
+
 - Gộp hết vào bảng auth: Đơn giản ban đầu | dễ rối schema, coupling chặt giữa auth và nghiệp vụ
 - Tự viết auth schema: Toàn quyền | tăng rủi ro bảo mật, lệch với thư viện
 - **Tách auth schema và business schema**: Rõ trách nhiệm, ít coupling, dễ migrate | cần thêm mapping giữa user và profile
@@ -984,10 +1018,12 @@ Sau 10 phút nếu chưa thanh toán → chỗ trở thành available.
 **Lựa chọn**: Không nhồi toàn bộ trạng thái thanh toán vào `registrations`; dùng bảng `payments` riêng liên kết với `registrations`.
 
 **Các phương án khác**:
+
 1. Chỉ dùng `payment_status` trong `registrations`.
 2. Lưu payment hoàn toàn ở Redis vì chỉ là mock/sandbox.
 
 **Đánh đổi của từng phương án**:
+
 - Chỉ dùng cột trong registrations: Đơn giản | mất lịch sử retry/webhook, khó audit
 - Chỉ dùng Redis: Nhanh | không bền, không phù hợp dữ liệu giao dịch
 - **Bảng payments riêng**: Audit tốt, hỗ trợ retry/idempotency/webhook rõ ràng | thêm schema và join
@@ -1001,10 +1037,12 @@ Sau 10 phút nếu chưa thanh toán → chỗ trở thành available.
 **Lựa chọn**: Phạm vi thao tác của `checkin_staff` được lưu trong DB bằng bảng phân công.
 
 **Các phương án khác**:
+
 1. Hard-code workshop được phép ở client mobile.
 2. Cấp quyền toàn cục cho mọi check-in staff trên mọi workshop.
 
 **Đánh đổi của từng phương án**:
+
 - Hard-code ở client: Nhanh | không an toàn, sync khó, khó thu hồi quyền
 - Quyền toàn cục: Đơn giản | vượt scope, trái nguyên tắc least privilege
 - **Bảng phân công trong DB**: An toàn, audit được, thu hồi quyền rõ ràng | thêm một join khi authorize
@@ -1018,10 +1056,12 @@ Sau 10 phút nếu chưa thanh toán → chỗ trở thành available.
 **Lựa chọn**: PDF workshop và output AI được lưu file ở Object Storage; PostgreSQL chỉ giữ metadata, trạng thái xử lý và liên kết nghiệp vụ.
 
 **Các phương án khác**:
+
 1. Lưu file binary trực tiếp trong PostgreSQL.
 2. Chỉ lưu đường dẫn file trong code hoặc config ngoài DB.
 
 **Đánh đổi của từng phương án**:
+
 - Lưu binary trong DB: Giao dịch tập trung | DB phình to, backup nặng, truy xuất chậm
 - Chỉ lưu ngoài DB: Nhẹ DB | khó truy vết và khó ràng buộc nghiệp vụ
 - **Metadata trong DB + file ngoài storage**: Cân bằng, dễ audit, hợp với worker async | cần thêm tầng storage
@@ -1035,10 +1075,12 @@ Sau 10 phút nếu chưa thanh toán → chỗ trở thành available.
 **Lựa chọn**: Dù job chạy qua RabbitMQ/worker, trạng thái nghiệp vụ của CSV import và AI summary vẫn được lưu trong PostgreSQL.
 
 **Các phương án khác**:
+
 1. Chỉ theo dõi job trong message broker.
 2. Chỉ log ra file mà không có bảng trạng thái.
 
 **Đánh đổi của từng phương án**:
+
 - Chỉ dựa vào broker: Đơn giản | khó báo cáo, khó audit, khó xem lịch sử
 - Chỉ log file: Nhanh | khó query và không gắn được với workshop/batch cụ thể
 - **Persist ở DB**: Query được, audit được, rõ trạng thái nghiệp vụ | thêm schema và cập nhật trạng thái
@@ -1052,6 +1094,7 @@ Sau 10 phút nếu chưa thanh toán → chỗ trở thành available.
 **Lựa chọn**: Kiến trúc phục vụ theo nguyên tắc SOLID, áp dụng adapter pattern cho tất cả external integrations (Payment, LLM, ObjectStorage, Notification).
 
 **Nguyên tắc thiết kế áp dụng**:
+
 1. **Single Responsibility (SRP)**: Mỗi service chỉ chịu trách nhiệm duy nhất — `RegistrationService` xử lý logic đăng ký, `PaymentService` giao tiếp với gateway (via adapter `IPaymentGateway`), `SeatAllocator` xử lý tranh chấp chỗ ngồi, không lẫn trách nhiệm.
 2. **Open/Closed (OCP)**: Mọi external service (Payment, Notification, LLM, Storage) phải có interface/adapter contract — mở rộng tính năng bằng cách triển khai adapter mới, không sửa business logic cốt lõi.
 3. **Liskov Substitution (LSP)**: Các adapter phải thay thế được nhau. Ví dụ `MockPaymentGateway` vs `StripePaymentGateway` phải có cùng hợp đồng `IPaymentGateway`.
@@ -1059,6 +1102,7 @@ Sau 10 phút nếu chưa thanh toán → chỗ trở thành available.
 5. **Dependency Inversion (DIP)**: Services phụ thuộc vào abstract interfaces (TS interfaces / DI tokens), không phụ thuộc vào concrete libraries.
 
 **Ràng buộc triển khai**:
+
 - Tách các cross-cutting concerns vào shared libraries: `libs/idempotency/` (middleware + Redis util), `libs/rate-limit/` (token bucket), `libs/circuit-breaker/` (wrapper).
 - Mỗi external integration phải có adapter interface: `IPaymentGateway`, `INotificationProvider`, `IObjectStorage`, `ILLMClient`.
 - Các DTO validate qua Zod; không tự viết parser.

@@ -12,8 +12,8 @@ import { PrismaService } from '../prisma/prisma.service.js';
 export class CsvSyncService {
   constructor(private readonly prisma: PrismaService) {}
 
-  createBatch(sourceFile: string) {
-    return this.prisma.csvImportBatch.create({
+  async createBatch(sourceFile: string) {
+    return this.prisma.csvLog.create({
       data: {
         sourceFile,
         totalRecords: 0,
@@ -25,8 +25,8 @@ export class CsvSyncService {
     });
   }
 
-  findBatch(id: string) {
-    return this.prisma.csvImportBatch.findUniqueOrThrow({
+  async findBatch(id: string) {
+    return this.prisma.csvLog.findUniqueOrThrow({
       where: { id },
       include: { errors: true },
     });

@@ -104,7 +104,7 @@ How to build it:
    - **Tests / docs / tooling**
 3. Output 5–10 ordered bullets that:
    - name the key files/directories to open
-   - explain *why this order* (what each step unlocks)
+   - explain _why this order_ (what each step unlocks)
    - optionally include 1–3 helpful commands for reviewers (e.g., `git diff <BASE>...HEAD -- path/`)
 
 Notes:
@@ -152,9 +152,9 @@ Use this template, filled from evidence:
 
 ## How to Review (suggested order)
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ## Changes
 

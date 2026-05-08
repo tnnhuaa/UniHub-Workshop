@@ -19,11 +19,12 @@ const schemaPath = path.resolve(
   'prisma',
   'schema.prisma',
 );
-const result = spawnSync(
-  process.platform === 'win32' ? 'npx.cmd' : 'npx',
-  ['prisma', ...prismaArgs, '--schema', schemaPath],
-  { stdio: 'inherit' },
-);
+const isWin = process.platform === 'win32';
+const command = isWin ? 'cmd.exe' : 'pnpm';
+const args = isWin
+  ? ['/c', 'pnpm', 'exec', 'prisma', ...prismaArgs, '--schema', schemaPath]
+  : ['exec', 'prisma', ...prismaArgs, '--schema', schemaPath];
+const result = spawnSync(command, args, { stdio: 'inherit' });
 
 if (result.error) {
   console.error('Prisma command failed to start:', result.error.message);
