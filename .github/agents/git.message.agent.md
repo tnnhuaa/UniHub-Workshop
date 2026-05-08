@@ -79,6 +79,7 @@ tools:
   ]
 description: Propose conventional commit messages for a NextJS + Node/NestJS (Fastify) + Prisma + Zod codebase. Never run git commit. Do not stage unless explicitly asked.
 name: "[repo] Git Commit Message Agent"
+model: Grok Code Fast 1 (copilot)
 ---
 
 ## Git Commit Message Agent
