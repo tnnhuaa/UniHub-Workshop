@@ -6,24 +6,24 @@ Triển khai toàn bộ UniHub theo blueprint trong 5 pha, phân công theo 3 st
 
 **Progress**
 
-| Pha                                    | Status         | Notes                       |
-| -------------------------------------- | -------------- | --------------------------- |
-| Pha 0 — Alignment & Setup              | ✅ Done        | Tech decisions locked       |
-| Pha 1 — Foundation & Auth              | 🔄 In Progress | Scaffold done, auth pending |
+| Pha                                    | Status         | Notes                        |
+| -------------------------------------- | -------------- | ---------------------------- |
+| Pha 0 — Alignment & Setup              | ✅ Done        | Tech decisions locked        |
+| Pha 1 — Foundation & Auth              | 🔄 In Progress | Scaffold done, auth pending  |
 | Pha 2 — Core Business                  | 🔄 In Progress | DB schema + seed đã cập nhật |
-| Pha 3 — Payment + Checkin + Workers    | ⬜ Not Started |                             |
-| Pha 4 — Verification, CI/CD, Hardening | ⬜ Not Started |                             |
-| Pha 5 — Release Readiness              | ⬜ Not Started |                             |
+| Pha 3 — Payment + Checkin + Workers    | ⬜ Not Started |                              |
+| Pha 4 — Verification, CI/CD, Hardening | ⬜ Not Started |                              |
+| Pha 5 — Release Readiness              | ⬜ Not Started |                              |
 
 **Pha 1 Completion Tracking**
 
-| Task                                                                               | Owner        | Status         | Report                                                                   |
-| ---------------------------------------------------------------------------------- | ------------ | -------------- | ------------------------------------------------------------------------ |
-| Scaffold NestJS + Fastify + modules + PrismaService DI + Prisma schema + migration | Thành viên 1 | ✅ Done        | [001-scaffold](reports/001-scaffold-nestjs-fastify-completion-report.md) |
+| Task                                                                               | Owner        | Status         | Report                                                                              |
+| ---------------------------------------------------------------------------------- | ------------ | -------------- | ----------------------------------------------------------------------------------- |
+| Scaffold NestJS + Fastify + modules + PrismaService DI + Prisma schema + migration | Thành viên 1 | ✅ Done        | [001-scaffold](reports/001-scaffold-nestjs-fastify-completion-report.md)            |
 | DB schema/index/seed + CSVLog naming sync                                          | Thành viên 1 | ✅ Done        | [002-db-schema-csvlog-seed](reports/002-db-schema-csvlog-seed-completion-report.md) |
-| Workshop/Registration skeleton + Zod validation + error handling                   | Thành viên 2 | ⬜ Not Started |                                                                          |
-| Redis/RabbitMQ integration + adapter contracts                                     | Thành viên 3 | ⬜ Not Started |                                                                          |
-| Auth/RBAC: BetterAuth hybrid session+JWT + role guards                             | All          | ⬜ Not Started |                                                                          |
+| Workshop/Registration skeleton + Zod validation + error handling                   | Thành viên 2 | ⬜ Not Started |                                                                                     |
+| Redis/RabbitMQ integration + adapter contracts                                     | Thành viên 3 | ⬜ Not Started |                                                                                     |
+| Auth/RBAC: BetterAuth hybrid session+JWT + role guards                             | All          | ⬜ Not Started |                                                                                     |
 
 ---
 
