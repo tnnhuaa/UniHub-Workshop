@@ -1,6 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AuditService } from '../audit/audit.service.js';
 import type {
   CreateWorkshopInput,
   UpdateWorkshopInput,
@@ -9,7 +14,10 @@ import type {
 
 @Injectable()
 export class WorkshopService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   findAll(query: WorkshopListQuery) {
     const where: Prisma.WorkshopWhereInput = {};
@@ -56,23 +64,154 @@ export class WorkshopService {
     return this.prisma.workshop.findUniqueOrThrow({ where: { id } });
   }
 
-  create(_input: CreateWorkshopInput): never {
-    // TODO: Implement with validated DTO
-    void _input;
-    throw new Error('Not implemented');
+  async create(input: CreateWorkshopInput, organizerId: string) {
+    if (!organizerId) {
+      throw new ForbiddenException({
+        code: 'ORGANIZER_REQUIRED',
+        message: 'Organizer identity is required',
+      });
+    }
+
+    if (input.endTime.getTime() <= input.startTime.getTime()) {
+      throw new BadRequestException({
+        code: 'WORKSHOP_TIME_RANGE_INVALID',
+        message: 'endTime must be after startTime',
+      });
+    }
+
+    const workshop = await this.prisma.workshop.create({
+      data: {
+        title: input.title,
+        description: input.description,
+        speaker: input.speaker,
+        room: input.room,
+        capacity: input.capacity,
+        price: input.price ?? 0,
+        startTime: input.startTime,
+        endTime: input.endTime,
+        floorMapUrl: input.floorMapUrl,
+        status: input.status ?? 'draft',
+        organizerId,
+      },
+    });
+
+    await this.auditService.log({
+      actorUserId: organizerId,
+      action: 'workshop.create',
+      resourceType: 'workshop',
+      resourceId: workshop.id,
+      metadata: {
+        title: workshop.title,
+        status: workshop.status,
+      },
+    });
+
+    return workshop;
   }
 
-  update(_id: string, _input: UpdateWorkshopInput): never {
-    // TODO: Implement with validated DTO
-    void _id;
-    void _input;
-    throw new Error('Not implemented');
+  async update(id: string, input: UpdateWorkshopInput, organizerId: string) {
+    if (!organizerId) {
+      throw new ForbiddenException({
+        code: 'ORGANIZER_REQUIRED',
+        message: 'Organizer identity is required',
+      });
+    }
+
+    const existing = await this.prisma.workshop.findUniqueOrThrow({
+      where: { id },
+    });
+
+    if (existing.organizerId !== organizerId) {
+      throw new ForbiddenException({
+        code: 'WORKSHOP_OWNERSHIP_REQUIRED',
+        message: 'Only the organizer can update this workshop',
+      });
+    }
+
+    const nextStartTime = input.startTime ?? existing.startTime;
+    const nextEndTime = input.endTime ?? existing.endTime;
+
+    if (nextEndTime.getTime() <= nextStartTime.getTime()) {
+      throw new BadRequestException({
+        code: 'WORKSHOP_TIME_RANGE_INVALID',
+        message: 'endTime must be after startTime',
+      });
+    }
+
+    const nextCapacity = input.capacity ?? existing.capacity;
+    if (nextCapacity < existing.registeredCount) {
+      throw new BadRequestException({
+        code: 'WORKSHOP_CAPACITY_TOO_LOW',
+        message: 'capacity cannot be lower than registered count',
+      });
+    }
+
+    const data: Prisma.WorkshopUpdateInput = {};
+
+    if (input.title !== undefined) data.title = input.title;
+    if (input.description !== undefined) data.description = input.description;
+    if (input.speaker !== undefined) data.speaker = input.speaker;
+    if (input.room !== undefined) data.room = input.room;
+    if (input.capacity !== undefined) data.capacity = input.capacity;
+    if (input.price !== undefined) data.price = input.price;
+    if (input.startTime !== undefined) data.startTime = input.startTime;
+    if (input.endTime !== undefined) data.endTime = input.endTime;
+    if (input.floorMapUrl !== undefined) data.floorMapUrl = input.floorMapUrl;
+    if (input.status !== undefined) data.status = input.status;
+
+    if (Object.keys(data).length === 0) {
+      throw new BadRequestException({
+        code: 'WORKSHOP_UPDATE_EMPTY',
+        message: 'No changes provided for update',
+      });
+    }
+
+    const workshop = await this.prisma.workshop.update({
+      where: { id },
+      data,
+    });
+
+    await this.auditService.log({
+      actorUserId: organizerId,
+      action: 'workshop.update',
+      resourceType: 'workshop',
+      resourceId: workshop.id,
+      metadata: {
+        changedFields: Object.keys(data),
+      },
+    });
+
+    return workshop;
   }
 
-  remove(id: string) {
-    return this.prisma.workshop.update({
+  async remove(id: string, organizerId: string) {
+    if (!organizerId) {
+      throw new ForbiddenException({
+        code: 'ORGANIZER_REQUIRED',
+        message: 'Organizer identity is required',
+      });
+    }
+
+    const existing = await this.prisma.workshop.findUniqueOrThrow({
+      where: { id },
+    });
+
+    const workshop = await this.prisma.workshop.update({
       where: { id },
       data: { status: 'cancelled' },
     });
+
+    await this.auditService.log({
+      actorUserId: organizerId,
+      action: 'workshop.cancel',
+      resourceType: 'workshop',
+      resourceId: workshop.id,
+      metadata: {
+        previousStatus: existing.status,
+        newStatus: workshop.status,
+      },
+    });
+
+    return workshop;
   }
 }

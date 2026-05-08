@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import type { UserRoleType } from '@prisma/client';
@@ -15,6 +16,7 @@ import { ZodValidationPipe } from '../../shared/validation/index.js';
 import { AuthGuard } from '../auth/auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
+import type { AuthenticatedRequest } from '../auth/auth.types.js';
 import {
   createWorkshopSchema,
   updateWorkshopSchema,
@@ -52,8 +54,9 @@ export class WorkshopController {
   create(
     @Body(new ZodValidationPipe(createWorkshopSchema))
     body: CreateWorkshopInput,
+    @Req() request: AuthenticatedRequest,
   ) {
-    return this.workshopService.create(body);
+    return this.workshopService.create(body, request.authUser?.id ?? '');
   }
 
   @Patch(':id')
@@ -64,8 +67,13 @@ export class WorkshopController {
     params: WorkshopIdParam,
     @Body(new ZodValidationPipe(updateWorkshopSchema))
     body: UpdateWorkshopInput,
+    @Req() request: AuthenticatedRequest,
   ) {
-    return this.workshopService.update(params.id, body);
+    return this.workshopService.update(
+      params.id,
+      body,
+      request.authUser?.id ?? '',
+    );
   }
 
   @Delete(':id')
@@ -74,7 +82,8 @@ export class WorkshopController {
   remove(
     @Param(new ZodValidationPipe(workshopIdParamSchema))
     params: WorkshopIdParam,
+    @Req() request: AuthenticatedRequest,
   ) {
-    return this.workshopService.remove(params.id);
+    return this.workshopService.remove(params.id, request.authUser?.id ?? '');
   }
 }
