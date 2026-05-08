@@ -260,8 +260,10 @@ model Checkin {
   checkinStaff BetterAuthUser?  @relation("StaffCheckins", fields: [checkinStaffId], references: [id])
   registration Registration?    @relation(fields: [registrationId], references: [id])
 
+  @@unique([mssv, workshopId])
   @@index([mssv])
   @@index([workshopId])
+  @@index([registrationId])
   @@map("checkins")
 }
 
@@ -342,7 +344,7 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-model CsvImportBatch {
+model CsvLog {
   id               String    @id @default(uuid())
   sourceFile       String    @map("source_file")
   totalRecords     Int       @map("total_records")
@@ -354,12 +356,14 @@ model CsvImportBatch {
   completedAt      DateTime? @map("completed_at")
   createdAt        DateTime  @default(now()) @map("created_at")
 
-  errors CsvImportError[]
+  errors CsvLogError[]
 
+  @@index([status])
+  @@index([startedAt])
   @@map("csv_import_batches")
 }
 
-model CsvImportError {
+model CsvLogError {
   id        String   @id @default(uuid())
   batchId   String   @map("batch_id")
   rowNumber Int      @map("row_number")
@@ -367,7 +371,7 @@ model CsvImportError {
   rawRow    Json?    @map("raw_row")
   createdAt DateTime @default(now()) @map("created_at")
 
-  batch CsvImportBatch @relation(fields: [batchId], references: [id])
+  batch CsvLog @relation(fields: [batchId], references: [id])
 
   @@index([batchId])
   @@map("csv_import_errors")

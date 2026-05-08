@@ -10,6 +10,10 @@
   },
   "scripts": {
     "prepare": "husky",
+    "format": "prettier --write .",
+    "build": "pnpm -r build",
+    "db:init": "node data/init-db.js",
+    "db:seed": "node data/seed.js",
     "lint": "pnpm -C apps/api lint",
     "lint:fix": "pnpm -C apps/api lint",
     "api:build": "pnpm -C apps/api build",

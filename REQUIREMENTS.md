@@ -10,11 +10,11 @@ Ban tổ chức muốn xây dựng hệ thống **UniHub Workshop** để số
 
 ## Người dùng
 
-|Nhóm|Mô tả|
-|---|---|
-|Sinh viên|Xem lịch workshop, đăng ký, nhận xác nhận, check-in khi tham dự|
-|Ban tổ chức|Tạo và quản lý workshop, theo dõi số lượng đăng ký|
-|Nhân sự check-in|Xác nhận sinh viên tham dự tại cửa phòng bằng mobile app|
+| Nhóm             | Mô tả                                                           |
+| ---------------- | --------------------------------------------------------------- |
+| Sinh viên        | Xem lịch workshop, đăng ký, nhận xác nhận, check-in khi tham dự |
+| Ban tổ chức      | Tạo và quản lý workshop, theo dõi số lượng đăng ký              |
+| Nhân sự check-in | Xác nhận sinh viên tham dự tại cửa phòng bằng mobile app        |
 
 ---
 
@@ -101,9 +101,9 @@ Thiết kế mô hình phân quyền cho hệ thống. Xác định các nhóm n
 
 Với mỗi vấn đề kỹ thuật dưới đây, trình bày giải pháp nhóm lựa chọn, giải thích cách nó hoạt động và lý do phù hợp với bài toán. Các kỹ thuật được gợi ý nhưng nhóm có thể đề xuất giải pháp thay thế nếu lập luận thuyết phục:
 
-- **Kiểm soát tải đột biến:** Làm thế nào để backend API không bị quá tải khi 12.000 sinh viên đăng ký cùng lúc? _(gợi ý: Rate Limiting — Fixed Window, Sliding Window, Token Bucket, Leaky Bucket)_
-- **Xử lý cổng thanh toán không ổn định:** Làm thế nào để hệ thống phản ứng khi cổng thanh toán liên tục lỗi mà không kéo sập toàn bộ dịch vụ? _(gợi ý: Circuit Breaker với các trạng thái Closed / Open / Half-Open, kết hợp Graceful Degradation)_
-- **Chống trừ tiền hai lần:** Làm thế nào để đảm bảo một giao dịch chỉ được thực hiện đúng một lần dù client retry nhiều lần? _(gợi ý: Idempotency Key — cơ chế sinh key, nơi lưu trữ, cách kiểm tra trùng lặp, thời gian hết hạn)_
+- **Kiểm soát tải đột biến:** Làm thế nào để backend API không bị quá tải khi 12.000 sinh viên đăng ký cùng lúc? *(gợi ý: Rate Limiting — Fixed Window, Sliding Window, Token Bucket, Leaky Bucket)*
+- **Xử lý cổng thanh toán không ổn định:** Làm thế nào để hệ thống phản ứng khi cổng thanh toán liên tục lỗi mà không kéo sập toàn bộ dịch vụ? *(gợi ý: Circuit Breaker với các trạng thái Closed / Open / Half-Open, kết hợp Graceful Degradation)*
+- **Chống trừ tiền hai lần:** Làm thế nào để đảm bảo một giao dịch chỉ được thực hiện đúng một lần dù client retry nhiều lần? *(gợi ý: Idempotency Key — cơ chế sinh key, nơi lưu trữ, cách kiểm tra trùng lặp, thời gian hết hạn)*
 
 ---
 
@@ -234,8 +234,7 @@ blueprint/
 Thư mục Drive của nhóm phải bao gồm đủ ba thành phần:
 
 1. **Blueprint** — Nhóm có thể nộp theo một trong hai hình thức:
-    - **PDF:** Một file `blueprint.pdf` duy nhất chứa đầy đủ các thành phần theo template.
-    - **Markdown:** Thư mục `blueprint/` tổ chức theo cấu trúc template, upload trực tiếp lên Drive.
+   - **PDF:** Một file `blueprint.pdf` duy nhất chứa đầy đủ các thành phần theo template.
+   - **Markdown:** Thư mục `blueprint/` tổ chức theo cấu trúc template, upload trực tiếp lên Drive.
 2. **Source code** — Thư mục `src/` chứa toàn bộ mã nguồn, kèm thư mục `data/` chứa seed data và script khởi tạo cơ sở dữ liệu, và file `README.md` với hướng dẫn cài đặt và khởi chạy.
-    
 3. **Video trình bày** — Thư mục `clips/` chứa video quay màn hình trình bày các vấn đề kỹ thuật mà nhóm đã giải quyết (không cần slide). Nội dung phải bao gồm **camera thành viên thuyết trình** và **demo trực tiếp trên code hoặc ứng dụng đang chạy**. Quy định kỹ thuật: độ phân giải **FullHD (1080p)**, bitrate khoảng **720 kbps**, định dạng MP4.

@@ -75,6 +75,10 @@ pnpm api:prisma:generate
 # Run migrations
 pnpm api:prisma:migrate
 
+# (Optional) Initialize and seed database
+pnpm db:init
+pnpm db:seed
+
 # Start dev server
 pnpm api:dev
 ```
@@ -85,6 +89,8 @@ The API runs at `http://localhost:3000/api/v1`.
 
 | Script                     | Description              |
 | -------------------------- | ------------------------ |
+| `pnpm db:init`             | Generate + migrate DB    |
+| `pnpm db:seed`             | Seed sample data         |
 | `pnpm api:dev`             | Start API in watch mode  |
 | `pnpm api:build`           | Build API for production |
 | `pnpm api:test`            | Run unit tests           |

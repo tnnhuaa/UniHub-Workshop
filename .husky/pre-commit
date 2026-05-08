@@ -1,3 +1,8 @@
-npx eslint
-prettier $(git diff --cached --name-only --diff-filter=ACMR | sed 's| |\\ |g') --write --ignore-unknown
-git update-index --again
+echo "Running ESLint..."
+npm run lint
+
+echo "Running Prettier..."
+npm run format
+
+echo "Running Build..."
+npm run build
