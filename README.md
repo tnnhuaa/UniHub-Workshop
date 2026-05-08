@@ -85,6 +85,20 @@ pnpm api:dev
 
 The API runs at `http://localhost:3000/api/v1`.
 
+## Configuration
+
+See `.env.example` for all values. Auth settings:
+
+- `BETTER_AUTH_SECRET`
+- `BETTER_AUTH_URL` (set to `http://localhost:3000/api/v1/auth` in dev)
+- `BETTER_AUTH_JWT_ISSUER` (default: `unihub-api`)
+- `BETTER_AUTH_JWT_AUDIENCE` (default: `unihub-mobile`)
+- `BETTER_AUTH_JWT_TTL` (default: `15m`)
+- `BETTER_AUTH_SESSION_TTL` (default: `30d`)
+- `GOOGLE_OAUTH_CLIENT_ID`
+- `GOOGLE_OAUTH_CLIENT_SECRET`
+- `GOOGLE_OAUTH_REDIRECT_URI` (optional override)
+
 ## Scripts
 
 | Script                     | Description              |

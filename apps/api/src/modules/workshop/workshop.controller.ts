@@ -7,9 +7,14 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import type { UserRoleType } from '@prisma/client';
 import { WorkshopService } from './workshop.service.js';
 import { ZodValidationPipe } from '../../shared/validation/index.js';
+import { AuthGuard } from '../auth/auth.guard.js';
+import { RolesGuard } from '../auth/roles.guard.js';
+import { Roles } from '../auth/roles.decorator.js';
 import {
   createWorkshopSchema,
   updateWorkshopSchema,
@@ -42,6 +47,8 @@ export class WorkshopController {
   }
 
   @Post()
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('organizer' satisfies UserRoleType)
   create(
     @Body(new ZodValidationPipe(createWorkshopSchema))
     body: CreateWorkshopInput,
@@ -50,6 +57,8 @@ export class WorkshopController {
   }
 
   @Patch(':id')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('organizer' satisfies UserRoleType)
   update(
     @Param(new ZodValidationPipe(workshopIdParamSchema))
     params: WorkshopIdParam,
@@ -60,6 +69,8 @@ export class WorkshopController {
   }
 
   @Delete(':id')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('organizer' satisfies UserRoleType)
   remove(
     @Param(new ZodValidationPipe(workshopIdParamSchema))
     params: WorkshopIdParam,

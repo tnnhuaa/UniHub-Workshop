@@ -82,6 +82,15 @@ See `.env.example` at project root. Required env vars:
 - `DIRECT_URL` — PostgreSQL direct connection (migrations)
 - `PORT` — Server port (default: 3000)
 - `NODE_ENV` — Environment (development/production/test)
+- `BETTER_AUTH_SECRET` — BetterAuth secret (min 32 chars)
+- `BETTER_AUTH_URL` — Base auth URL (e.g. `http://localhost:3000/api/v1/auth`)
+- `BETTER_AUTH_JWT_ISSUER` — JWT issuer (default: `unihub-api`)
+- `BETTER_AUTH_JWT_AUDIENCE` — JWT audience (default: `unihub-mobile`)
+- `BETTER_AUTH_JWT_TTL` — JWT expiration (default: `15m`)
+- `BETTER_AUTH_SESSION_TTL` — Session TTL (default: `30d`)
+- `GOOGLE_OAUTH_CLIENT_ID` — Google OAuth client id
+- `GOOGLE_OAUTH_CLIENT_SECRET` — Google OAuth client secret
+- `GOOGLE_OAUTH_REDIRECT_URI` — Optional OAuth redirect override
 
 ## References
 

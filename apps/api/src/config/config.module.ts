@@ -7,15 +7,11 @@ import * as path from 'node:path';
   imports: [
     NestConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: path.resolve(
-        __dirname,
-        '..',
-        '..',
-        '..',
-        '..',
-        '..',
-        '.env',
-      ),
+      envFilePath: [
+        path.resolve(process.cwd(), '.env'),
+        path.resolve(process.cwd(), '..', '..', '.env'),
+        path.resolve(__dirname, '..', '..', '..', '..', '..', '.env'),
+      ],
       validate: (config: Record<string, unknown>) => {
         const result = envSchema.safeParse(config);
         if (!result.success) {

@@ -140,6 +140,16 @@ model BetterAuthVerification {
   @@map("better_auth_verifications")
 }
 
+model Jwks {
+  id         String   @id @default(cuid())
+  publicKey  String   @map("public_key")
+  privateKey String   @map("private_key")
+  createdAt  DateTime @default(now()) @map("created_at")
+  expiresAt  DateTime? @map("expires_at")
+
+  @@map("jwks")
+}
+
 model UserRole {
   id        String       @id @default(uuid())
   userId    String       @map("user_id")
