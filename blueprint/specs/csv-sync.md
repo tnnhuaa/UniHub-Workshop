@@ -11,7 +11,7 @@ Job chạy theo lịch để nhập dữ liệu sinh viên từ file CSV export 
    - Parse và validate mỗi row (bắt buộc: `mssv`; kiểm tra định dạng email, phone nếu có).
    - Với row hợp lệ: upsert vào `students` trong transaction ở cấp chunk.
    - Với row không hợp lệ: skip row và ghi lỗi (row number, lỗi) vào log batch.
-3. Sau khi hoàn tất file, worker ghi một bản tóm tắt vào `csv_sync_logs` (total, successful, failed, conflicts).
+3. Sau khi hoàn tất file, worker ghi một bản tóm tắt vào `CsvLog` (mapping DB table: `csv_import_batches`) với các trường total, successful, failed, conflicts.
 
 ## Kịch bản lỗi
 
@@ -28,7 +28,7 @@ Job chạy theo lịch để nhập dữ liệu sinh viên từ file CSV export 
 
 ## Tiêu chí chấp nhận
 
-- Khi có file trong drop location tại lịch chạy, `csv_sync_logs` được tạo với `total_records > 0`.
+- Khi có file trong drop location tại lịch chạy, một bản ghi `CsvLog` được tạo với `total_records > 0`.
 - Các row hợp lệ được áp dụng (kiểm tra `students.csv_synced_at` cập nhật với timestamp batch).
 - Các row lỗi được bỏ qua nhưng có log chi tiết (row index + lỗi) để kiểm tra sau.
-- Số lượng conflict (ghi đè) được ghi vào `csv_sync_logs` và có thể truy vấn qua admin UI.
+- Số lượng conflict (ghi đè) được ghi vào `CsvLog` và có thể truy vấn qua admin UI.

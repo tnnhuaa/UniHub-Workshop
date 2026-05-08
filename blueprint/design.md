@@ -228,7 +228,7 @@ erDiagram
     BETTER_AUTH_USER ||--o{ BETTER_AUTH_VERIFICATION : requests
     BETTER_AUTH_USER ||--o{ NOTIFICATION_DELIVERIES : receives
     BETTER_AUTH_USER ||--o{ AUDIT_LOGS : triggers
-    CSV_IMPORT_BATCHES ||--o{ CSV_IMPORT_ERRORS : contains
+    CSV_LOGS ||--o{ CSV_LOG_ERRORS : contains
 
     BETTER_AUTH_USER {
         string id PK
@@ -404,7 +404,7 @@ erDiagram
         datetime created_at
     }
 
-    CSV_IMPORT_BATCHES {
+    CSV_LOGS {
         uuid id PK
         string file_name
         string checksum
@@ -417,7 +417,7 @@ erDiagram
         datetime finished_at
     }
 
-    CSV_IMPORT_ERRORS {
+    CSV_LOG_ERRORS {
         uuid id PK
         uuid batch_id FK
         int row_number
@@ -638,7 +638,7 @@ CREATE TABLE csv_import_errors (
 - `workshop_documents` chỉ lưu metadata file; file thật nằm ở Object Storage.
 - `notification_deliveries` lưu trạng thái gửi thông báo qua email/in-app và hỗ trợ dedupe khi worker retry.
 - `audit_logs` lưu vết các thao tác nhạy cảm như tạo/sửa/hủy workshop, phân công staff và đồng bộ check-in.
-- `csv_import_batches` và `csv_import_errors` tồn tại để hỗ trợ audit, báo cáo theo lô và truy vết lỗi nhập CSV.
+- `CsvLog` (map sang bảng `csv_import_batches`) và `CsvLogError` (map sang `csv_import_errors`) tồn tại để hỗ trợ audit, báo cáo theo lô và truy vết lỗi nhập CSV.
 - **SOLID principle**: Schema tách rõ domain tables (workshops, registrations, checkins) khỏi auth tables (better*auth*\*) để tránh coupling giữa authentication và business logic.
 
 ### Luồng dữ liệu quan trọng ở tầng database
@@ -657,7 +657,7 @@ CREATE TABLE csv_import_errors (
 
 #### CSV Sync theo lô
 
-- Worker đọc file CSV, ghi một dòng trong `csv_import_batches`, sau đó validate từng record.
+- Worker đọc file CSV, ghi một dòng trong `CsvLog` (bảng vật lý: `csv_import_batches`), sau đó validate từng record.
 - Dòng lỗi được lưu tại `csv_import_errors`, không làm sập cả lô.
 - Chính sách xung đột là `last-write-wins` cho dữ liệu sinh viên đến từ CSV.
 
