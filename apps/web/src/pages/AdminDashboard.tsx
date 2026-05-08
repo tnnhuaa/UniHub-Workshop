@@ -1,4 +1,5 @@
-const imgAdminAvatar = "http://localhost:3845/assets/b4953046acec56080827af80f9f7729917d46a90.png";
+const imgAdminAvatar =
+  "http://localhost:3845/assets/b4953046acec56080827af80f9f7729917d46a90.png";
 
 const kpis = [
   {
@@ -115,7 +116,10 @@ const AdminDashboard = () => {
                   <div className="admin-kpi-header">
                     <span>{kpi.label}</span>
                     <div className={`admin-kpi-icon ${kpi.accent}`}>
-                      <i className={`fa-solid ${kpi.icon}`} aria-hidden="true" />
+                      <i
+                        className={`fa-solid ${kpi.icon}`}
+                        aria-hidden="true"
+                      />
                     </div>
                   </div>
                   <div className="admin-kpi-value">
@@ -146,7 +150,10 @@ const AdminDashboard = () => {
                 <h2>Active Workshops</h2>
                 <div className="admin-table-actions">
                   <div className="admin-search">
-                    <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
+                    <i
+                      className="fa-solid fa-magnifying-glass"
+                      aria-hidden="true"
+                    />
                     <input
                       type="search"
                       placeholder="Search workshops..."
@@ -184,13 +191,19 @@ const AdminDashboard = () => {
                     </span>
                     <div className="admin-row-actions">
                       <button type="button" aria-label="Edit">
-                        <i className="fa-solid fa-pen-to-square" aria-hidden="true" />
+                        <i
+                          className="fa-solid fa-pen-to-square"
+                          aria-hidden="true"
+                        />
                       </button>
                       <button type="button" aria-label="View">
                         <i className="fa-solid fa-eye" aria-hidden="true" />
                       </button>
                       <button type="button" aria-label="More">
-                        <i className="fa-solid fa-ellipsis" aria-hidden="true" />
+                        <i
+                          className="fa-solid fa-ellipsis"
+                          aria-hidden="true"
+                        />
                       </button>
                     </div>
                   </div>
@@ -207,7 +220,10 @@ const AdminDashboard = () => {
             <div className="admin-panel-section">
               <h3>CSV Sync Jobs</h3>
               <div className="admin-job-card admin-job-card--failed">
-                <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
+                <i
+                  className="fa-solid fa-circle-exclamation"
+                  aria-hidden="true"
+                />
                 <div>
                   <strong>Student_Roster_Q3.csv</strong>
                   <p>Failed at row 42</p>
@@ -247,14 +263,20 @@ const AdminDashboard = () => {
               <div className="admin-ai-row">
                 <div>
                   <div className="admin-ai-icon admin-ai-icon--gray">
-                    <i className="fa-solid fa-calendar-check" aria-hidden="true" />
+                    <i
+                      className="fa-solid fa-calendar-check"
+                      aria-hidden="true"
+                    />
                   </div>
                   <div>
                     <strong>Schedule Optimization</strong>
                     <p>Completed (12m ago)</p>
                   </div>
                 </div>
-                <i className="fa-solid fa-circle-check admin-ai-check" aria-hidden="true" />
+                <i
+                  className="fa-solid fa-circle-check admin-ai-check"
+                  aria-hidden="true"
+                />
               </div>
             </div>
             <button className="admin-secondary-button" type="button">
