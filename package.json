@@ -1,14 +1,24 @@
 {
+  "private": true,
   "devDependencies": {
     "eslint": "^10.3.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
     "husky": "^9.1.7",
-    "prettier": "^3.8.3"
+    "prettier": "^3.8.3",
+    "prisma": "6.19.3"
   },
   "scripts": {
     "prepare": "husky",
-    "lint": "eslint .",
-    "lint:fix": "eslint --fix ."
+    "lint": "pnpm -C apps/api lint",
+    "lint:fix": "pnpm -C apps/api lint",
+    "api:build": "pnpm -C apps/api build",
+    "api:dev": "pnpm -C apps/api start:dev",
+    "api:test": "pnpm -C apps/api test",
+    "api:prisma:generate": "pnpm -C apps/api prisma:generate",
+    "api:prisma:migrate": "pnpm -C apps/api prisma:migrate"
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.3"
   }
 }
