@@ -18,7 +18,7 @@ export class NotificationService {
     throw new Error('Not implemented');
   }
 
-  async findByUser(userId: string) {
+  findByUser(userId: string) {
     return this.prisma.notificationDelivery.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },

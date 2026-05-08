@@ -5,6 +5,7 @@ import {
 } from '@nestjs/platform-fastify';
 import { Logger } from '@nestjs/common';
 import { AppModule } from './app.module.js';
+import { HttpExceptionFilter } from './shared/errors/index.js';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -22,6 +23,8 @@ async function bootstrap() {
     origin: process.env.CORS_ORIGIN ?? '*',
     credentials: true,
   });
+
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   const port = Number(process.env.PORT ?? 3000);
   await app.listen({ port, host: '0.0.0.0' });

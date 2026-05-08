@@ -14,7 +14,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 export class AuthService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getUserRoles(userId: string) {
+  getUserRoles(userId: string) {
     return this.prisma.userRole.findMany({
       where: { userId },
       select: { role: true },

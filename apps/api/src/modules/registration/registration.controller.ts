@@ -1,29 +1,49 @@
-import { Controller, Get, Post, Param } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { RegistrationService } from './registration.service.js';
+import { ZodValidationPipe } from '../../shared/validation/index.js';
+import {
+  createRegistrationSchema,
+  registrationIdParamSchema,
+  registrationListQuerySchema,
+  type CreateRegistrationInput,
+  type RegistrationIdParam,
+  type RegistrationListQuery,
+} from './registration.schemas.js';
 
 @Controller('registrations')
 export class RegistrationController {
   constructor(private readonly registrationService: RegistrationService) {}
 
   @Post()
-  create() {
-    // TODO: Implement with Zod DTO (CreateRegistrationDTO)
-    return this.registrationService.create();
+  create(
+    @Body(new ZodValidationPipe(createRegistrationSchema))
+    body: CreateRegistrationInput,
+  ) {
+    return this.registrationService.create(body);
   }
 
   @Get('me')
-  findMine() {
+  findMine(
+    @Query(new ZodValidationPipe(registrationListQuerySchema))
+    query: RegistrationListQuery,
+  ) {
     // TODO: Extract user from auth context
-    return this.registrationService.findByStudent('placeholder');
+    return this.registrationService.findByStudent('placeholder', query);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.registrationService.findOne(id);
+  findOne(
+    @Param(new ZodValidationPipe(registrationIdParamSchema))
+    params: RegistrationIdParam,
+  ) {
+    return this.registrationService.findOne(params.id);
   }
 
   @Get(':id/qr')
-  getQrCode(@Param('id') id: string) {
-    return this.registrationService.getQrCode(id);
+  getQrCode(
+    @Param(new ZodValidationPipe(registrationIdParamSchema))
+    params: RegistrationIdParam,
+  ) {
+    return this.registrationService.getQrCode(params.id);
   }
 }
