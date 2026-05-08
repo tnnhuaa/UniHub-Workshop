@@ -15,7 +15,7 @@ export const workshopListQuerySchema = z.object({
   pageSize: z.coerce.number().int().positive().max(100).default(20),
 });
 
-export const createWorkshopSchema = z.object({
+const baseWorkshopSchema = z.object({
   title: z.string().trim().min(1),
   description: z.string().trim().optional(),
   speaker: z.string().trim().optional(),
@@ -28,7 +28,15 @@ export const createWorkshopSchema = z.object({
   status: z.enum(['draft', 'published', 'cancelled', 'completed']).optional(),
 });
 
-export const updateWorkshopSchema = createWorkshopSchema.partial();
+export const createWorkshopSchema = baseWorkshopSchema.refine(
+  (data) => data.endTime.getTime() > data.startTime.getTime(),
+  {
+    message: 'endTime must be after startTime',
+    path: ['endTime'],
+  },
+);
+
+export const updateWorkshopSchema = baseWorkshopSchema.partial();
 
 export type WorkshopIdParam = z.infer<typeof workshopIdParamSchema>;
 export type WorkshopListQuery = z.infer<typeof workshopListQuerySchema>;

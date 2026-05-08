@@ -11,6 +11,9 @@ importers:
         specifier: 6.19.3
         version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
     devDependencies:
+      "@types/jest":
+        specifier: ^30.0.0
+        version: 30.0.0
       eslint:
         specifier: ^10.3.0
         version: 10.3.0(jiti@2.7.0)
