@@ -22,7 +22,7 @@ export class CheckinService {
     throw new Error('Not implemented');
   }
 
-  async findByWorkshop(workshopId: string) {
+  findByWorkshop(workshopId: string) {
     return this.prisma.checkin.findMany({
       where: { workshopId },
       include: { student: true },

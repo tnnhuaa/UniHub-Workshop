@@ -12,7 +12,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 export class CsvSyncService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createBatch(sourceFile: string) {
+  createBatch(sourceFile: string) {
     return this.prisma.csvImportBatch.create({
       data: {
         sourceFile,
@@ -25,7 +25,7 @@ export class CsvSyncService {
     });
   }
 
-  async findBatch(id: string) {
+  findBatch(id: string) {
     return this.prisma.csvImportBatch.findUniqueOrThrow({
       where: { id },
       include: { errors: true },
