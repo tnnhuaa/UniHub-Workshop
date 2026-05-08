@@ -1,5 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { PaymentService } from '../payment/payment.service.js';
+import { SeatAllocator } from './seat-allocator.js';
 import type {
   CreateRegistrationInput,
   RegistrationListQuery,
@@ -7,12 +10,77 @@ import type {
 
 @Injectable()
 export class RegistrationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly seatAllocator: SeatAllocator,
+    private readonly paymentService: PaymentService,
+  ) {}
 
-  create(_input: CreateRegistrationInput): never {
-    // TODO: Implement registration flow with SeatAllocator
-    void _input;
-    throw new Error('Not implemented');
+  async create(input: CreateRegistrationInput, idempotencyKey: string) {
+    const existing = await this.prisma.registration.findUnique({
+      where: {
+        mssv_workshopId: {
+          mssv: input.mssv,
+          workshopId: input.workshopId,
+        },
+      },
+    });
+
+    const workshop = await this.prisma.workshop.findUniqueOrThrow({
+      where: { id: input.workshopId },
+      select: { price: true },
+    });
+
+    if (existing) {
+      const payment = await this.prisma.payment.findFirst({
+        where: { registrationId: existing.id },
+        select: { id: true },
+      });
+
+      const paymentRequired =
+        Number(workshop.price) > 0 && existing.paymentStatus !== 'paid';
+
+      return {
+        registration: existing,
+        paymentRequired,
+        payment: payment
+          ? this.paymentService.buildMockPaymentInfo(payment.id)
+          : null,
+      };
+    }
+
+    if (Number(workshop.price) <= 0) {
+      const registration = await this.seatAllocator.confirmFreeRegistration(
+        input.mssv,
+        input.workshopId,
+      );
+
+      const qrCode = registration.qrCode ?? `qr_${randomUUID()}`;
+      const confirmed = await this.prisma.registration.update({
+        where: { id: registration.id },
+        data: { qrCode },
+      });
+
+      return { registration: confirmed, paymentRequired: false };
+    }
+
+    const registration = await this.seatAllocator.holdSeat(
+      input.mssv,
+      input.workshopId,
+    );
+
+    const payment = await this.paymentService.initiateMockPayment({
+      registrationId: registration.id,
+      amount: workshop.price,
+      currency: 'VND',
+      idempotencyKey,
+    });
+
+    return {
+      registration,
+      paymentRequired: true,
+      payment,
+    };
   }
 
   findOne(id: string) {
@@ -39,6 +107,13 @@ export class RegistrationService {
       where: { id },
       select: { qrCode: true },
     });
+
+    if (!registration.qrCode) {
+      throw new ConflictException({
+        code: 'QR_NOT_READY',
+        message: 'QR code is not available for this registration',
+      });
+    }
     return { qrCode: registration.qrCode };
   }
 }

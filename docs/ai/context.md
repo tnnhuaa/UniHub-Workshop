@@ -36,9 +36,9 @@ UniHub Workshop manages workshop registration, payment holds, offline check-in, 
 | `health`       | ✅ Ready    | Health check                         |
 | `auth`         | ✅ Ready    | BetterAuth hybrid session/JWT + RBAC |
 | `audit`        | ✅ Ready    | Audit logging                        |
-| `workshop`     | 🔧 Skeleton | Workshop CRUD                        |
-| `registration` | 🔧 Skeleton | Registration flow                    |
-| `payment`      | 🔧 Skeleton | Payment adapter                      |
+| `workshop`     | ✅ Done     | Workshop CRUD                        |
+| `registration` | ✅ Done     | Registration flow                    |
+| `payment`      | ✅ Done     | Payment adapter                      |
 | `checkin`      | 🔧 Skeleton | QR + offline sync                    |
 | `student`      | 🔧 Skeleton | Student profiles                     |
 | `notification` | 🔧 Skeleton | Notifications                        |

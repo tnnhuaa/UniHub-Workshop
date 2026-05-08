@@ -21,7 +21,8 @@ Triển khai toàn bộ UniHub theo blueprint trong 5 pha, phân công theo 3 st
 | ---------------------------------------------------------------------------------- | ------------ | -------------- | ----------------------------------------------------------------------------------- |
 | Scaffold NestJS + Fastify + modules + PrismaService DI + Prisma schema + migration | Thành viên 1 | ✅ Done        | [001-scaffold](reports/001-scaffold-nestjs-fastify-completion-report.md)            |
 | DB schema/index/seed + CSVLog naming sync                                          | Thành viên 1 | ✅ Done        | [002-db-schema-csvlog-seed](reports/002-db-schema-csvlog-seed-completion-report.md) |
-| Workshop/Registration skeleton + Zod validation + error handling                   | Thành viên 2 | ⬜ Not Started |                                                                                     |
+| Workshop CRUD base + Zod validation + error handling                               | Thành viên 2 | ✅ Done        |                                                                                     |
+| Registration skeleton + Zod validation + error handling                            | Thành viên 2 | ✅ Done        |                                                                                     |
 | Redis/RabbitMQ integration + adapter contracts                                     | Thành viên 3 | ⬜ Not Started |                                                                                     |
 | Auth/RBAC: BetterAuth hybrid session+JWT + role guards                             | All          | ✅ Done        |                                                                                     |
 

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AppConfigModule } from './config/config.module.js';
+import { RedisModule } from './libs/redis/index.js';
 import { PrismaModule } from './modules/prisma/prisma.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
@@ -19,6 +20,7 @@ import { AppService } from './app.service.js';
   imports: [
     // Infrastructure
     AppConfigModule,
+    RedisModule,
     PrismaModule,
     HealthModule,
 

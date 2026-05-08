@@ -17,4 +17,5 @@ export type AuthenticatedRequest = FastifyRequest & {
   authUser?: AuthUser;
   authSession?: AuthSession;
   authRoles?: UserRoleType[];
+  idempotencyKey?: string;
 };
