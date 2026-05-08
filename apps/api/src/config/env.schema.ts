@@ -7,6 +7,15 @@ export const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.url(),
   DIRECT_URL: z.url(),
+  BETTER_AUTH_SECRET: z.string().min(32),
+  BETTER_AUTH_URL: z.url(),
+  BETTER_AUTH_JWT_ISSUER: z.string().default('unihub-api'),
+  BETTER_AUTH_JWT_AUDIENCE: z.string().default('unihub-mobile'),
+  BETTER_AUTH_JWT_TTL: z.string().default('15m'),
+  BETTER_AUTH_SESSION_TTL: z.string().default('30d'),
+  GOOGLE_OAUTH_CLIENT_ID: z.string(),
+  GOOGLE_OAUTH_CLIENT_SECRET: z.string(),
+  GOOGLE_OAUTH_REDIRECT_URI: z.url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

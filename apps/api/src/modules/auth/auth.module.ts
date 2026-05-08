@@ -1,5 +1,13 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service.js';
+import { AuthController } from './auth.controller.js';
+import { AuthGuard } from './auth.guard.js';
+import { RolesGuard } from './roles.guard.js';
+import { createBetterAuthInstance } from './auth.instance.js';
+import { BETTER_AUTH_INSTANCE } from './auth.constants.js';
+import type { Env } from '../../config/env.schema.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 
 /**
  * AuthModule — BetterAuth integration placeholder.
@@ -8,7 +16,39 @@ import { AuthService } from './auth.service.js';
  * @see blueprint/specs/auth.md
  */
 @Module({
-  providers: [AuthService],
-  exports: [AuthService],
+  controllers: [AuthController],
+  providers: [
+    {
+      provide: BETTER_AUTH_INSTANCE,
+      useFactory: (prisma: PrismaService, config: ConfigService<Env, true>) => {
+        const env: Env = {
+          NODE_ENV: config.getOrThrow('NODE_ENV'),
+          PORT: config.getOrThrow('PORT'),
+          DATABASE_URL: config.getOrThrow('DATABASE_URL'),
+          DIRECT_URL: config.getOrThrow('DIRECT_URL'),
+          BETTER_AUTH_SECRET: config.getOrThrow('BETTER_AUTH_SECRET'),
+          BETTER_AUTH_URL: config.getOrThrow('BETTER_AUTH_URL'),
+          BETTER_AUTH_JWT_ISSUER: config.getOrThrow('BETTER_AUTH_JWT_ISSUER'),
+          BETTER_AUTH_JWT_AUDIENCE: config.getOrThrow(
+            'BETTER_AUTH_JWT_AUDIENCE',
+          ),
+          BETTER_AUTH_JWT_TTL: config.getOrThrow('BETTER_AUTH_JWT_TTL'),
+          BETTER_AUTH_SESSION_TTL: config.getOrThrow('BETTER_AUTH_SESSION_TTL'),
+          GOOGLE_OAUTH_CLIENT_ID: config.getOrThrow('GOOGLE_OAUTH_CLIENT_ID'),
+          GOOGLE_OAUTH_CLIENT_SECRET: config.getOrThrow(
+            'GOOGLE_OAUTH_CLIENT_SECRET',
+          ),
+          GOOGLE_OAUTH_REDIRECT_URI: config.get('GOOGLE_OAUTH_REDIRECT_URI'),
+        };
+
+        return createBetterAuthInstance(prisma, env);
+      },
+      inject: [PrismaService, ConfigService],
+    },
+    AuthService,
+    AuthGuard,
+    RolesGuard,
+  ],
+  exports: [AuthService, AuthGuard, RolesGuard],
 })
 export class AuthModule {}

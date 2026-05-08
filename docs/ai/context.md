@@ -29,18 +29,18 @@ UniHub Workshop manages workshop registration, payment holds, offline check-in, 
 
 ## Module Map
 
-| Module         | Status      | Purpose                |
-| -------------- | ----------- | ---------------------- |
-| `prisma`       | ✅ Ready    | DB access via DI       |
-| `config`       | ✅ Ready    | Env validation         |
-| `health`       | ✅ Ready    | Health check           |
-| `auth`         | 🔧 Skeleton | BetterAuth placeholder |
-| `audit`        | ✅ Ready    | Audit logging          |
-| `workshop`     | 🔧 Skeleton | Workshop CRUD          |
-| `registration` | 🔧 Skeleton | Registration flow      |
-| `payment`      | 🔧 Skeleton | Payment adapter        |
-| `checkin`      | 🔧 Skeleton | QR + offline sync      |
-| `student`      | 🔧 Skeleton | Student profiles       |
-| `notification` | 🔧 Skeleton | Notifications          |
-| `csv-sync`     | 🔧 Skeleton | CSV import             |
-| `document`     | 🔧 Skeleton | PDF + AI summary       |
+| Module         | Status      | Purpose                              |
+| -------------- | ----------- | ------------------------------------ |
+| `prisma`       | ✅ Ready    | DB access via DI                     |
+| `config`       | ✅ Ready    | Env validation                       |
+| `health`       | ✅ Ready    | Health check                         |
+| `auth`         | ✅ Ready    | BetterAuth hybrid session/JWT + RBAC |
+| `audit`        | ✅ Ready    | Audit logging                        |
+| `workshop`     | 🔧 Skeleton | Workshop CRUD                        |
+| `registration` | 🔧 Skeleton | Registration flow                    |
+| `payment`      | 🔧 Skeleton | Payment adapter                      |
+| `checkin`      | 🔧 Skeleton | QR + offline sync                    |
+| `student`      | 🔧 Skeleton | Student profiles                     |
+| `notification` | 🔧 Skeleton | Notifications                        |
+| `csv-sync`     | 🔧 Skeleton | CSV import                           |
+| `document`     | 🔧 Skeleton | PDF + AI summary                     |
