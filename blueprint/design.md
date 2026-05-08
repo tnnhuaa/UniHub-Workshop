@@ -635,6 +635,7 @@ CREATE TABLE csv_import_errors (
 - `notification_deliveries` lưu trạng thái gửi thông báo qua email/in-app và hỗ trợ dedupe khi worker retry.
 - `audit_logs` lưu vết các thao tác nhạy cảm như tạo/sửa/hủy workshop, phân công staff và đồng bộ check-in.
 - `csv_import_batches` và `csv_import_errors` tồn tại để hỗ trợ audit, báo cáo theo lô và truy vết lỗi nhập CSV.
+- **SOLID principle**: Schema tách rõ domain tables (workshops, registrations, checkins) khỏi auth tables (better_auth_*) để tránh coupling giữa authentication và business logic.
 
 ### Luồng dữ liệu quan trọng ở tầng database
 
@@ -1046,6 +1047,27 @@ Sau 10 phút nếu chưa thanh toán → chỗ trở thành available.
 
 ---
 
+### ADR-14: Service Architecture & Adapter Pattern — SOLID Principles
+
+**Lựa chọn**: Kiến trúc phục vụ theo nguyên tắc SOLID, áp dụng adapter pattern cho tất cả external integrations (Payment, LLM, ObjectStorage, Notification).
+
+**Nguyên tắc thiết kế áp dụng**:
+1. **Single Responsibility (SRP)**: Mỗi service chỉ chịu trách nhiệm duy nhất — `RegistrationService` xử lý logic đăng ký, `PaymentService` giao tiếp với gateway (via adapter `IPaymentGateway`), `SeatAllocator` xử lý tranh chấp chỗ ngồi, không lẫn trách nhiệm.
+2. **Open/Closed (OCP)**: Mọi external service (Payment, Notification, LLM, Storage) phải có interface/adapter contract — mở rộng tính năng bằng cách triển khai adapter mới, không sửa business logic cốt lõi.
+3. **Liskov Substitution (LSP)**: Các adapter phải thay thế được nhau. Ví dụ `MockPaymentGateway` vs `StripePaymentGateway` phải có cùng hợp đồng `IPaymentGateway`.
+4. **Interface Segregation (ISP)**: DTO nhỏ, cụ thể cho từng endpoint — `CreateRegistrationDTO`, `ConfirmPaymentDTO`, `CheckinScanDTO` (không payload quá nặng).
+5. **Dependency Inversion (DIP)**: Services phụ thuộc vào abstract interfaces (TS interfaces / DI tokens), không phụ thuộc vào concrete libraries.
+
+**Ràng buộc triển khai**:
+- Tách các cross-cutting concerns vào shared libraries: `libs/idempotency/` (middleware + Redis util), `libs/rate-limit/` (token bucket), `libs/circuit-breaker/` (wrapper).
+- Mỗi external integration phải có adapter interface: `IPaymentGateway`, `INotificationProvider`, `IObjectStorage`, `ILLMClient`.
+- Các DTO validate qua Zod; không tự viết parser.
+- Unit tests cho từng service tách rời (mock external adapters); integration tests cho luồng end-to-end.
+
+**Tại sao**: Giảm coupling, dễ test, mở rộng tính năng mà không sửa code cốt lõi. Matching blueprint/specs/IMPLEMENTATION-GUIDE.md checklist.
+
+---
+
 ## Kết luận
 
-UniHub Workshop được thiết kế để xử lý tải cao, đảm bảo data consistency, graceful degradation khi payment lỗi, và offline-first mobile check-in. Các cơ chế bảo vệ được cài đặt thực tế, không chỉ mô phỏng.
+UniHub Workshop được thiết kế để xử lý tải cao, đảm bảo data consistency, graceful degradation khi payment lỗi, và offline-first mobile check-in. Các cơ chế bảo vệ được cài đặt thực tế, không chỉ mô phỏng. Kiến trúc tuân thủ nguyên tắc SOLID (ADR-14) và DRY (gom cross-cutting concerns, tái sử dụng libraries) để đảm bảo mã dễ bảo trì và mở rộng.
