@@ -1,7 +1,8 @@
+import WorkshopCard from "../components/WorkshopCard.tsx";
+import useWorkshopList from "../hooks/useWorkshopList.ts";
+
 const imgStudentProfile =
   "https://www.figma.com/api/mcp/asset/065a2bff-6d30-4eb7-9d26-b63b86059f0d";
-const imgSpeaker =
-  "https://www.figma.com/api/mcp/asset/2ee92fe2-f247-4654-8897-051b1d405acb";
 const imgSearchIcon =
   "https://www.figma.com/api/mcp/asset/1238d665-e630-4675-87ba-9353ba6dd352";
 const imgBell =
@@ -14,24 +15,10 @@ const imgToggleGrid =
   "https://www.figma.com/api/mcp/asset/f06e85c7-6aa8-48aa-aa79-e2755a94b67f";
 const imgToggleList =
   "https://www.figma.com/api/mcp/asset/f03f15f8-92d8-4fad-88c7-0d2545933476";
-const imgStatusAlmost =
-  "https://www.figma.com/api/mcp/asset/068b2dc4-b19a-4317-930f-ffc7d9b5447c";
-const imgCalendar =
-  "https://www.figma.com/api/mcp/asset/75b30881-6a1c-44f8-b54d-75d7f509d330";
-const imgInstructor =
-  "https://www.figma.com/api/mcp/asset/f60f7648-b21b-4036-811f-973b9e258b60";
-const imgLocation =
-  "https://www.figma.com/api/mcp/asset/895e2868-0a2f-4ca4-b813-97d5b99c1a50";
-const imgStatusOpen =
-  "https://www.figma.com/api/mcp/asset/6a183687-7bba-4e74-b4d6-f96b16fa67fa";
-const imgPlace =
-  "https://www.figma.com/api/mcp/asset/39673742-a86c-46d7-9668-f8b8964fa9ae";
-const imgStatusFull =
-  "https://www.figma.com/api/mcp/asset/317c0c6d-c8ca-4533-8dc8-ae46cf857110";
-const imgStatusCancelled =
-  "https://www.figma.com/api/mcp/asset/12e0c9be-c44c-40cb-af1d-361c17ce4aba";
 
 const WorkshopList = () => {
+  const { workshops } = useWorkshopList();
+
   return (
     <div className="workshop-list-page">
       <header className="workshop-topbar">
@@ -131,179 +118,9 @@ const WorkshopList = () => {
           </div>
 
           <div className="workshop-grid">
-            <article className="workshop-card featured">
-              <div className="card-top">
-                <span className="badge success">
-                  <img src={imgStatusOpen} alt="" aria-hidden="true" />
-                  Open
-                </span>
-                <span className="badge price">Free</span>
-              </div>
-              <div className="card-body">
-                <h3>Advanced Academic Writing &amp; Research</h3>
-                <p>
-                  Master the intricacies of composing high-impact academic
-                  papers, structuring arguments, and effectively navigating
-                  academic databases.
-                </p>
-                <div className="card-meta">
-                  <div>
-                    <img src={imgCalendar} alt="" aria-hidden="true" />
-                    Oct 24 • 10:00 AM
-                  </div>
-                  <div>
-                    <img src={imgPlace} alt="" aria-hidden="true" />
-                    Library, Room 4B
-                  </div>
-                </div>
-              </div>
-              <div className="card-footer">
-                <div className="speaker">
-                  <img src={imgSpeaker} alt="Dr. Sarah Jenkins" />
-                  <div>
-                    <strong>Dr. Sarah Jenkins</strong>
-                    <span>Writing Center Director</span>
-                  </div>
-                </div>
-                <div className="seats">
-                  <span>12 seats left</span>
-                  <div className="progress">
-                    <div className="progress-bar" />
-                  </div>
-                </div>
-                <button type="button" className="action-button">
-                  Register Now
-                </button>
-              </div>
-            </article>
-
-            <article className="workshop-card">
-              <div className="card-top">
-                <span className="badge warning">
-                  <img src={imgStatusAlmost} alt="" aria-hidden="true" />
-                  Almost Full
-                </span>
-                <span className="badge price">$15.00</span>
-              </div>
-              <div className="card-body">
-                <h3>Data Analysis with Python Basics</h3>
-                <div className="card-meta stack">
-                  <div>
-                    <img src={imgCalendar} alt="" aria-hidden="true" />
-                    Oct 25 • 2:00 PM
-                  </div>
-                  <div>
-                    <img src={imgInstructor} alt="" aria-hidden="true" />
-                    Prof. Michael Chang
-                  </div>
-                  <div>
-                    <img src={imgLocation} alt="" aria-hidden="true" />
-                    Tech Hub, Lab 2
-                  </div>
-                </div>
-              </div>
-              <div className="card-footer">
-                <span className="status-text warning">Only 2 seats left</span>
-                <button type="button" className="action-button">
-                  Register
-                </button>
-              </div>
-            </article>
-
-            <article className="workshop-card muted">
-              <div className="card-top">
-                <span className="badge neutral">
-                  <img src={imgStatusFull} alt="" aria-hidden="true" />
-                  Full
-                </span>
-                <span className="badge price">Free</span>
-              </div>
-              <div className="card-body">
-                <h3>Effective Time Management</h3>
-                <div className="card-meta stack">
-                  <div>
-                    <img src={imgCalendar} alt="" aria-hidden="true" />
-                    Oct 26 • 11:00 AM
-                  </div>
-                  <div>
-                    <img src={imgInstructor} alt="" aria-hidden="true" />
-                    Emma Richards
-                  </div>
-                  <div>
-                    <img src={imgLocation} alt="" aria-hidden="true" />
-                    Student Center, Rm 101
-                  </div>
-                </div>
-              </div>
-              <div className="card-footer">
-                <span className="status-text">0 seats left</span>
-                <button type="button" className="ghost-button">
-                  Join Waitlist
-                </button>
-              </div>
-            </article>
-
-            <article className="workshop-card cancelled">
-              <div className="card-top">
-                <span className="badge danger">
-                  <img src={imgStatusCancelled} alt="" aria-hidden="true" />
-                  Cancelled
-                </span>
-                <span className="badge price">Free</span>
-              </div>
-              <div className="card-body">
-                <h3 className="strike">Public Speaking 101</h3>
-                <div className="card-meta stack faded">
-                  <div>
-                    <img src={imgCalendar} alt="" aria-hidden="true" />
-                    Oct 28 • 3:30 PM
-                  </div>
-                  <div>
-                    <img src={imgInstructor} alt="" aria-hidden="true" />
-                    Dr. Alan Grant
-                  </div>
-                </div>
-              </div>
-              <div className="card-footer">
-                <span className="status-text danger">Session Cancelled</span>
-                <button type="button" className="ghost-button muted">
-                  Unavailable
-                </button>
-              </div>
-            </article>
-
-            <article className="workshop-card">
-              <div className="card-top">
-                <span className="badge success">
-                  <img src={imgStatusOpen} alt="" aria-hidden="true" />
-                  Open
-                </span>
-                <span className="badge price highlight">$25.00</span>
-              </div>
-              <div className="card-body">
-                <h3>Introduction to Machine Learning Models</h3>
-                <div className="card-meta stack">
-                  <div>
-                    <img src={imgCalendar} alt="" aria-hidden="true" />
-                    Nov 02 • 9:00 AM
-                  </div>
-                  <div>
-                    <img src={imgInstructor} alt="" aria-hidden="true" />
-                    Dr. Elena Rostova
-                  </div>
-                  <div>
-                    <img src={imgLocation} alt="" aria-hidden="true" />
-                    Engineering Bldg, Hall A
-                  </div>
-                </div>
-              </div>
-              <div className="card-footer">
-                <span className="status-text success">45 seats left</span>
-                <button type="button" className="action-button">
-                  Register
-                </button>
-              </div>
-            </article>
+            {workshops.map((workshop) => (
+              <WorkshopCard key={workshop.id} workshop={workshop} />
+            ))}
           </div>
         </section>
       </main>
