@@ -12,7 +12,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async log(params: {
+  log(params: {
     actorUserId: string | null;
     action: string;
     resourceType: string;
@@ -30,7 +30,7 @@ export class AuditService {
     });
   }
 
-  async findByResource(resourceType: string, resourceId: string) {
+  findByResource(resourceType: string, resourceId: string) {
     return this.prisma.auditLog.findMany({
       where: { resourceType, resourceId },
       orderBy: { createdAt: 'desc' },

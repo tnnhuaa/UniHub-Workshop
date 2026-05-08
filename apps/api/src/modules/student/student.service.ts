@@ -5,11 +5,11 @@ import { PrismaService } from '../prisma/prisma.service.js';
 export class StudentService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findOne(mssv: string) {
+  findOne(mssv: string) {
     return this.prisma.student.findUniqueOrThrow({ where: { mssv } });
   }
 
-  async upsertFromCsv(data: {
+  upsertFromCsv(data: {
     mssv: string;
     email: string | null;
     fullName: string | null;

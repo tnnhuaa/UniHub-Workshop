@@ -18,7 +18,7 @@ export class DocumentService {
     throw new Error('Not implemented');
   }
 
-  async findByWorkshop(workshopId: string) {
+  findByWorkshop(workshopId: string) {
     return this.prisma.workshopDocument.findMany({
       where: { workshopId },
     });
