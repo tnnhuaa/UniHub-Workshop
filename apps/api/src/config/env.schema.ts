@@ -7,6 +7,7 @@ export const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.url(),
   DIRECT_URL: z.url(),
+  REDIS_URL: z.string().min(1),
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.url(),
   BETTER_AUTH_JWT_ISSUER: z.string().default('unihub-api'),

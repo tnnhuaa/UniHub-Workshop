@@ -26,6 +26,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
           PORT: config.getOrThrow('PORT'),
           DATABASE_URL: config.getOrThrow('DATABASE_URL'),
           DIRECT_URL: config.getOrThrow('DIRECT_URL'),
+          REDIS_URL: config.getOrThrow('REDIS_URL'),
           BETTER_AUTH_SECRET: config.getOrThrow('BETTER_AUTH_SECRET'),
           BETTER_AUTH_URL: config.getOrThrow('BETTER_AUTH_URL'),
           BETTER_AUTH_JWT_ISSUER: config.getOrThrow('BETTER_AUTH_JWT_ISSUER'),

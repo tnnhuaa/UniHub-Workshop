@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -18,6 +19,10 @@ import { AuthService } from '../auth/auth.service.js';
 import { RegistrationService } from './registration.service.js';
 import { ZodValidationPipe } from '../../shared/validation/index.js';
 import {
+  IdempotencyKey,
+  IdempotencyService,
+} from '../../libs/idempotency/index.js';
+import {
   createRegistrationSchema,
   registrationIdParamSchema,
   registrationListQuerySchema,
@@ -31,6 +36,7 @@ export class RegistrationController {
   constructor(
     private readonly registrationService: RegistrationService,
     private readonly authService: AuthService,
+    private readonly idempotencyService: IdempotencyService,
   ) {}
 
   @Post()
@@ -40,7 +46,22 @@ export class RegistrationController {
     @Body(new ZodValidationPipe(createRegistrationSchema))
     body: CreateRegistrationInput,
     @Req() request: AuthenticatedRequest,
+    @IdempotencyKey() idempotencyKey: string | null,
   ) {
+    if (!idempotencyKey) {
+      throw new BadRequestException({
+        code: 'IDEMPOTENCY_KEY_REQUIRED',
+        message: 'Idempotency-Key header is required',
+      });
+    }
+
+    const cached = await this.idempotencyService.getResponse<{
+      registration: unknown;
+    }>(idempotencyKey);
+    if (cached) {
+      return cached;
+    }
+
     const userId = request.authUser?.id;
     if (!userId) {
       throw new ForbiddenException({
@@ -57,7 +78,12 @@ export class RegistrationController {
       });
     }
 
-    return this.registrationService.create(body);
+    const response = await this.registrationService.create(
+      body,
+      idempotencyKey,
+    );
+    await this.idempotencyService.storeResponse(idempotencyKey, response);
+    return response;
   }
 
   @Get('me')

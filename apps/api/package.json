@@ -29,6 +29,7 @@
     "@nestjs/platform-fastify": "^11.0.1",
     "@prisma/client": "^6.19.3",
     "better-auth": "^1.4.18",
+    "redis": "^4.7.1",
     "fastify": "^5.3.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
@@ -66,13 +67,13 @@
       "json",
       "ts"
     ],
-    "moduleNameMapper": {
-      "^(.*)\\.js$": "$1"
-    },
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"

@@ -1,5 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import type { NotificationChannel } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { NOTIFICATION_PROVIDERS } from './notification.constants.js';
+import type {
+  NotificationProvider,
+  NotificationSendPayload,
+  NotificationSendResult,
+} from './notification.providers.js';
+import type {
+  NotificationListQuery,
+  NotificationSendInput,
+} from './notification.schemas.js';
 
 /**
  * NotificationService — adapter layer for notification delivery.
@@ -10,18 +21,97 @@ import { PrismaService } from '../prisma/prisma.service.js';
  */
 @Injectable()
 export class NotificationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(NOTIFICATION_PROVIDERS)
+    private readonly providers: NotificationProvider[],
+  ) {}
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  send(_userId: string, _channel: string, _templateCode: string): never {
-    // TODO: Implement via INotificationProvider adapter + RabbitMQ publish
-    throw new Error('Not implemented');
+  async send(input: NotificationSendInput) {
+    if (input.dedupeKey) {
+      const existing = await this.prisma.notificationDelivery.findUnique({
+        where: { dedupeKey: input.dedupeKey },
+      });
+
+      if (existing) {
+        return existing;
+      }
+    }
+
+    const provider = this.getProvider(input.channel);
+
+    const delivery = await this.prisma.notificationDelivery.create({
+      data: {
+        userId: input.userId,
+        channel: input.channel,
+        templateCode: input.templateCode,
+        status: 'pending',
+        dedupeKey: input.dedupeKey,
+      },
+    });
+
+    const result = await this.sendWithProvider(provider, {
+      notificationId: delivery.id,
+      userId: input.userId,
+      channel: input.channel,
+      templateCode: input.templateCode,
+    });
+
+    return this.prisma.notificationDelivery.update({
+      where: { id: delivery.id },
+      data: {
+        status: result.status,
+        sentAt: result.status === 'sent' ? new Date() : null,
+      },
+    });
   }
 
-  findByUser(userId: string) {
+  findByUser(userId: string, query: NotificationListQuery) {
+    const where: {
+      userId: string;
+      channel?: NotificationChannel;
+      status?: 'pending' | 'sent' | 'failed';
+    } = { userId };
+
+    if (query.channel) {
+      where.channel = query.channel;
+    }
+
+    if (query.status) {
+      where.status = query.status;
+    }
+
+    const page = query.page;
+    const pageSize = query.pageSize;
+
     return this.prisma.notificationDelivery.findMany({
-      where: { userId },
+      where,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  private getProvider(channel: NotificationChannel) {
+    const provider = this.providers.find((entry) => entry.channel === channel);
+    if (!provider) {
+      throw new BadRequestException({
+        code: 'NOTIFICATION_CHANNEL_UNSUPPORTED',
+        message: 'Notification channel is not supported yet',
+      });
+    }
+
+    return provider;
+  }
+
+  private async sendWithProvider(
+    provider: NotificationProvider,
+    payload: NotificationSendPayload,
+  ): Promise<NotificationSendResult> {
+    try {
+      return await provider.send(payload);
+    } catch {
+      return { status: 'failed' };
+    }
   }
 }

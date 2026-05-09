@@ -4,6 +4,8 @@
 
 Luồng đăng ký dành cho workshop có thu phí theo chiến lược giữ chỗ (hold) rồi thanh toán (pay). Khi người dùng bắt đầu đăng ký, hệ thống tạo `registration` ở trạng thái `pending` với `held_until = NOW + 10 minutes`, sau đó gọi Payment Gateway. Dùng `Idempotency-Key` (lưu trên Redis, TTL 24h) để tránh trừ tiền hai lần và circuit breaker để bảo vệ hệ thống khi gateway lỗi.
 
+Trong giai đoạn triển khai, payment gateway được mock với hai hành động: **success** và **failure** (UI giả lập hai nút). Webhook mock **không** yêu cầu verify signature.
+
 ## Luồng chính
 
 1. Client gửi `POST /registrations` với payload `{ mssv, workshop_id, ... }` và header `Idempotency-Key`.
@@ -13,7 +15,7 @@ Luồng đăng ký dành cho workshop có thu phí theo chiến lược giữ ch
    - Server cập nhật `registration.payment_status='paid'`, đặt `payment_completed_at`, tăng `workshops.registered_count` atomically, lưu kết quả trả về Redis dưới `idempotency:{key}` (TTL 24h) và trả success cho client kèm mã QR.
 5. Nếu thanh toán thất bại hoặc timeout:
    - Server giữ `registration` ở trạng thái `pending` để chờ webhook hoặc retry; client nhận thông báo lỗi thân thiện.
-6. Webhook từ gateway: verify signature → lookup `Idempotency-Key` hoặc payment id → idempotent update `registration` nếu cần.
+6. Webhook từ gateway: mock webhook không verify signature → lookup `Idempotency-Key` hoặc payment id → idempotent update `registration` nếu cần.
 
 ## Kịch bản lỗi
 

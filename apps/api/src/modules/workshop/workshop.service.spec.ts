@@ -80,6 +80,12 @@ describe('WorkshopService', () => {
       status: 'draft',
     });
 
+    await expect(service.create(baseInput, 'organizer-1')).resolves.toEqual(
+      expect.objectContaining({
+        id: 'workshop-1',
+      }),
+    );
+
     const createArgs = prismaMock.workshop.create.mock.calls[0]?.[0] as {
       data: {
         organizerId: string;
@@ -90,11 +96,6 @@ describe('WorkshopService', () => {
     expect(createArgs.data.organizerId).toBe('organizer-1');
     expect(createArgs.data.price).toBe(0);
     expect(auditServiceMock.log).toHaveBeenCalled();
-    await expect(service.create(baseInput, 'organizer-1')).resolves.toEqual(
-      expect.objectContaining({
-        id: 'workshop-1',
-      }),
-    );
   });
 
   it('rejects updates from non-owners', async () => {
