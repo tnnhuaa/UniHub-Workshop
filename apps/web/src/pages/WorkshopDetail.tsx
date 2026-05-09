@@ -1,4 +1,5 @@
 import { Bell, Calendar, Check, Clock, MapPin, Sparkles } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
 
 const imgStudentProfile =
   "https://www.figma.com/api/mcp/asset/22492359-f12d-464a-b95a-fb292c891cc8";
@@ -8,6 +9,10 @@ const imgMapLocation =
   "https://www.figma.com/api/mcp/asset/2bdc588e-4301-40b3-8b99-53cbc5b02add";
 
 const WorkshopDetail = () => {
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const workshopId = id ?? "featured";
+
   return (
     <div className="workshop-detail-page">
       <header className="workshop-detail-topbar">
@@ -121,7 +126,11 @@ const WorkshopDetail = () => {
                   Innovation Hub, Room 402
                 </div>
               </div>
-              <button type="button" className="detail-register">
+              <button
+                type="button"
+                className="detail-register"
+                onClick={() => navigate(`/workshops/${workshopId}/register`)}
+              >
                 <Check className="icon icon-md" aria-hidden="true" />
                 Register Now
               </button>
