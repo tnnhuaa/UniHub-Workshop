@@ -1,23 +1,19 @@
 import { useMemo } from "react";
+import type { ComponentType } from "react";
+import {
+  AlertTriangle,
+  Calendar,
+  CheckCircle2,
+  MapPin,
+  User,
+  Users,
+  XCircle,
+} from "lucide-react";
 
 const imgSpeaker =
   "https://www.figma.com/api/mcp/asset/2ee92fe2-f247-4654-8897-051b1d405acb";
-const imgStatusAlmost =
-  "https://www.figma.com/api/mcp/asset/068b2dc4-b19a-4317-930f-ffc7d9b5447c";
-const imgCalendar =
-  "https://www.figma.com/api/mcp/asset/75b30881-6a1c-44f8-b54d-75d7f509d330";
-const imgInstructor =
-  "https://www.figma.com/api/mcp/asset/f60f7648-b21b-4036-811f-973b9e258b60";
-const imgLocation =
-  "https://www.figma.com/api/mcp/asset/895e2868-0a2f-4ca4-b813-97d5b99c1a50";
-const imgStatusOpen =
-  "https://www.figma.com/api/mcp/asset/6a183687-7bba-4e74-b4d6-f96b16fa67fa";
-const imgPlace =
-  "https://www.figma.com/api/mcp/asset/39673742-a86c-46d7-9668-f8b8964fa9ae";
-const imgStatusFull =
-  "https://www.figma.com/api/mcp/asset/317c0c6d-c8ca-4533-8dc8-ae46cf857110";
-const imgStatusCancelled =
-  "https://www.figma.com/api/mcp/asset/12e0c9be-c44c-40cb-af1d-361c17ce4aba";
+
+type IconType = ComponentType<{ className?: string }>;
 
 export type WorkshopBadgeTone = "success" | "warning" | "neutral" | "danger";
 
@@ -30,7 +26,7 @@ export type WorkshopCardData = {
   status: {
     label: string;
     tone: WorkshopBadgeTone;
-    icon: string;
+    icon: IconType;
   };
   price: {
     label: string;
@@ -39,7 +35,7 @@ export type WorkshopCardData = {
   title: string;
   description?: string;
   meta: Array<{
-    icon: string;
+    icon: IconType;
     label: string;
   }>;
   speaker?: {
@@ -70,7 +66,7 @@ const useWorkshopList = () => {
         status: {
           label: "Open",
           tone: "success",
-          icon: imgStatusOpen,
+          icon: CheckCircle2,
         },
         price: {
           label: "Free",
@@ -80,11 +76,11 @@ const useWorkshopList = () => {
           "Master the intricacies of composing high-impact academic papers, structuring arguments, and effectively navigating academic databases.",
         meta: [
           {
-            icon: imgCalendar,
+            icon: Calendar,
             label: "Oct 24 • 10:00 AM",
           },
           {
-            icon: imgPlace,
+            icon: MapPin,
             label: "Library, Room 4B",
           },
         ],
@@ -109,7 +105,7 @@ const useWorkshopList = () => {
         status: {
           label: "Almost Full",
           tone: "warning",
-          icon: imgStatusAlmost,
+          icon: AlertTriangle,
         },
         price: {
           label: "$15.00",
@@ -117,15 +113,15 @@ const useWorkshopList = () => {
         title: "Data Analysis with Python Basics",
         meta: [
           {
-            icon: imgCalendar,
+            icon: Calendar,
             label: "Oct 25 • 2:00 PM",
           },
           {
-            icon: imgInstructor,
+            icon: User,
             label: "Prof. Michael Chang",
           },
           {
-            icon: imgLocation,
+            icon: MapPin,
             label: "Tech Hub, Lab 2",
           },
         ],
@@ -145,7 +141,7 @@ const useWorkshopList = () => {
         status: {
           label: "Full",
           tone: "neutral",
-          icon: imgStatusFull,
+          icon: Users,
         },
         price: {
           label: "Free",
@@ -153,15 +149,15 @@ const useWorkshopList = () => {
         title: "Effective Time Management",
         meta: [
           {
-            icon: imgCalendar,
+            icon: Calendar,
             label: "Oct 26 • 11:00 AM",
           },
           {
-            icon: imgInstructor,
+            icon: User,
             label: "Emma Richards",
           },
           {
-            icon: imgLocation,
+            icon: MapPin,
             label: "Student Center, Rm 101",
           },
         ],
@@ -180,7 +176,7 @@ const useWorkshopList = () => {
         status: {
           label: "Cancelled",
           tone: "danger",
-          icon: imgStatusCancelled,
+          icon: XCircle,
         },
         price: {
           label: "Free",
@@ -188,11 +184,11 @@ const useWorkshopList = () => {
         title: "Public Speaking 101",
         meta: [
           {
-            icon: imgCalendar,
+            icon: Calendar,
             label: "Oct 28 • 3:30 PM",
           },
           {
-            icon: imgInstructor,
+            icon: User,
             label: "Dr. Alan Grant",
           },
         ],
@@ -214,7 +210,7 @@ const useWorkshopList = () => {
         status: {
           label: "Open",
           tone: "success",
-          icon: imgStatusOpen,
+          icon: CheckCircle2,
         },
         price: {
           label: "$25.00",
@@ -223,15 +219,15 @@ const useWorkshopList = () => {
         title: "Introduction to Machine Learning Models",
         meta: [
           {
-            icon: imgCalendar,
+            icon: Calendar,
             label: "Nov 02 • 9:00 AM",
           },
           {
-            icon: imgInstructor,
+            icon: User,
             label: "Dr. Elena Rostova",
           },
           {
-            icon: imgLocation,
+            icon: MapPin,
             label: "Engineering Bldg, Hall A",
           },
         ],

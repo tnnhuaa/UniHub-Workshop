@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import type { WorkshopBadgeTone, WorkshopCardData } from "../hooks/useWorkshopList.ts";
 
 const getActionClassName = (
@@ -20,8 +21,11 @@ const getStatusTextClassName = (tone?: WorkshopBadgeTone) => {
 };
 
 const WorkshopCard = ({ workshop }: { workshop: WorkshopCardData }) => {
+  const navigate = useNavigate();
+  const StatusIcon = workshop.status.icon;
   const cardClassName = [
     "workshop-card",
+    "is-clickable",
     workshop.variant === "featured" ? "featured" : "",
     workshop.className ?? "",
   ]
@@ -37,10 +41,22 @@ const WorkshopCard = ({ workshop }: { workshop: WorkshopCardData }) => {
     .join(" ");
 
   return (
-    <article className={cardClassName}>
+    <article
+      className={cardClassName}
+      role="link"
+      tabIndex={0}
+      aria-label={`Open workshop ${workshop.title}`}
+      onClick={() => navigate(`/workshops/${workshop.id}`)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          navigate(`/workshops/${workshop.id}`);
+        }
+      }}
+    >
       <div className="card-top">
         <span className={`badge ${workshop.status.tone}`}>
-          <img src={workshop.status.icon} alt="" aria-hidden="true" />
+          <StatusIcon className="icon icon-xs" aria-hidden="true" />
           {workshop.status.label}
         </span>
         <span
@@ -59,7 +75,7 @@ const WorkshopCard = ({ workshop }: { workshop: WorkshopCardData }) => {
         <div className={metaClassName}>
           {workshop.meta.map((item) => (
             <div key={`${workshop.id}-${item.label}`}>
-              <img src={item.icon} alt="" aria-hidden="true" />
+              <item.icon className="icon icon-sm" aria-hidden="true" />
               {item.label}
             </div>
           ))}

@@ -1,20 +1,9 @@
+import { Bell, Check, LayoutGrid, List, Search } from "lucide-react";
 import WorkshopCard from "../components/WorkshopCard.tsx";
 import useWorkshopList from "../hooks/useWorkshopList.ts";
 
 const imgStudentProfile =
   "https://www.figma.com/api/mcp/asset/065a2bff-6d30-4eb7-9d26-b63b86059f0d";
-const imgSearchIcon =
-  "https://www.figma.com/api/mcp/asset/1238d665-e630-4675-87ba-9353ba6dd352";
-const imgBell =
-  "https://www.figma.com/api/mcp/asset/04d716d3-ee1e-4049-9217-913bf2d57bb1";
-const imgRadioSelected =
-  "https://www.figma.com/api/mcp/asset/30461be2-71d7-4b94-83c0-8225e41a59bb";
-const imgCheckboxSelected =
-  "https://www.figma.com/api/mcp/asset/19811603-035a-423f-82ac-28e6e0662c77";
-const imgToggleGrid =
-  "https://www.figma.com/api/mcp/asset/f06e85c7-6aa8-48aa-aa79-e2755a94b67f";
-const imgToggleList =
-  "https://www.figma.com/api/mcp/asset/f03f15f8-92d8-4fad-88c7-0d2545933476";
 
 const WorkshopList = () => {
   const { workshops } = useWorkshopList();
@@ -25,7 +14,7 @@ const WorkshopList = () => {
         <div className="workshop-topbar-left">
           <div className="workshop-brand">UniHub</div>
           <label className="workshop-search" htmlFor="workshop-search-input">
-            <img src={imgSearchIcon} alt="" aria-hidden="true" />
+            <Search className="icon icon-sm" aria-hidden="true" />
             <input
               id="workshop-search-input"
               type="search"
@@ -41,7 +30,7 @@ const WorkshopList = () => {
         </nav>
         <div className="workshop-topbar-actions">
           <button type="button" className="icon-button" aria-label="Alerts">
-            <img src={imgBell} alt="" aria-hidden="true" />
+            <Bell className="icon icon-md" aria-hidden="true" />
           </button>
           <button type="button" className="avatar-button" aria-label="Profile">
             <img src={imgStudentProfile} alt="Student profile" />
@@ -57,7 +46,7 @@ const WorkshopList = () => {
             <div className="filter-options">
               <label className="filter-option selected">
                 <span className="selection-dot">
-                  <img src={imgRadioSelected} alt="" aria-hidden="true" />
+                  <Check className="icon icon-xs" aria-hidden="true" />
                 </span>
                 <span>Upcoming</span>
               </label>
@@ -76,13 +65,13 @@ const WorkshopList = () => {
             <div className="filter-options">
               <label className="filter-option selected square">
                 <span className="selection-square">
-                  <img src={imgCheckboxSelected} alt="" aria-hidden="true" />
+                  <Check className="icon icon-xs" aria-hidden="true" />
                 </span>
                 <span>Free</span>
               </label>
               <label className="filter-option selected square">
                 <span className="selection-square">
-                  <img src={imgCheckboxSelected} alt="" aria-hidden="true" />
+                  <Check className="icon icon-xs" aria-hidden="true" />
                 </span>
                 <span>Paid</span>
               </label>
@@ -108,11 +97,15 @@ const WorkshopList = () => {
               <p>Discover sessions to enhance your academic journey.</p>
             </div>
             <div className="view-toggle" role="group" aria-label="View toggle">
-              <button type="button" className="toggle-button active">
-                <img src={imgToggleGrid} alt="Grid view" />
+              <button
+                type="button"
+                className="toggle-button active"
+                aria-label="Grid view"
+              >
+                <LayoutGrid className="icon icon-sm" aria-hidden="true" />
               </button>
-              <button type="button" className="toggle-button">
-                <img src={imgToggleList} alt="List view" />
+              <button type="button" className="toggle-button" aria-label="List view">
+                <List className="icon icon-sm" aria-hidden="true" />
               </button>
             </div>
           </div>
