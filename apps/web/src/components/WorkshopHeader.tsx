@@ -1,49 +1,21 @@
 import { Bell } from "lucide-react";
 import { Link } from "react-router-dom";
 
-type WorkshopHeaderVariant = "list" | "detail";
-type WorkshopHeaderNavPlacement = "left" | "center";
 type WorkshopHeaderTab = "workshops" | "schedule";
 
 type WorkshopHeaderProps = {
-  variant: WorkshopHeaderVariant;
   profileImage: string;
   activeTab?: WorkshopHeaderTab;
-  navPlacement?: WorkshopHeaderNavPlacement;
-};
-
-const variantClasses: Record<WorkshopHeaderVariant, {
-  root: string;
-  left: string;
-  brand: string;
-  nav: string;
-  actions: string;
-}> = {
-  list: {
-    root: "workshop-topbar",
-    left: "workshop-topbar-left",
-    brand: "workshop-brand",
-    nav: "workshop-topbar-nav",
-    actions: "workshop-topbar-actions",
-  },
-  detail: {
-    root: "workshop-detail-topbar",
-    left: "detail-topbar-left",
-    brand: "detail-brand",
-    nav: "detail-nav",
-    actions: "detail-topbar-actions",
-  },
+  profileLink?: string;
 };
 
 const WorkshopHeader = ({
-  variant,
   profileImage,
-  activeTab = "workshops",
-  navPlacement = "center",
+  activeTab,
+  profileLink,
 }: WorkshopHeaderProps) => {
-  const classes = variantClasses[variant];
   const nav = (
-    <nav className={classes.nav} aria-label="Workshop navigation">
+    <nav className="workshop-topbar-nav" aria-label="Workshop navigation">
       <Link className={activeTab === "workshops" ? "active" : undefined} to="/workshops">
         Workshops
       </Link>
@@ -54,19 +26,24 @@ const WorkshopHeader = ({
   );
 
   return (
-    <header className={classes.root}>
-      <div className={classes.left}>
-        <div className={classes.brand}>UniHub</div>
-        {navPlacement === "left" ? nav : null}
+    <header className="workshop-topbar">
+      <div className="workshop-topbar-left">
+        <div className="workshop-brand">UniHub</div>
       </div>
-      {navPlacement === "center" ? nav : null}
-      <div className={classes.actions}>
+      {nav}
+      <div className="workshop-topbar-actions">
         <button type="button" className="icon-button" aria-label="Alerts">
           <Bell className="icon icon-md" aria-hidden="true" />
         </button>
-        <button type="button" className="avatar-button" aria-label="Profile">
-          <img src={profileImage} alt="Student profile" />
-        </button>
+        {profileLink ? (
+          <Link className="avatar-button" to={profileLink} aria-label="Profile">
+            <img src={profileImage} alt="Student profile" />
+          </Link>
+        ) : (
+          <button type="button" className="avatar-button" aria-label="Profile">
+            <img src={profileImage} alt="Student profile" />
+          </button>
+        )}
       </div>
     </header>
   );

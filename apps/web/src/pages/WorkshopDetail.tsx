@@ -17,9 +17,9 @@ const WorkshopDetail = () => {
   return (
     <div className="workshop-detail-page">
       <WorkshopHeader
-        variant="list"
         activeTab="workshops"
         profileImage={imgStudentProfile}
+        profileLink="/profile"
       />
 
       <main className="workshop-detail-main">

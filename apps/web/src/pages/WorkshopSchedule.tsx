@@ -28,9 +28,9 @@ const WorkshopSchedule = () => {
   return (
     <div className="schedule-page">
       <WorkshopHeader
-        variant="list"
         activeTab="schedule"
         profileImage={imgStudentProfile}
+        profileLink="/profile"
       />
 
       <main className="schedule-main">

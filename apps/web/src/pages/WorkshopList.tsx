@@ -12,9 +12,9 @@ const WorkshopList = () => {
   return (
     <div className="workshop-list-page">
       <WorkshopHeader
-        variant="list"
         activeTab="workshops"
         profileImage={imgStudentProfile}
+        profileLink="/profile"
       />
 
       <main className="workshop-layout">
