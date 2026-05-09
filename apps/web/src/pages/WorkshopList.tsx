@@ -1,4 +1,5 @@
-import { Bell, Check, LayoutGrid, List, Search } from "lucide-react";
+import { Check, LayoutGrid, List, Search } from "lucide-react";
+import WorkshopHeader from "../components/WorkshopHeader.tsx";
 import WorkshopCard from "../components/WorkshopCard.tsx";
 import useWorkshopList from "../hooks/useWorkshopList.ts";
 
@@ -10,33 +11,11 @@ const WorkshopList = () => {
 
   return (
     <div className="workshop-list-page">
-      <header className="workshop-topbar">
-        <div className="workshop-topbar-left">
-          <div className="workshop-brand">UniHub</div>
-          <label className="workshop-search" htmlFor="workshop-search-input">
-            <Search className="icon icon-sm" aria-hidden="true" />
-            <input
-              id="workshop-search-input"
-              type="search"
-              placeholder="Search workshops..."
-            />
-          </label>
-        </div>
-        <nav className="workshop-topbar-nav" aria-label="Workshop navigation">
-          <a className="active" href="/workshops">
-            Workshops
-          </a>
-          <a href="/">My Schedule</a>
-        </nav>
-        <div className="workshop-topbar-actions">
-          <button type="button" className="icon-button" aria-label="Alerts">
-            <Bell className="icon icon-md" aria-hidden="true" />
-          </button>
-          <button type="button" className="avatar-button" aria-label="Profile">
-            <img src={imgStudentProfile} alt="Student profile" />
-          </button>
-        </div>
-      </header>
+      <WorkshopHeader
+        variant="list"
+        activeTab="workshops"
+        profileImage={imgStudentProfile}
+      />
 
       <main className="workshop-layout">
         <aside className="workshop-filters" aria-label="Filters">
@@ -96,6 +75,14 @@ const WorkshopList = () => {
               <h1>Explore Workshops</h1>
               <p>Discover sessions to enhance your academic journey.</p>
             </div>
+            <label className="workshop-search" htmlFor="workshop-search-input">
+              <Search className="icon icon-sm" aria-hidden="true" />
+              <input
+                id="workshop-search-input"
+                type="search"
+                placeholder="Search workshops..."
+              />
+            </label>
             <div className="view-toggle" role="group" aria-label="View toggle">
               <button
                 type="button"

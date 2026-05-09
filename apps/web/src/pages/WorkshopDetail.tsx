@@ -1,5 +1,6 @@
-import { Bell, Calendar, Check, Clock, MapPin, Sparkles } from "lucide-react";
+import { Calendar, Check, Clock, MapPin, Sparkles } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
+import WorkshopHeader from "../components/WorkshopHeader.tsx";
 
 const imgStudentProfile =
   "https://www.figma.com/api/mcp/asset/22492359-f12d-464a-b95a-fb292c891cc8";
@@ -15,25 +16,11 @@ const WorkshopDetail = () => {
 
   return (
     <div className="workshop-detail-page">
-      <header className="workshop-detail-topbar">
-        <div className="detail-topbar-left">
-          <div className="detail-brand">UniHub</div>
-          <nav className="detail-nav" aria-label="Workshop navigation">
-            <a className="active" href="/workshops">
-              Workshops
-            </a>
-            <a href="/">My Schedule</a>
-          </nav>
-        </div>
-        <div className="detail-topbar-actions">
-          <button type="button" className="icon-button" aria-label="Alerts">
-            <Bell className="icon icon-md" aria-hidden="true" />
-          </button>
-          <button type="button" className="avatar-button" aria-label="Profile">
-            <img src={imgStudentProfile} alt="Student profile" />
-          </button>
-        </div>
-      </header>
+      <WorkshopHeader
+        variant="list"
+        activeTab="workshops"
+        profileImage={imgStudentProfile}
+      />
 
       <main className="workshop-detail-main">
         <div className="detail-grid">
