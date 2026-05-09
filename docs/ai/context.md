@@ -29,18 +29,18 @@ UniHub Workshop manages workshop registration, payment holds, offline check-in, 
 
 ## Module Map
 
-| Module         | Status      | Purpose                              |
-| -------------- | ----------- | ------------------------------------ |
-| `prisma`       | ✅ Ready    | DB access via DI                     |
-| `config`       | ✅ Ready    | Env validation                       |
-| `health`       | ✅ Ready    | Health check                         |
-| `auth`         | ✅ Ready    | BetterAuth hybrid session/JWT + RBAC |
-| `audit`        | ✅ Ready    | Audit logging                        |
-| `workshop`     | ✅ Done     | Workshop CRUD                        |
-| `registration` | ✅ Done     | Registration flow                    |
-| `payment`      | ✅ Done     | Payment adapter                      |
-| `checkin`      | ✅ Done     | QR + offline sync                    |
-| `student`      | ✅ Done     | Student profiles                     |
-| `notification` | ✅ Done     | Notifications                        |
-| `csv-sync`     | ✅ Done     | CSV import                           |
-| `document`     | 🔧 Skeleton | PDF + AI summary                     |
+| Module         | Status   | Purpose                              |
+| -------------- | -------- | ------------------------------------ |
+| `prisma`       | ✅ Ready | DB access via DI                     |
+| `config`       | ✅ Ready | Env validation                       |
+| `health`       | ✅ Ready | Health check                         |
+| `auth`         | ✅ Ready | BetterAuth hybrid session/JWT + RBAC |
+| `audit`        | ✅ Ready | Audit logging                        |
+| `workshop`     | ✅ Done  | Workshop CRUD                        |
+| `registration` | ✅ Done  | Registration flow                    |
+| `payment`      | ✅ Done  | Payment adapter                      |
+| `checkin`      | ✅ Done  | QR + offline sync                    |
+| `student`      | ✅ Done  | Student profiles                     |
+| `notification` | ✅ Done  | Notifications                        |
+| `csv-sync`     | ✅ Done  | CSV import                           |
+| `document`     | ✅ Done  | PDF upload + AI summary job tracking |

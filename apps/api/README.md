@@ -57,22 +57,22 @@ pnpm lint
 
 Base URL: `http://localhost:3000/api/v1`
 
-| Path                                         | Method             | Module       | Notes                 |
-| -------------------------------------------- | ------------------ | ------------ | --------------------- |
-| `/health`                                    | GET                | Health       | Health check          |
-| `/workshops`                                 | GET, POST          | Workshop     | List/create workshops |
-| `/workshops/:id`                             | GET, PATCH, DELETE | Workshop     | CRUD                  |
-| `/registrations`                             | POST               | Registration | Register for workshop |
-| `/registrations/me`                          | GET                | Registration | My registrations      |
-| `/registrations/:id/qr`                      | GET                | Registration | QR code               |
-| `/payments/webhook`                          | POST               | Payment      | Payment webhook       |
-| `/checkins/scan`                             | POST               | Checkin      | QR scan               |
-| `/checkins/confirm`                          | POST               | Checkin      | Confirm check-in      |
-| `/checkins/sync`                             | POST               | Checkin      | Offline sync          |
-| `/checkins/workshop/:id`                     | GET                | Checkin      | Workshop checkins     |
-| `/students/:mssv`                            | GET                | Student      | Student lookup        |
-| `/admin/workshops/:id/documents`             | GET, POST          | Document     | PDF upload/list       |
-| `/admin/workshops/:id/documents/:id/summary` | GET                | Document     | AI summary            |
+| Path                                                         | Method             | Module       | Notes                  |
+| ------------------------------------------------------------ | ------------------ | ------------ | ---------------------- |
+| `/health`                                                    | GET                | Health       | Health check           |
+| `/workshops`                                                 | GET, POST          | Workshop     | List/create workshops  |
+| `/workshops/:id`                                             | GET, PATCH, DELETE | Workshop     | CRUD                   |
+| `/registrations`                                             | POST               | Registration | Register for workshop  |
+| `/registrations/me`                                          | GET                | Registration | My registrations       |
+| `/registrations/:id/qr`                                      | GET                | Registration | QR code                |
+| `/payments/webhook`                                          | POST               | Payment      | Payment webhook        |
+| `/checkins/scan`                                             | POST               | Checkin      | QR scan                |
+| `/checkins/confirm`                                          | POST               | Checkin      | Confirm check-in       |
+| `/checkins/sync`                                             | POST               | Checkin      | Offline sync           |
+| `/checkins/workshop/:id`                                     | GET                | Checkin      | Workshop checkins      |
+| `/students/:mssv`                                            | GET                | Student      | Student lookup         |
+| `/admin/workshops/:workshopId/documents`                     | GET, POST          | Document     | PDF upload/list        |
+| `/admin/workshops/:workshopId/documents/:documentId/summary` | GET                | Document     | AI summary status/text |
 
 ## Configuration
 
