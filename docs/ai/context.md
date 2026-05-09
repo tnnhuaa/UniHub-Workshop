@@ -41,6 +41,6 @@ UniHub Workshop manages workshop registration, payment holds, offline check-in, 
 | `payment`      | ✅ Done     | Payment adapter                      |
 | `checkin`      | ✅ Done     | QR + offline sync                    |
 | `student`      | ✅ Done     | Student profiles                     |
-| `notification` | 🔧 Skeleton | Notifications                        |
+| `notification` | ✅ Done     | Notifications                        |
 | `csv-sync`     | 🔧 Skeleton | CSV import                           |
 | `document`     | 🔧 Skeleton | PDF + AI summary                     |
