@@ -1,6 +1,7 @@
 import { useState } from "react";
 import AuthLayout from "../components/AuthLayout.tsx";
 import { signInWithEmail } from "../lib/authClient.ts";
+import { formatMockRequestAlert } from "../lib/mockApi.ts";
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
@@ -22,7 +23,7 @@ const SignIn = () => {
     }
 
     setIsSubmitting(true);
-    const result = await signInWithEmail(email.trim(), password);
+    const result = await signInWithEmail(email.trim(), password, remember);
     setIsSubmitting(false);
 
     if (!result.ok) {
@@ -31,6 +32,7 @@ const SignIn = () => {
     }
 
     setSuccess(true);
+    window.alert(formatMockRequestAlert(result.request));
   };
 
   return (

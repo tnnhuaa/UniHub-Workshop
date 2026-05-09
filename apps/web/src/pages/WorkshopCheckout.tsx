@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Calendar,
   CreditCard,
@@ -8,14 +9,125 @@ import {
   X,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
+import {
+  createMockRegistration,
+  formatMockRequestAlert,
+  getMockStudentProfile,
+  getMockWorkshopDetail,
+  type MockWorkshopDetail,
+} from "../lib/mockApi.ts";
 
 const imgWorkshopHeader =
   "https://www.figma.com/api/mcp/asset/1b8cc43f-4e00-42b2-9a62-ff2bb6e5389a";
 
+const defaultWorkshopId = "11111111-1111-4111-8111-111111111111";
+
 const WorkshopCheckout = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const workshopId = id ?? "featured";
+  const workshopId = id ?? defaultWorkshopId;
+  const [workshop, setWorkshop] = useState<MockWorkshopDetail | null>(null);
+  const [mssv, setMssv] = useState("STU-84920");
+  const [firstName, setFirstName] = useState("Jane");
+  const [lastName, setLastName] = useState("Doe");
+  const [email, setEmail] = useState("jane.doe@university.edu");
+  const [cardholderName, setCardholderName] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [cvc, setCvc] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadCheckoutData = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      const [workshopResult, studentResult] = await Promise.all([
+        getMockWorkshopDetail(workshopId),
+        getMockStudentProfile("STU-84920"),
+      ]);
+
+      setIsLoading(false);
+
+      if (!workshopResult.ok) {
+        setError(workshopResult.error);
+        return;
+      }
+
+      if (!studentResult.ok) {
+        setError(studentResult.error);
+        return;
+      }
+
+      setWorkshop(workshopResult.data);
+      setMssv(studentResult.data.mssv);
+
+      const [first, ...rest] = studentResult.data.fullName.split(" ");
+      setFirstName(first ?? "");
+      setLastName(rest.join(" "));
+      setEmail(studentResult.data.email);
+      setCardholderName(studentResult.data.fullName);
+    };
+
+    void loadCheckoutData();
+  }, [workshopId]);
+
+  const handlePay = async () => {
+    if (!workshop) {
+      return;
+    }
+
+    setError(null);
+    setIsSubmitting(true);
+
+    const result = await createMockRegistration({
+      mssv,
+      workshopId: workshop.id,
+      attendee: {
+        firstName,
+        lastName,
+        email,
+      },
+      payment: {
+        cardholderName,
+        cardNumber,
+        expiryDate,
+        cvc,
+      },
+      idempotencyKey: `checkout-${workshop.id}`,
+    });
+
+    setIsSubmitting(false);
+
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+
+    window.alert(formatMockRequestAlert(result.request));
+  };
+
+  if (isLoading) {
+    return (
+      <div className="checkout-page">
+        <main className="checkout-main">
+          <p className="helper-text">Loading checkout...</p>
+        </main>
+      </div>
+    );
+  }
+
+  if (error || !workshop) {
+    return (
+      <div className="checkout-page">
+        <main className="checkout-main">
+          <p className="helper-text">{error ?? "Workshop not found."}</p>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="checkout-page">
@@ -39,6 +151,7 @@ const WorkshopCheckout = () => {
 
       <main className="checkout-main">
         <div className="checkout-container">
+          {error ? <p className="helper-text">{error}</p> : null}
           <section className="reservation-banner">
             <div className="reservation-info">
               <div className="reservation-icon">
@@ -66,17 +179,26 @@ const WorkshopCheckout = () => {
                 <div className="checkout-form-grid">
                   <label className="checkout-field">
                     <span>First Name</span>
-                    <input type="text" defaultValue="Jane" />
+                    <input
+                      type="text"
+                      value={firstName}
+                      onChange={(event) => setFirstName(event.target.value)}
+                    />
                   </label>
                   <label className="checkout-field">
                     <span>Last Name</span>
-                    <input type="text" defaultValue="Doe" />
+                    <input
+                      type="text"
+                      value={lastName}
+                      onChange={(event) => setLastName(event.target.value)}
+                    />
                   </label>
                   <label className="checkout-field full">
                     <span>Email Address</span>
                     <input
                       type="email"
-                      defaultValue="jane.doe@university.edu"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
                     />
                   </label>
                 </div>
@@ -91,24 +213,44 @@ const WorkshopCheckout = () => {
                 <div className="checkout-form-stack">
                   <label className="checkout-field">
                     <span>Name on Card</span>
-                    <input type="text" placeholder="e.g. Jane Doe" />
+                    <input
+                      type="text"
+                      placeholder="e.g. Jane Doe"
+                      value={cardholderName}
+                      onChange={(event) => setCardholderName(event.target.value)}
+                    />
                   </label>
                   <label className="checkout-field">
                     <span>Card Number</span>
                     <div className="checkout-input icon-left">
                       <CreditCard className="icon icon-sm" aria-hidden="true" />
-                      <input type="text" placeholder="0000 0000 0000 0000" />
+                      <input
+                        type="text"
+                        placeholder="0000 0000 0000 0000"
+                        value={cardNumber}
+                        onChange={(event) => setCardNumber(event.target.value)}
+                      />
                     </div>
                   </label>
                   <div className="checkout-form-grid">
                     <label className="checkout-field">
                       <span>Expiry Date</span>
-                      <input type="text" placeholder="MM/YY" />
+                      <input
+                        type="text"
+                        placeholder="MM/YY"
+                        value={expiryDate}
+                        onChange={(event) => setExpiryDate(event.target.value)}
+                      />
                     </label>
                     <label className="checkout-field">
                       <span>CVC</span>
                       <div className="checkout-input icon-right">
-                        <input type="text" placeholder="123" />
+                        <input
+                          type="text"
+                          placeholder="123"
+                          value={cvc}
+                          onChange={(event) => setCvc(event.target.value)}
+                        />
                         <ShieldCheck className="icon icon-sm" aria-hidden="true" />
                       </div>
                     </label>
@@ -119,26 +261,38 @@ const WorkshopCheckout = () => {
 
             <aside className="checkout-summary">
               <div className="checkout-summary-image">
-                <img src={imgWorkshopHeader} alt="Workshop preview" />
+                <img src={workshop.coverImage ?? imgWorkshopHeader} alt="Workshop preview" />
               </div>
               <div className="checkout-summary-content">
                 <div className="checkout-tags">
                   <span className="checkout-tag">In-Person</span>
-                  <span className="checkout-tag secondary">Professional Dev</span>
+                  <span className="checkout-tag secondary">{workshop.category}</span>
                 </div>
                 <h3>
-                  Advanced React & State
-                  <span>Architecture</span>
+                  {workshop.title}
                 </h3>
                 <div className="checkout-date">
                   <Calendar className="icon icon-xs" aria-hidden="true" />
-                  Oct 24 • 10:00 AM - 3:00 PM
+                  {new Date(workshop.startTime).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "2-digit",
+                  })}{" "}
+                  •{" "}
+                  {new Date(workshop.startTime).toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}{" "}
+                  -{" "}
+                  {new Date(workshop.endTime).toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
                 </div>
                 <div className="checkout-divider" />
                 <div className="checkout-pricing">
                   <div className="checkout-price-row">
                     <span>Registration Fee</span>
-                    <span>$149.00</span>
+                    <span>${workshop.price.toFixed(2)}</span>
                   </div>
                   <div className="checkout-price-row">
                     <span>Materials Fee</span>
@@ -146,17 +300,22 @@ const WorkshopCheckout = () => {
                   </div>
                   <div className="checkout-price-row">
                     <span>Tax</span>
-                    <span>$14.79</span>
+                    <span>${(workshop.price * 0.0993).toFixed(2)}</span>
                   </div>
                 </div>
                 <div className="checkout-divider dashed" />
                 <div className="checkout-total">
                   <span>Total</span>
-                  <strong>$188.79</strong>
+                  <strong>${(workshop.price + 25 + workshop.price * 0.0993).toFixed(2)}</strong>
                 </div>
-                <button type="button" className="checkout-pay">
+                <button
+                  type="button"
+                  className="checkout-pay"
+                  onClick={() => void handlePay()}
+                  disabled={isSubmitting}
+                >
                   <Lock className="icon icon-sm" aria-hidden="true" />
-                  Pay & Register
+                  {isSubmitting ? "Processing..." : "Pay & Register"}
                 </button>
                 <p className="checkout-note">
                   By paying, you agree to the UniHub cancellation policy.

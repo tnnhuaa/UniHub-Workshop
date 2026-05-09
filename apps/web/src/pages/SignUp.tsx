@@ -1,6 +1,7 @@
 import { useState } from "react";
 import AuthLayout from "../components/AuthLayout.tsx";
 import { signUpWithEmail } from "../lib/authClient.ts";
+import { formatMockRequestAlert } from "../lib/mockApi.ts";
 
 const SignUp = () => {
   const [email, setEmail] = useState("");
@@ -30,6 +31,7 @@ const SignUp = () => {
     }
 
     setSuccess(true);
+    window.alert(formatMockRequestAlert(result.request));
   };
 
   return (

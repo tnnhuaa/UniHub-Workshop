@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   BadgeCheck,
@@ -10,6 +11,13 @@ import {
   XCircle,
 } from "lucide-react";
 import WorkshopHeader from "../components/WorkshopHeader.tsx";
+import {
+  deleteMockRegistration,
+  formatMockRequestAlert,
+  getMockRegistrationQr,
+  getMockRegistrations,
+  type MockRegistration,
+} from "../lib/mockApi.ts";
 
 const imgStudentProfile =
   "https://www.figma.com/api/mcp/asset/646bd94c-8822-432f-be1f-38d08a09df59";
@@ -25,6 +33,110 @@ const imgInstructor =
   "https://www.figma.com/api/mcp/asset/2b82168d-29d3-4c5e-9069-76b377aabbc7";
 
 const WorkshopSchedule = () => {
+  const [registrations, setRegistrations] = useState<MockRegistration[]>([]);
+  const [selectedRegistrationId, setSelectedRegistrationId] = useState<
+    string | null
+  >(null);
+  const [selectedQrCode, setSelectedQrCode] = useState(imgQrCodeForCheckIn);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadRegistrations = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    const result = await getMockRegistrations({
+      page: 1,
+      pageSize: 20,
+    });
+
+    setIsLoading(false);
+
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+
+    setRegistrations(result.data);
+    setSelectedRegistrationId((current) => current ?? result.data[0]?.id ?? null);
+  };
+
+  useEffect(() => {
+    void loadRegistrations();
+  }, []);
+
+  const selectedRegistration = useMemo(
+    () =>
+      registrations.find((registration) => registration.id === selectedRegistrationId) ??
+      registrations[0] ??
+      null,
+    [registrations, selectedRegistrationId],
+  );
+
+  useEffect(() => {
+    if (selectedRegistration?.qrCode) {
+      setSelectedQrCode(selectedRegistration.qrCode);
+    }
+  }, [selectedRegistration]);
+
+  const handleShowQr = async (registrationId: string) => {
+    setError(null);
+    const result = await getMockRegistrationQr(registrationId);
+
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+
+    setSelectedRegistrationId(registrationId);
+    setSelectedQrCode(result.data.qrCode);
+    window.alert(formatMockRequestAlert(result.request));
+  };
+
+  const handleCancelRegistration = async () => {
+    if (!selectedRegistration) {
+      return;
+    }
+
+    setError(null);
+    const result = await deleteMockRegistration(selectedRegistration.id);
+
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+
+    window.alert(formatMockRequestAlert(result.request));
+    void loadRegistrations();
+  };
+
+  const getCardClassName = (registration: MockRegistration) =>
+    `schedule-card ${
+      registration.status === "confirmed"
+        ? "registered"
+        : registration.status === "checked-in"
+          ? "checked"
+          : registration.status === "pending"
+            ? "pending"
+            : "pending"
+    }`;
+
+  const getStatusLabel = (registration: MockRegistration) => {
+    if (registration.status === "checked-in") {
+      return "Checked-in";
+    }
+
+    if (registration.status === "pending") {
+      return "Pending Payment";
+    }
+
+    if (registration.status === "cancelled") {
+      return "Cancelled";
+    }
+
+    return "Registered";
+  };
+
   return (
     <div className="schedule-page">
       <WorkshopHeader
@@ -50,108 +162,93 @@ const WorkshopSchedule = () => {
             </span>
           </div>
         </div>
+        {error ? <p className="helper-text">{error}</p> : null}
+        {isLoading ? <p className="helper-text">Loading registrations...</p> : null}
 
         <div className="schedule-grid">
           <section className="schedule-list" aria-label="Registrations">
-            <article className="schedule-card registered">
-              <div className="schedule-card-media">
-                <img
-                  src={imgBusinessStrategyWorkshop}
-                  alt="Advanced Corporate Strategy workshop"
-                />
-              </div>
-              <div className="schedule-card-body">
-                <div className="schedule-card-head">
-                  <div>
-                    <span className="schedule-tag registered">
-                      <BadgeCheck className="icon icon-xs" aria-hidden="true" />
-                      Registered
-                    </span>
-                    <h3>Advanced Corporate Strategy</h3>
-                    <p>Prof. Eleanor Vance • Business Hall A</p>
-                  </div>
-                  <button
-                    type="button"
-                    className="schedule-icon-button"
-                    aria-label="Show QR code"
-                  >
-                    <QrCode className="icon icon-sm" aria-hidden="true" />
-                  </button>
-                </div>
-                <div className="schedule-meta">
-                  <div>
-                    <Calendar className="icon icon-xs" aria-hidden="true" />
-                    Oct 24, 2023
-                  </div>
-                  <div>
-                    <Clock className="icon icon-xs" aria-hidden="true" />
-                    14:00 - 16:00
-                  </div>
-                </div>
-              </div>
-            </article>
+            {registrations.map((registration) => {
+              const isChecked = registration.status === "checked-in";
+              const isPending = registration.status === "pending";
+              const cardImage =
+                registration.coverImage ||
+                (registration.status === "pending"
+                  ? imgDesignWorkshop
+                  : registration.status === "checked-in"
+                    ? imgCodingBootcamp
+                    : imgBusinessStrategyWorkshop);
 
-            <article className="schedule-card checked">
-              <div className="schedule-card-media muted">
-                <img
-                  src={imgCodingBootcamp}
-                  alt="Introduction to Python workshop"
-                />
-              </div>
-              <div className="schedule-card-body">
-                <div className="schedule-card-head">
-                  <div>
-                    <span className="schedule-tag checked">
-                      <BadgeCheck className="icon icon-xs" aria-hidden="true" />
-                      Checked-in
-                    </span>
-                    <h3 className="muted">Introduction to Python</h3>
-                    <p>Dr. Alan Turing • Lab 4B</p>
+              return (
+                <article
+                  key={registration.id}
+                  className={getCardClassName(registration)}
+                >
+                  <div className={`schedule-card-media${isChecked ? " muted" : ""}`}>
+                    <img src={cardImage} alt={`${registration.workshopTitle} workshop`} />
                   </div>
-                </div>
-                <div className="schedule-meta">
-                  <div>
-                    <Calendar className="icon icon-xs" aria-hidden="true" />
-                    Oct 22, 2023
+                  <div className="schedule-card-body">
+                    <div className="schedule-card-head">
+                      <div>
+                        <span
+                          className={`schedule-tag ${
+                            registration.status === "checked-in"
+                              ? "checked"
+                              : registration.status === "pending"
+                                ? "pending"
+                                : "registered"
+                          }`}
+                        >
+                          {registration.status === "pending" ? (
+                            <AlertCircle className="icon icon-xs" aria-hidden="true" />
+                          ) : (
+                            <BadgeCheck className="icon icon-xs" aria-hidden="true" />
+                          )}
+                          {getStatusLabel(registration)}
+                        </span>
+                        <h3 className={isChecked ? "muted" : undefined}>
+                          {registration.workshopTitle}
+                        </h3>
+                        <p>
+                          {registration.speaker} • {registration.location}
+                        </p>
+                      </div>
+                      {isPending ? (
+                        <button
+                          type="button"
+                          className="schedule-pay-now"
+                          onClick={() => setSelectedRegistrationId(registration.id)}
+                        >
+                          Pay Now
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="schedule-icon-button"
+                          aria-label="Show QR code"
+                          onClick={() => void handleShowQr(registration.id)}
+                        >
+                          <QrCode className="icon icon-sm" aria-hidden="true" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="schedule-meta">
+                      <div>
+                        <Calendar className="icon icon-xs" aria-hidden="true" />
+                        {registration.dateLabel}
+                      </div>
+                      <div>
+                        {isPending ? (
+                          <DollarSign className="icon icon-xs" aria-hidden="true" />
+                        ) : (
+                          <Clock className="icon icon-xs" aria-hidden="true" />
+                        )}
+                        {isPending ? registration.priceLabel : registration.timeLabel}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <Clock className="icon icon-xs" aria-hidden="true" />
-                    09:00 - 12:00
-                  </div>
-                </div>
-              </div>
-            </article>
-
-            <article className="schedule-card pending">
-              <div className="schedule-card-media">
-                <img src={imgDesignWorkshop} alt="UX/UI Principles workshop" />
-              </div>
-              <div className="schedule-card-body">
-                <div className="schedule-card-head">
-                  <div>
-                    <span className="schedule-tag pending">
-                      <AlertCircle className="icon icon-xs" aria-hidden="true" />
-                      Pending Payment
-                    </span>
-                    <h3>UX/UI Principles</h3>
-                    <p>Sarah Jenkins • Studio 2</p>
-                  </div>
-                  <button type="button" className="schedule-pay-now">
-                    Pay Now
-                  </button>
-                </div>
-                <div className="schedule-meta">
-                  <div>
-                    <Calendar className="icon icon-xs" aria-hidden="true" />
-                    Nov 05, 2023
-                  </div>
-                  <div>
-                    <DollarSign className="icon icon-xs" aria-hidden="true" />
-                    $45.00
-                  </div>
-                </div>
-              </div>
-            </article>
+                </article>
+              );
+            })}
           </section>
 
           <aside className="schedule-panel" aria-label="Registration details">
@@ -161,14 +258,16 @@ const WorkshopSchedule = () => {
                   <MoreHorizontal className="icon icon-sm" aria-hidden="true" />
                 </button>
               </div>
-              <span className="schedule-panel-code">REG-492-X</span>
-              <h2>Advanced Corporate Strategy</h2>
+              <span className="schedule-panel-code">
+                {selectedRegistration?.registrationCode ?? "REG-000-X"}
+              </span>
+              <h2>{selectedRegistration?.workshopTitle ?? "No registration selected"}</h2>
             </div>
 
             <div className="schedule-panel-body">
               <div className="schedule-qr">
                 <div className="schedule-qr-box">
-                  <img src={imgQrCodeForCheckIn} alt="QR code for check-in" />
+                  <img src={selectedQrCode} alt="QR code for check-in" />
                 </div>
                 <span>Scan at entrance</span>
               </div>
@@ -178,34 +277,42 @@ const WorkshopSchedule = () => {
                   <span>DATE</span>
                   <div>
                     <Calendar className="icon icon-xs" aria-hidden="true" />
-                    Oct 24, 2023
+                    {selectedRegistration?.dateLabel ?? "N/A"}
                   </div>
                 </div>
                 <div className="schedule-detail-card">
                   <span>TIME</span>
                   <div>
                     <Clock className="icon icon-xs" aria-hidden="true" />
-                    14:00 - 16:00
+                    {selectedRegistration?.timeLabel ?? "N/A"}
                   </div>
                 </div>
                 <div className="schedule-detail-card full">
                   <span>LOCATION</span>
                   <div>
                     <MapPin className="icon icon-xs" aria-hidden="true" />
-                    Business Hall A, Main Campus
+                    {selectedRegistration?.location ?? "N/A"}
                   </div>
                 </div>
               </div>
 
               <div className="schedule-instructor">
-                <img src={imgInstructor} alt="Prof. Eleanor Vance" />
+                <img
+                  src={selectedRegistration?.instructorImage ?? imgInstructor}
+                  alt={selectedRegistration?.instructorName ?? "Instructor"}
+                />
                 <div>
                   <span>INSTRUCTOR</span>
-                  <strong>Prof. Eleanor Vance</strong>
+                  <strong>{selectedRegistration?.instructorName ?? "N/A"}</strong>
                 </div>
               </div>
 
-              <button type="button" className="schedule-cancel">
+              <button
+                type="button"
+                className="schedule-cancel"
+                onClick={() => void handleCancelRegistration()}
+                disabled={!selectedRegistration}
+              >
                 <XCircle className="icon icon-sm" aria-hidden="true" />
                 Cancel Registration
               </button>

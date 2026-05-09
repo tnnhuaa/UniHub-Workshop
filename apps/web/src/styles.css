@@ -513,6 +513,10 @@ label {
   gap: 12px;
   font-size: 14px;
   color: var(--ws-text);
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
   cursor: pointer;
 }
 

@@ -1,13 +1,49 @@
 import { Check, LayoutGrid, List, Search } from "lucide-react";
 import WorkshopHeader from "../components/WorkshopHeader.tsx";
 import WorkshopCard from "../components/WorkshopCard.tsx";
-import useWorkshopList from "../hooks/useWorkshopList.ts";
+import useWorkshopList, {
+  type WorkshopAvailabilityFilter,
+  type WorkshopDateFilter,
+  type WorkshopPriceFilter,
+} from "../hooks/useWorkshopList.ts";
 
 const imgStudentProfile =
   "https://www.figma.com/api/mcp/asset/065a2bff-6d30-4eb7-9d26-b63b86059f0d";
 
 const WorkshopList = () => {
-  const { workshops } = useWorkshopList();
+  const {
+    workshops,
+    isLoading,
+    error,
+    searchTerm,
+    setSearchTerm,
+    dateFilter,
+    setDateFilter,
+    priceFilters,
+    togglePriceFilter,
+    availability,
+    setAvailability,
+    applyFilters,
+  } = useWorkshopList();
+
+  const dateOptions: Array<{ value: WorkshopDateFilter; label: string }> = [
+    { value: "upcoming", label: "Upcoming" },
+    { value: "this-week", label: "This Week" },
+    { value: "next-month", label: "Next Month" },
+  ];
+
+  const priceOptions: Array<{ value: WorkshopPriceFilter; label: string }> = [
+    { value: "free", label: "Free" },
+    { value: "paid", label: "Paid" },
+  ];
+
+  const availabilityOptions: Array<{
+    value: WorkshopAvailabilityFilter;
+    label: string;
+  }> = [
+    { value: "open", label: "Open" },
+    { value: "almost-full", label: "Almost Full" },
+  ];
 
   return (
     <div className="workshop-list-page">
@@ -23,50 +59,71 @@ const WorkshopList = () => {
           <div className="filter-group">
             <span className="filter-label">Date</span>
             <div className="filter-options">
-              <label className="filter-option selected">
-                <span className="selection-dot">
-                  <Check className="icon icon-xs" aria-hidden="true" />
-                </span>
-                <span>Upcoming</span>
-              </label>
-              <label className="filter-option">
-                <span className="selection-dot" />
-                <span>This Week</span>
-              </label>
-              <label className="filter-option">
-                <span className="selection-dot" />
-                <span>Next Month</span>
-              </label>
+              {dateOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`filter-option${
+                    dateFilter === option.value ? " selected" : ""
+                  }`}
+                  onClick={() => setDateFilter(option.value)}
+                >
+                  <span className="selection-dot">
+                    {dateFilter === option.value ? (
+                      <Check className="icon icon-xs" aria-hidden="true" />
+                    ) : null}
+                  </span>
+                  <span>{option.label}</span>
+                </button>
+              ))}
             </div>
           </div>
           <div className="filter-group">
             <span className="filter-label">Price</span>
             <div className="filter-options">
-              <label className="filter-option selected square">
-                <span className="selection-square">
-                  <Check className="icon icon-xs" aria-hidden="true" />
-                </span>
-                <span>Free</span>
-              </label>
-              <label className="filter-option selected square">
-                <span className="selection-square">
-                  <Check className="icon icon-xs" aria-hidden="true" />
-                </span>
-                <span>Paid</span>
-              </label>
+              {priceOptions.map((option) => {
+                const isSelected = priceFilters.includes(option.value);
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`filter-option square${
+                      isSelected ? " selected" : ""
+                    }`}
+                    onClick={() => togglePriceFilter(option.value)}
+                  >
+                    <span className="selection-square">
+                      {isSelected ? (
+                        <Check className="icon icon-xs" aria-hidden="true" />
+                      ) : null}
+                    </span>
+                    <span>{option.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
           <div className="filter-group">
             <span className="filter-label">Availability</span>
             <div className="filter-pill-group">
-              <button type="button" className="filter-pill active">
-                Open
-              </button>
-              <button type="button" className="filter-pill">
-                Almost Full
-              </button>
+              {availabilityOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`filter-pill${
+                    availability === option.value ? " active" : ""
+                  }`}
+                  onClick={() => setAvailability(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
           </div>
+          <button type="button" className="primary-button" onClick={applyFilters}>
+            Apply Filters
+          </button>
         </aside>
 
         <section className="workshop-grid-section">
@@ -81,6 +138,8 @@ const WorkshopList = () => {
                 id="workshop-search-input"
                 type="search"
                 placeholder="Search workshops..."
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
               />
             </label>
             <div className="view-toggle" role="group" aria-label="View toggle">
@@ -96,6 +155,9 @@ const WorkshopList = () => {
               </button>
             </div>
           </div>
+
+          {error ? <p className="helper-text">{error}</p> : null}
+          {isLoading ? <p className="helper-text">Loading workshops...</p> : null}
 
           <div className="workshop-grid">
             {workshops.map((workshop) => (
