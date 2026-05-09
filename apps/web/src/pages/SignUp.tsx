@@ -31,6 +31,7 @@ const SignUp = () => {
     }
 
     setSuccess(true);
+    // Remove this debug alert when the page is connected to the real auth flow.
     window.alert(formatMockRequestAlert(result.request));
   };
 

@@ -7,6 +7,7 @@ export const signInWithEmail = (
   password: string,
   remember: boolean,
 ) => {
+  // Replace this mock auth call with the real sign-in endpoint integration later.
   return postMockAuth("/auth/sign-in/email", {
     email,
     password,
@@ -15,6 +16,7 @@ export const signInWithEmail = (
 };
 
 export const signUpWithEmail = (email: string, password: string) => {
+  // Replace this mock auth call with the real sign-up endpoint integration later.
   return postMockAuth("/auth/sign-up/email", {
     email,
     password,

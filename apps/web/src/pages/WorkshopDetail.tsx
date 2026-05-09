@@ -29,6 +29,7 @@ const WorkshopDetail = () => {
       setIsLoading(true);
       setError(null);
 
+      // Replace this mock detail fetch with the real GET /workshops/:id request later.
       const result = await getMockWorkshopDetail(workshopId);
       setIsLoading(false);
 

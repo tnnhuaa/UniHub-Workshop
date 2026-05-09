@@ -267,6 +267,7 @@ const useWorkshopList = () => {
     setError(null);
 
     const dateRange = getDateRange(dateFilter);
+    // Replace this mock workshop fetch with the real list endpoint later.
     const result = await getMockWorkshops({
       q: searchTerm.trim() || undefined,
       status: "published" satisfies WorkshopStatus,
@@ -286,6 +287,7 @@ const useWorkshopList = () => {
     setRawWorkshops(result.data);
 
     if (showAlert) {
+      // Remove this alert after wiring the page to the real API flow.
       window.alert(formatMockRequestAlert(result.request));
     }
   };

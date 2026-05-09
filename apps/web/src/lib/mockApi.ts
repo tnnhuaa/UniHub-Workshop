@@ -1,3 +1,4 @@
+// This file is the temporary mock transport layer. Swap these handlers for real HTTP calls later.
 const DEFAULT_BASE_URL = "http://localhost:3000/api/v1";
 
 export type MockHttpMethod = "GET" | "POST" | "PUT" | "DELETE";
@@ -641,35 +642,44 @@ export const formatMockRequestAlert = (request: MockRequestSnapshot) => {
   return lines.join("\n\n");
 };
 
+// Replace with a real GET /workshops request later.
 export const getMockWorkshops = (query: MockWorkshopQuery) =>
   performMockRequest<MockWorkshopSummary[]>("GET", "/workshops", { query });
 
+// Replace with a real GET /workshops/:id request later.
 export const getMockWorkshopDetail = (workshopId: string) =>
   performMockRequest<MockWorkshopDetail>("GET", `/workshops/${workshopId}`);
 
+// Replace with a real GET /students/:mssv request later.
 export const getMockStudentProfile = (mssv: string) =>
   performMockRequest<MockStudentProfile>("GET", `/students/${mssv}`);
 
+// Replace with the real student profile update endpoint when backend supports it.
 export const updateMockStudentProfile = (
   mssv: string,
   payload: MockProfileUpdatePayload,
 ) => performMockRequest<MockStudentProfile, MockProfileUpdatePayload>("PUT", `/students/${mssv}`, { body: payload });
 
+// Replace with a real GET /registrations/me request later.
 export const getMockRegistrations = (query?: {
   status?: RegistrationStatus;
   page?: number;
   pageSize?: number;
 }) => performMockRequest<MockRegistration[]>("GET", "/registrations/me", { query });
 
+// Replace with a real POST /registrations request later.
 export const createMockRegistration = (payload: MockRegistrationPayload) =>
   performMockRequest<MockRegistration, MockRegistrationPayload>("POST", "/registrations", { body: payload });
 
+// Replace with a real GET /registrations/:id/qr request later.
 export const getMockRegistrationQr = (registrationId: string) =>
   performMockRequest<MockQrCodeResponse>("GET", `/registrations/${registrationId}/qr`);
 
+// Replace with the real cancel-registration endpoint when backend supports it.
 export const deleteMockRegistration = (registrationId: string) =>
   performMockRequest<{ id: string; status: "cancelled" }>("DELETE", `/registrations/${registrationId}`);
 
+// Replace this helper with real auth HTTP calls later.
 export const postMockAuth = <TBody extends Record<string, unknown>>(
   path: "/auth/sign-in/email" | "/auth/sign-up/email",
   payload: TBody,

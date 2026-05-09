@@ -36,6 +36,7 @@ const UserProfile = () => {
       setIsLoading(true);
       setError(null);
 
+      // Replace this mock profile fetch with the real student/profile endpoint later.
       const result = await getMockStudentProfile("STU-84920");
       setIsLoading(false);
 
@@ -61,6 +62,7 @@ const UserProfile = () => {
   const handleReset = () => {
     void (async () => {
       setIsLoading(true);
+      // Replace this refresh with the real profile re-fetch later.
       const result = await getMockStudentProfile(mssv);
       setIsLoading(false);
 
@@ -82,6 +84,7 @@ const UserProfile = () => {
 
   const handleSave = async () => {
     setError(null);
+    // Replace this mock save with the real profile update endpoint later.
     const result = await updateMockStudentProfile(mssv, {
       fullName,
       phone,
@@ -94,6 +97,7 @@ const UserProfile = () => {
       return;
     }
 
+    // Remove this debug alert when the page is connected to the real API flow.
     window.alert(formatMockRequestAlert(result.request));
   };
 

@@ -45,6 +45,7 @@ const WorkshopSchedule = () => {
     setIsLoading(true);
     setError(null);
 
+    // Replace this mock registration fetch with the real GET /registrations/me request later.
     const result = await getMockRegistrations({
       page: 1,
       pageSize: 20,
@@ -81,6 +82,7 @@ const WorkshopSchedule = () => {
 
   const handleShowQr = async (registrationId: string) => {
     setError(null);
+    // Replace this mock QR fetch with the real GET /registrations/:id/qr request later.
     const result = await getMockRegistrationQr(registrationId);
 
     if (!result.ok) {
@@ -90,6 +92,7 @@ const WorkshopSchedule = () => {
 
     setSelectedRegistrationId(registrationId);
     setSelectedQrCode(result.data.qrCode);
+    // Remove this debug alert when the page is connected to the real API flow.
     window.alert(formatMockRequestAlert(result.request));
   };
 
@@ -99,6 +102,7 @@ const WorkshopSchedule = () => {
     }
 
     setError(null);
+    // Replace this mock delete with the real cancel-registration endpoint later.
     const result = await deleteMockRegistration(selectedRegistration.id);
 
     if (!result.ok) {
@@ -106,12 +110,15 @@ const WorkshopSchedule = () => {
       return;
     }
 
+    // Remove this debug alert when the page is connected to the real API flow.
     window.alert(formatMockRequestAlert(result.request));
     void loadRegistrations();
   };
 
   const getCardClassName = (registration: MockRegistration) =>
-    `schedule-card ${
+    `schedule-card${
+      selectedRegistrationId === registration.id ? " is-selected" : ""
+    } ${
       registration.status === "confirmed"
         ? "registered"
         : registration.status === "checked-in"
@@ -182,6 +189,16 @@ const WorkshopSchedule = () => {
                 <article
                   key={registration.id}
                   className={getCardClassName(registration)}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={selectedRegistrationId === registration.id}
+                  onClick={() => setSelectedRegistrationId(registration.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelectedRegistrationId(registration.id);
+                    }
+                  }}
                 >
                   <div className={`schedule-card-media${isChecked ? " muted" : ""}`}>
                     <img src={cardImage} alt={`${registration.workshopTitle} workshop`} />
@@ -216,7 +233,10 @@ const WorkshopSchedule = () => {
                         <button
                           type="button"
                           className="schedule-pay-now"
-                          onClick={() => setSelectedRegistrationId(registration.id)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedRegistrationId(registration.id);
+                          }}
                         >
                           Pay Now
                         </button>
@@ -225,7 +245,10 @@ const WorkshopSchedule = () => {
                           type="button"
                           className="schedule-icon-button"
                           aria-label="Show QR code"
-                          onClick={() => void handleShowQr(registration.id)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void handleShowQr(registration.id);
+                          }}
                         >
                           <QrCode className="icon icon-sm" aria-hidden="true" />
                         </button>

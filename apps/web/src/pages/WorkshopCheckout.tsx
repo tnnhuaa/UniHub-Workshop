@@ -44,6 +44,7 @@ const WorkshopCheckout = () => {
       setIsLoading(true);
       setError(null);
 
+      // Replace these mock reads with real workshop/profile requests later.
       const [workshopResult, studentResult] = await Promise.all([
         getMockWorkshopDetail(workshopId),
         getMockStudentProfile("STU-84920"),
@@ -82,6 +83,7 @@ const WorkshopCheckout = () => {
     setError(null);
     setIsSubmitting(true);
 
+    // Replace this mock registration submit with the real POST /registrations flow later.
     const result = await createMockRegistration({
       mssv,
       workshopId: workshop.id,
@@ -106,6 +108,7 @@ const WorkshopCheckout = () => {
       return;
     }
 
+    // Remove this debug alert when the page is connected to the real API flow.
     window.alert(formatMockRequestAlert(result.request));
   };
 
