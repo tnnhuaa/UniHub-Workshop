@@ -7,11 +7,8 @@ import {
   X,
 } from "lucide-react";
 import WorkshopHeader from "../components/WorkshopHeader.tsx";
-import {
-  formatMockRequestAlert,
-  getMockStudentProfile,
-  updateMockStudentProfile,
-} from "../lib/mockApi.ts";
+import { mapStudentToProfileViewModel } from "../lib/unihubAdapters.ts";
+import { fetchCurrentStudent } from "../lib/unihubApi.ts";
 
 const imgStudentProfile =
   "https://www.figma.com/api/mcp/asset/3e16b081-8990-428b-bada-53ad0e6d75e8";
@@ -36,8 +33,7 @@ const UserProfile = () => {
       setIsLoading(true);
       setError(null);
 
-      // Replace this mock profile fetch with the real student/profile endpoint later.
-      const result = await getMockStudentProfile("STU-84920");
+      const result = await fetchCurrentStudent();
       setIsLoading(false);
 
       if (!result.ok) {
@@ -45,15 +41,17 @@ const UserProfile = () => {
         return;
       }
 
-      setFullName(result.data.fullName);
-      setEmail(result.data.email);
-      setPhone(result.data.phone);
-      setBio(result.data.bio);
-      setMssv(result.data.mssv);
-      setMajor(result.data.major);
-      setYear(result.data.year);
-      setAvatar(result.data.avatar);
-      setVerified(result.data.verified);
+      const profile = mapStudentToProfileViewModel(result.data);
+
+      setFullName(profile.fullName);
+      setEmail(profile.email);
+      setPhone(profile.phone);
+      setBio(profile.bio);
+      setMssv(profile.mssv);
+      setMajor(profile.major);
+      setYear(profile.year);
+      setAvatar(profile.avatar);
+      setVerified(profile.verified);
     };
 
     void loadProfile();
@@ -62,8 +60,8 @@ const UserProfile = () => {
   const handleReset = () => {
     void (async () => {
       setIsLoading(true);
-      // Replace this refresh with the real profile re-fetch later.
-      const result = await getMockStudentProfile(mssv);
+      setError(null);
+      const result = await fetchCurrentStudent();
       setIsLoading(false);
 
       if (!result.ok) {
@@ -71,34 +69,17 @@ const UserProfile = () => {
         return;
       }
 
-      setFullName(result.data.fullName);
-      setEmail(result.data.email);
-      setPhone(result.data.phone);
-      setBio(result.data.bio);
-      setAvatar(result.data.avatar);
-      setMajor(result.data.major);
-      setYear(result.data.year);
-      setVerified(result.data.verified);
+      const profile = mapStudentToProfileViewModel(result.data);
+
+      setFullName(profile.fullName);
+      setEmail(profile.email);
+      setPhone(profile.phone);
+      setBio(profile.bio);
+      setAvatar(profile.avatar);
+      setMajor(profile.major);
+      setYear(profile.year);
+      setVerified(profile.verified);
     })();
-  };
-
-  const handleSave = async () => {
-    setError(null);
-    // Replace this mock save with the real profile update endpoint later.
-    const result = await updateMockStudentProfile(mssv, {
-      fullName,
-      phone,
-      bio,
-      avatar,
-    });
-
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
-
-    // Remove this debug alert when the page is connected to the real API flow.
-    window.alert(formatMockRequestAlert(result.request));
   };
 
   return (
@@ -125,7 +106,12 @@ const UserProfile = () => {
                   <Camera className="icon icon-sm" aria-hidden="true" />
                 </button>
               </div>
-              <button type="button" className="profile-avatar-button">
+              <button
+                type="button"
+                className="profile-avatar-button"
+                disabled
+                title="Profile updates are not supported by the current backend contract"
+              >
                 Change photo
               </button>
             </div>
@@ -215,8 +201,8 @@ const UserProfile = () => {
           <button
             type="button"
             className="profile-save"
-            onClick={() => void handleSave()}
-            disabled={isLoading}
+            disabled
+            title="Profile updates are not supported by the current backend contract"
           >
             <Check className="icon icon-sm" aria-hidden="true" />
             Save changes

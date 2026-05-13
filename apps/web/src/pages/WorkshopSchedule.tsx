@@ -12,32 +12,23 @@ import {
 } from "lucide-react";
 import WorkshopHeader from "../components/WorkshopHeader.tsx";
 import {
-  deleteMockRegistration,
-  formatMockRequestAlert,
-  getMockRegistrationQr,
-  getMockRegistrations,
-  type MockRegistration,
-} from "../lib/mockApi.ts";
+  getQrImageSource,
+  mapRegistrationToScheduleViewModel,
+} from "../lib/unihubAdapters.ts";
+import {
+  fetchMyRegistrations,
+  fetchRegistrationQr,
+  fetchWorkshop,
+} from "../lib/unihubApi.ts";
+import type { ScheduleRegistrationViewModel } from "../lib/unihubAdapters.ts";
 
 const imgStudentProfile =
   "https://www.figma.com/api/mcp/asset/646bd94c-8822-432f-be1f-38d08a09df59";
-const imgBusinessStrategyWorkshop =
-  "https://www.figma.com/api/mcp/asset/9b0e9b49-856f-47e4-9ac5-2de62892ba6e";
-const imgCodingBootcamp =
-  "https://www.figma.com/api/mcp/asset/64a58b45-b300-48f9-995e-2293793f2b53";
-const imgDesignWorkshop =
-  "https://www.figma.com/api/mcp/asset/0847573c-09b5-4b5f-99f0-8cc62fb92523";
-const imgQrCodeForCheckIn =
-  "https://www.figma.com/api/mcp/asset/5c679e98-021a-4ac3-a67b-e57df7f69bfb";
-const imgInstructor =
-  "https://www.figma.com/api/mcp/asset/2b82168d-29d3-4c5e-9069-76b377aabbc7";
 
 const WorkshopSchedule = () => {
-  const [registrations, setRegistrations] = useState<MockRegistration[]>([]);
-  const [selectedRegistrationId, setSelectedRegistrationId] = useState<
-    string | null
-  >(null);
-  const [selectedQrCode, setSelectedQrCode] = useState(imgQrCodeForCheckIn);
+  const [registrations, setRegistrations] = useState<ScheduleRegistrationViewModel[]>([]);
+  const [selectedRegistrationId, setSelectedRegistrationId] = useState<string | null>(null);
+  const [selectedQrCode, setSelectedQrCode] = useState(getQrImageSource(null));
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,21 +36,43 @@ const WorkshopSchedule = () => {
     setIsLoading(true);
     setError(null);
 
-    // Replace this mock registration fetch with the real GET /registrations/me request later.
-    const result = await getMockRegistrations({
-      page: 1,
-      pageSize: 20,
-    });
+    const registrationResult = await fetchMyRegistrations({ page: 1, pageSize: 20 });
 
-    setIsLoading(false);
-
-    if (!result.ok) {
-      setError(result.error);
+    if (!registrationResult.ok) {
+      setIsLoading(false);
+      setError(registrationResult.error);
       return;
     }
 
-    setRegistrations(result.data);
-    setSelectedRegistrationId((current) => current ?? result.data[0]?.id ?? null);
+    if (registrationResult.data.length === 0) {
+      setRegistrations([]);
+      setSelectedRegistrationId(null);
+      setSelectedQrCode(getQrImageSource(null));
+      setIsLoading(false);
+      return;
+    }
+
+    const workshopResults = await Promise.all(
+      registrationResult.data.map((registration) => fetchWorkshop(registration.workshopId)),
+    );
+
+    const firstFailure = workshopResults.find((result) => !result.ok);
+    if (firstFailure && !firstFailure.ok) {
+      setIsLoading(false);
+      setError(firstFailure.error);
+      return;
+    }
+
+    const hydratedRegistrations = registrationResult.data.map((registration, index) =>
+      mapRegistrationToScheduleViewModel(
+        registration,
+        (workshopResults[index] as Extract<(typeof workshopResults)[number], { ok: true }>).data,
+      ),
+    );
+
+    setRegistrations(hydratedRegistrations);
+    setSelectedRegistrationId((current) => current ?? hydratedRegistrations[0]?.id ?? null);
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -75,62 +88,46 @@ const WorkshopSchedule = () => {
   );
 
   useEffect(() => {
-    if (selectedRegistration?.qrCode) {
-      setSelectedQrCode(selectedRegistration.qrCode);
-    }
+    const loadQrCode = async () => {
+      if (!selectedRegistration) {
+        setSelectedQrCode(getQrImageSource(null));
+        return;
+      }
+
+      if (selectedRegistration.status !== "confirmed") {
+        setSelectedQrCode(getQrImageSource(null));
+        return;
+      }
+
+      const qrResult = await fetchRegistrationQr(selectedRegistration.id);
+      if (!qrResult.ok) {
+        setError(qrResult.error);
+        setSelectedQrCode(getQrImageSource(selectedRegistration.qrCode));
+        return;
+      }
+
+      setSelectedQrCode(getQrImageSource(qrResult.data.qrCode));
+    };
+
+    void loadQrCode();
   }, [selectedRegistration]);
 
-  const handleShowQr = async (registrationId: string) => {
-    setError(null);
-    // Replace this mock QR fetch with the real GET /registrations/:id/qr request later.
-    const result = await getMockRegistrationQr(registrationId);
-
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
-
-    setSelectedRegistrationId(registrationId);
-    setSelectedQrCode(result.data.qrCode);
-    // Remove this debug alert when the page is connected to the real API flow.
-    window.alert(formatMockRequestAlert(result.request));
-  };
-
-  const handleCancelRegistration = async () => {
-    if (!selectedRegistration) {
-      return;
-    }
-
-    setError(null);
-    // Replace this mock delete with the real cancel-registration endpoint later.
-    const result = await deleteMockRegistration(selectedRegistration.id);
-
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
-
-    // Remove this debug alert when the page is connected to the real API flow.
-    window.alert(formatMockRequestAlert(result.request));
-    void loadRegistrations();
-  };
-
-  const getCardClassName = (registration: MockRegistration) =>
-    `schedule-card${
-      selectedRegistrationId === registration.id ? " is-selected" : ""
-    } ${
+  const getCardClassName = (registration: ScheduleRegistrationViewModel) =>
+    `schedule-card${selectedRegistrationId === registration.id ? " is-selected" : ""} ${
       registration.status === "confirmed"
         ? "registered"
-        : registration.status === "checked-in"
-          ? "checked"
-          : registration.status === "pending"
-            ? "pending"
-            : "pending"
+        : registration.status === "pending"
+          ? "pending"
+          : "pending"
     }`;
 
-  const getStatusLabel = (registration: MockRegistration) => {
-    if (registration.status === "checked-in") {
-      return "Checked-in";
+  const getStatusLabel = (registration: ScheduleRegistrationViewModel) => {
+    if (registration.status === "confirmed" && registration.paymentStatus === "paid") {
+      return "Confirmed";
+    }
+
+    if (registration.status === "confirmed") {
+      return "Registered";
     }
 
     if (registration.status === "pending") {
@@ -141,8 +138,13 @@ const WorkshopSchedule = () => {
       return "Cancelled";
     }
 
-    return "Registered";
+    return "Expired";
   };
+
+  const selectedQrCaption =
+    selectedRegistration?.status === "confirmed"
+      ? "Scan at entrance"
+      : "QR code becomes available after confirmation";
 
   return (
     <div className="schedule-page">
@@ -175,15 +177,7 @@ const WorkshopSchedule = () => {
         <div className="schedule-grid">
           <section className="schedule-list" aria-label="Registrations">
             {registrations.map((registration) => {
-              const isChecked = registration.status === "checked-in";
               const isPending = registration.status === "pending";
-              const cardImage =
-                registration.coverImage ||
-                (registration.status === "pending"
-                  ? imgDesignWorkshop
-                  : registration.status === "checked-in"
-                    ? imgCodingBootcamp
-                    : imgBusinessStrategyWorkshop);
 
               return (
                 <article
@@ -200,16 +194,16 @@ const WorkshopSchedule = () => {
                     }
                   }}
                 >
-                  <div className={`schedule-card-media${isChecked ? " muted" : ""}`}>
-                    <img src={cardImage} alt={`${registration.workshopTitle} workshop`} />
+                  <div className={`schedule-card-media${isPending ? " muted" : ""}`}>
+                    <img src={registration.coverImage} alt={`${registration.workshopTitle} workshop`} />
                   </div>
                   <div className="schedule-card-body">
                     <div className="schedule-card-head">
                       <div>
                         <span
                           className={`schedule-tag ${
-                            registration.status === "checked-in"
-                              ? "checked"
+                            registration.status === "confirmed"
+                              ? "registered"
                               : registration.status === "pending"
                                 ? "pending"
                                 : "registered"
@@ -222,7 +216,7 @@ const WorkshopSchedule = () => {
                           )}
                           {getStatusLabel(registration)}
                         </span>
-                        <h3 className={isChecked ? "muted" : undefined}>
+                        <h3 className={isPending ? "muted" : undefined}>
                           {registration.workshopTitle}
                         </h3>
                         <p>
@@ -230,15 +224,8 @@ const WorkshopSchedule = () => {
                         </p>
                       </div>
                       {isPending ? (
-                        <button
-                          type="button"
-                          className="schedule-pay-now"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setSelectedRegistrationId(registration.id);
-                          }}
-                        >
-                          Pay Now
+                        <button type="button" className="schedule-pay-now" disabled>
+                          Awaiting Payment
                         </button>
                       ) : (
                         <button
@@ -247,7 +234,7 @@ const WorkshopSchedule = () => {
                           aria-label="Show QR code"
                           onClick={(event) => {
                             event.stopPropagation();
-                            void handleShowQr(registration.id);
+                            setSelectedRegistrationId(registration.id);
                           }}
                         >
                           <QrCode className="icon icon-sm" aria-hidden="true" />
@@ -292,7 +279,7 @@ const WorkshopSchedule = () => {
                 <div className="schedule-qr-box">
                   <img src={selectedQrCode} alt="QR code for check-in" />
                 </div>
-                <span>Scan at entrance</span>
+                <span>{selectedQrCaption}</span>
               </div>
 
               <div className="schedule-detail-grid">
@@ -321,7 +308,7 @@ const WorkshopSchedule = () => {
 
               <div className="schedule-instructor">
                 <img
-                  src={selectedRegistration?.instructorImage ?? imgInstructor}
+                  src={selectedRegistration?.instructorImage ?? imgStudentProfile}
                   alt={selectedRegistration?.instructorName ?? "Instructor"}
                 />
                 <div>
@@ -333,8 +320,8 @@ const WorkshopSchedule = () => {
               <button
                 type="button"
                 className="schedule-cancel"
-                onClick={() => void handleCancelRegistration()}
-                disabled={!selectedRegistration}
+                disabled
+                title="Cancellation is not available in the current backend contract"
               >
                 <XCircle className="icon icon-sm" aria-hidden="true" />
                 Cancel Registration

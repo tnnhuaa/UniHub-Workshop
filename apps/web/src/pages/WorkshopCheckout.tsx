@@ -10,31 +10,42 @@ import {
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  createMockRegistration,
-  formatMockRequestAlert,
-  getMockStudentProfile,
-  getMockWorkshopDetail,
-  type MockWorkshopDetail,
-} from "../lib/mockApi.ts";
+  mapStudentToProfileViewModel,
+  mapWorkshopToDetailViewModel,
+} from "../lib/unihubAdapters.ts";
+import {
+  createRegistration,
+  fetchCurrentStudent,
+  fetchWorkshop,
+} from "../lib/unihubApi.ts";
+import type { RegistrationCheckoutResponseDto } from "../lib/unihubApi.ts";
+import type { WorkshopDetailViewModel, UserProfileViewModel } from "../lib/unihubAdapters.ts";
 
-const imgWorkshopHeader =
-  "https://www.figma.com/api/mcp/asset/1b8cc43f-4e00-42b2-9a62-ff2bb6e5389a";
+const defaultWorkshopId = "1f5b7b88-2f2a-4ff0-9fb8-0f8b51a58f01";
 
-const defaultWorkshopId = "11111111-1111-4111-8111-111111111111";
+const splitFullName = (fullName: string) => {
+  const parts = fullName.trim().split(/\s+/);
+  return {
+    firstName: parts[0] ?? "",
+    lastName: parts.slice(1).join(" "),
+  };
+};
 
 const WorkshopCheckout = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const workshopId = id ?? defaultWorkshopId;
-  const [workshop, setWorkshop] = useState<MockWorkshopDetail | null>(null);
-  const [mssv, setMssv] = useState("STU-84920");
-  const [firstName, setFirstName] = useState("Jane");
-  const [lastName, setLastName] = useState("Doe");
-  const [email, setEmail] = useState("jane.doe@university.edu");
+  const [workshop, setWorkshop] = useState<WorkshopDetailViewModel | null>(null);
+  const [student, setStudent] = useState<UserProfileViewModel | null>(null);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
   const [cardholderName, setCardholderName] = useState("");
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiryDate, setExpiryDate] = useState("");
-  const [cvc, setCvc] = useState("");
+  const [cardNumber] = useState("");
+  const [expiryDate] = useState("");
+  const [cvc] = useState("");
+  const [registrationResult, setRegistrationResult] = useState<RegistrationCheckoutResponseDto | null>(null);
+  const [submissionMessage, setSubmissionMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,10 +55,9 @@ const WorkshopCheckout = () => {
       setIsLoading(true);
       setError(null);
 
-      // Replace these mock reads with real workshop/profile requests later.
       const [workshopResult, studentResult] = await Promise.all([
-        getMockWorkshopDetail(workshopId),
-        getMockStudentProfile("STU-84920"),
+        fetchWorkshop(workshopId),
+        fetchCurrentStudent(),
       ]);
 
       setIsLoading(false);
@@ -62,44 +72,37 @@ const WorkshopCheckout = () => {
         return;
       }
 
-      setWorkshop(workshopResult.data);
-      setMssv(studentResult.data.mssv);
+      setWorkshop(mapWorkshopToDetailViewModel(workshopResult.data));
 
-      const [first, ...rest] = studentResult.data.fullName.split(" ");
-      setFirstName(first ?? "");
-      setLastName(rest.join(" "));
-      setEmail(studentResult.data.email);
-      setCardholderName(studentResult.data.fullName);
+      const profile = mapStudentToProfileViewModel(studentResult.data);
+      const nameParts = splitFullName(profile.fullName);
+
+      setStudent(profile);
+      setFirstName(nameParts.firstName);
+      setLastName(nameParts.lastName);
+      setEmail(profile.email);
+      setCardholderName(profile.fullName);
     };
 
     void loadCheckoutData();
   }, [workshopId]);
 
   const handlePay = async () => {
-    if (!workshop) {
+    if (!workshop || !student) {
       return;
     }
 
     setError(null);
+    setSubmissionMessage(null);
     setIsSubmitting(true);
 
-    // Replace this mock registration submit with the real POST /registrations flow later.
-    const result = await createMockRegistration({
-      mssv,
-      workshopId: workshop.id,
-      attendee: {
-        firstName,
-        lastName,
-        email,
+    const result = await createRegistration(
+      {
+        mssv: student.mssv,
+        workshopId: workshop.id,
       },
-      payment: {
-        cardholderName,
-        cardNumber,
-        expiryDate,
-        cvc,
-      },
-      idempotencyKey: `checkout-${workshop.id}`,
-    });
+      `checkout-${workshop.id}-${student.mssv}`,
+    );
 
     setIsSubmitting(false);
 
@@ -108,8 +111,12 @@ const WorkshopCheckout = () => {
       return;
     }
 
-    // Remove this debug alert when the page is connected to the real API flow.
-    window.alert(formatMockRequestAlert(result.request));
+    setRegistrationResult(result.data);
+    setSubmissionMessage(
+      result.data.paymentRequired
+        ? `Payment was created for registration ${result.data.registration.id}. The backend returned mock payment endpoints for the next step.`
+        : `Registration confirmed for ${student.fullName}. The QR code is now available from your schedule.`,
+    );
   };
 
   if (isLoading) {
@@ -132,6 +139,9 @@ const WorkshopCheckout = () => {
     );
   }
 
+  const registrationFee = workshop.price;
+  const isPaidWorkshop = registrationFee > 0;
+
   return (
     <div className="checkout-page">
       <header className="checkout-topbar">
@@ -148,7 +158,7 @@ const WorkshopCheckout = () => {
         </div>
         <div className="checkout-topbar-right">
           <Lock className="icon icon-xs" aria-hidden="true" />
-          <span>Secure Checkout</span>
+          <span>{isPaidWorkshop ? "Secure Checkout" : "Instant Registration"}</span>
         </div>
       </header>
 
@@ -161,16 +171,46 @@ const WorkshopCheckout = () => {
                 <Timer className="icon icon-sm" aria-hidden="true" />
               </div>
               <div>
-                <h2>Reservation Held</h2>
+                <h2>{isPaidWorkshop ? "Reservation Held" : "Ready to Register"}</h2>
                 <p>
-                  Your spot is temporarily locked. Please complete your payment.
+                  {isPaidWorkshop
+                    ? "Your spot is temporarily locked while the backend prepares the payment record."
+                    : "This workshop is free. Submit once to confirm your registration."}
                 </p>
               </div>
             </div>
             <div className="reservation-timer">
-              <span>09:45</span>
+              <span>{isPaidWorkshop ? "09:45" : "FREE"}</span>
             </div>
           </section>
+
+          {submissionMessage ? (
+            <section className="checkout-card">
+              <div className="checkout-card-header">
+                <Lock className="icon icon-sm" aria-hidden="true" />
+                <h2>Registration Status</h2>
+              </div>
+              <p className="helper-text" style={{ textAlign: "left", marginTop: 0 }}>
+                {submissionMessage}
+              </p>
+              {registrationResult?.paymentRequired && registrationResult.payment ? (
+                <div className="checkout-pricing">
+                  <div className="checkout-price-row">
+                    <span>Payment ID</span>
+                    <span>{registrationResult.payment.paymentId ?? "Pending"}</span>
+                  </div>
+                  <div className="checkout-price-row">
+                    <span>Success endpoint</span>
+                    <span>{registrationResult.payment.mockActions?.successEndpoint ?? "N/A"}</span>
+                  </div>
+                  <div className="checkout-price-row">
+                    <span>Failure endpoint</span>
+                    <span>{registrationResult.payment.mockActions?.failureEndpoint ?? "N/A"}</span>
+                  </div>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
 
           <div className="checkout-grid">
             <div className="checkout-column">
@@ -185,7 +225,7 @@ const WorkshopCheckout = () => {
                     <input
                       type="text"
                       value={firstName}
-                      onChange={(event) => setFirstName(event.target.value)}
+                      readOnly
                     />
                   </label>
                   <label className="checkout-field">
@@ -193,7 +233,7 @@ const WorkshopCheckout = () => {
                     <input
                       type="text"
                       value={lastName}
-                      onChange={(event) => setLastName(event.target.value)}
+                      readOnly
                     />
                   </label>
                   <label className="checkout-field full">
@@ -201,7 +241,7 @@ const WorkshopCheckout = () => {
                     <input
                       type="email"
                       value={email}
-                      onChange={(event) => setEmail(event.target.value)}
+                      readOnly
                     />
                   </label>
                 </div>
@@ -211,7 +251,7 @@ const WorkshopCheckout = () => {
                 <div className="checkout-card-accent" aria-hidden="true" />
                 <div className="checkout-card-header">
                   <CreditCard className="icon icon-sm" aria-hidden="true" />
-                  <h2>Payment Method</h2>
+                  <h2>{isPaidWorkshop ? "Payment Method" : "Payment Not Required"}</h2>
                 </div>
                 <div className="checkout-form-stack">
                   <label className="checkout-field">
@@ -220,7 +260,7 @@ const WorkshopCheckout = () => {
                       type="text"
                       placeholder="e.g. Jane Doe"
                       value={cardholderName}
-                      onChange={(event) => setCardholderName(event.target.value)}
+                      readOnly
                     />
                   </label>
                   <label className="checkout-field">
@@ -231,7 +271,7 @@ const WorkshopCheckout = () => {
                         type="text"
                         placeholder="0000 0000 0000 0000"
                         value={cardNumber}
-                        onChange={(event) => setCardNumber(event.target.value)}
+                        readOnly
                       />
                     </div>
                   </label>
@@ -242,7 +282,7 @@ const WorkshopCheckout = () => {
                         type="text"
                         placeholder="MM/YY"
                         value={expiryDate}
-                        onChange={(event) => setExpiryDate(event.target.value)}
+                        readOnly
                       />
                     </label>
                     <label className="checkout-field">
@@ -252,19 +292,24 @@ const WorkshopCheckout = () => {
                           type="text"
                           placeholder="123"
                           value={cvc}
-                          onChange={(event) => setCvc(event.target.value)}
+                          readOnly
                         />
                         <ShieldCheck className="icon icon-sm" aria-hidden="true" />
                       </div>
                     </label>
                   </div>
+                  {!isPaidWorkshop ? (
+                    <p className="checkout-note" style={{ textAlign: "left" }}>
+                      This workshop is free, so the backend confirms the registration immediately.
+                    </p>
+                  ) : null}
                 </div>
               </section>
             </div>
 
             <aside className="checkout-summary">
               <div className="checkout-summary-image">
-                <img src={workshop.coverImage ?? imgWorkshopHeader} alt="Workshop preview" />
+                <img src={workshop.coverImage} alt="Workshop preview" />
               </div>
               <div className="checkout-summary-content">
                 <div className="checkout-tags">
@@ -274,6 +319,9 @@ const WorkshopCheckout = () => {
                 <h3>
                   {workshop.title}
                 </h3>
+                <p className="checkout-note" style={{ textAlign: "left", marginTop: 0 }}>
+                  {workshop.summary}
+                </p>
                 <div className="checkout-date">
                   <Calendar className="icon icon-xs" aria-hidden="true" />
                   {new Date(workshop.startTime).toLocaleDateString("en-US", {
@@ -295,33 +343,31 @@ const WorkshopCheckout = () => {
                 <div className="checkout-pricing">
                   <div className="checkout-price-row">
                     <span>Registration Fee</span>
-                    <span>${workshop.price.toFixed(2)}</span>
-                  </div>
-                  <div className="checkout-price-row">
-                    <span>Materials Fee</span>
-                    <span>$25.00</span>
-                  </div>
-                  <div className="checkout-price-row">
-                    <span>Tax</span>
-                    <span>${(workshop.price * 0.0993).toFixed(2)}</span>
+                    <span>${registrationFee.toFixed(2)}</span>
                   </div>
                 </div>
                 <div className="checkout-divider dashed" />
                 <div className="checkout-total">
                   <span>Total</span>
-                  <strong>${(workshop.price + 25 + workshop.price * 0.0993).toFixed(2)}</strong>
+                  <strong>${registrationFee.toFixed(2)}</strong>
                 </div>
                 <button
                   type="button"
                   className="checkout-pay"
                   onClick={() => void handlePay()}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || Boolean(submissionMessage)}
                 >
                   <Lock className="icon icon-sm" aria-hidden="true" />
-                  {isSubmitting ? "Processing..." : "Pay & Register"}
+                  {isSubmitting
+                    ? "Processing..."
+                    : isPaidWorkshop
+                      ? "Pay & Register"
+                      : "Register Now"}
                 </button>
                 <p className="checkout-note">
-                  By paying, you agree to the UniHub cancellation policy.
+                  {isPaidWorkshop
+                    ? "By paying, you agree to the UniHub cancellation policy."
+                    : "No payment is required for this workshop."}
                 </p>
               </div>
             </aside>
