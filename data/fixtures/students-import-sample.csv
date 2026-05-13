@@ -1,0 +1,5 @@
+mssv,email,full_name,phone,faculty,class_name,status
+21127002,tran.binh@unihub.local,Tran Thi Binh,0901000002,Business Administration,BA2026,active
+21127005,ngo.ha@unihub.local,Ngo Thu Ha,0901000005,Digital Marketing,DM2026,active
+21127100,invalid-email,Invalid Email Student,0901000099,Testing,QA2026,active
+21127006,hoang.lam@unihub.local,Hoang Gia Lam,0901000006,Logistics,LG2026,active

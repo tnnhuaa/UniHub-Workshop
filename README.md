@@ -112,6 +112,31 @@ See `.env.example` for all values. Auth settings:
 | `pnpm api:prisma:migrate`  | Run pending migrations   |
 | `pnpm lint`                | Lint all packages        |
 
+## Seed Test Data
+
+Running `pnpm db:seed` creates reusable sample data for the main API flows:
+
+- Better Auth accounts for `student`, `organizer`, and `checkin_staff`
+- Student profiles, workshops, registrations, payments, check-ins
+- Staff assignments, workshop documents, AI summary jobs
+- Notifications, audit logs, CSV import batches, and CSV import errors
+
+Sample accounts:
+
+- `student@unihub.local` / `Test@123456`
+- `organizer@unihub.local` / `Test@123456`
+- `checkin@unihub.local` / `Test@123456`
+
+CSV import fixture for `csv-sync` testing:
+
+- `data/fixtures/students-import-sample.csv`
+
+Suggested test targets after seeding:
+
+- Student registration history and QR: `students/me`, `registrations/me`, `registrations/:id/qr`
+- Organizer workflows: `workshops`, `notifications`, `csv-sync`, `admin/workshops/:workshopId/documents`
+- Check-in flows: `checkins/scan`, `checkins/confirm`, `checkins/workshop/:id`
+
 ## Documentation
 
 - [Proposal](blueprint/proposal.md) — Business scope & SLA targets
