@@ -1,6 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { bearer, jwt } from 'better-auth/plugins';
+import { bearer } from 'better-auth/plugins';
 import type { Env } from '../../config/env.schema.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
 
@@ -70,16 +70,7 @@ export const createBetterAuthInstance = (prisma: PrismaService, env: Env) => {
         ...(redirectUri ? { redirectURI: redirectUri } : {}),
       },
     },
-    plugins: [
-      bearer(),
-      jwt({
-        jwt: {
-          issuer: env.BETTER_AUTH_JWT_ISSUER,
-          audience: env.BETTER_AUTH_JWT_AUDIENCE,
-          expirationTime: env.BETTER_AUTH_JWT_TTL,
-        },
-      }),
-    ],
+    plugins: [bearer()],
     advanced: {
       defaultCookieAttributes: {
         sameSite: 'strict',
