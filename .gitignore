@@ -39,3 +39,6 @@ playwright-report/
 
 # Copilot scratch
 .copilot_temp/
+
+#yaml
+pnpm-lock.yaml

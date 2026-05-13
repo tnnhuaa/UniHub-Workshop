@@ -14,6 +14,15 @@ module.exports = [
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
+      parser: require("@babel/eslint-parser"),
+      parserOptions: {
+        requireConfigFile: false,
+        babelOptions: {
+          parserOpts: {
+            plugins: ["jsx", "typescript"],
+          },
+        },
+      },
     },
     plugins: {
       prettier: require("eslint-plugin-prettier"),
