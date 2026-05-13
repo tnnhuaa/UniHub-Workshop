@@ -33,9 +33,14 @@ export const createBetterAuthInstance = (prisma: PrismaService, env: Env) => {
   const secureCookies = env.NODE_ENV === 'production';
   const redirectUri = env.GOOGLE_OAUTH_REDIRECT_URI;
   const authOrigin = new URL(env.BETTER_AUTH_URL).origin;
+  const corsOrigins = String(env.CORS_ORIGIN)
+    .split(',')
+    .map((origin: string) => origin.trim())
+    .filter((origin: string) => origin.length > 0);
+
   const trustedOrigins = Array.from(
-    new Set([
-      ...env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean),
+    new Set<string>([
+      ...corsOrigins,
       authOrigin,
       `http://127.0.0.1:${env.PORT}`,
       `http://localhost:${env.PORT}`,

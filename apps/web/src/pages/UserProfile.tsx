@@ -4,9 +4,12 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  LogOut,
   X,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import WorkshopHeader from "../components/WorkshopHeader.tsx";
+import { signOut } from "../lib/authClient.ts";
 import { mapStudentToProfileViewModel } from "../lib/unihubAdapters.ts";
 import { fetchCurrentStudent } from "../lib/unihubApi.ts";
 
@@ -16,6 +19,7 @@ const imgProfilePicture =
   "https://www.figma.com/api/mcp/asset/8b5490f6-451d-4c0e-b17e-9b43a0619761";
 
 const UserProfile = () => {
+  const navigate = useNavigate();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -26,6 +30,7 @@ const UserProfile = () => {
   const [avatar, setAvatar] = useState(imgProfilePicture);
   const [verified, setVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -80,6 +85,21 @@ const UserProfile = () => {
       setYear(profile.year);
       setVerified(profile.verified);
     })();
+  };
+
+  const handleSignOut = async () => {
+    setError(null);
+    setIsSigningOut(true);
+
+    const result = await signOut();
+    setIsSigningOut(false);
+
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+
+    void navigate("/sign-in");
   };
 
   return (
@@ -191,9 +211,18 @@ const UserProfile = () => {
         <div className="profile-actions">
           <button
             type="button"
+            className="profile-logout"
+            onClick={() => void handleSignOut()}
+            disabled={isSigningOut}
+          >
+            <LogOut className="icon icon-sm" aria-hidden="true" />
+            {isSigningOut ? "Signing out..." : "Log out"}
+          </button>
+          <button
+            type="button"
             className="profile-cancel"
             onClick={handleReset}
-            disabled={isLoading}
+            disabled={isLoading || isSigningOut}
           >
             <X className="icon icon-sm" aria-hidden="true" />
             Cancel

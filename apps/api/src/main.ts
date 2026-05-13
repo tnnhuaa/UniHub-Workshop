@@ -1,19 +1,22 @@
-import { NestFactory } from '@nestjs/core';
+import { Logger } from '@nestjs/common';
+import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import { Logger } from '@nestjs/common';
 import { AppModule } from './app.module.js';
 import { HttpExceptionFilter } from './shared/errors/index.js';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const corsOrigins = (process.env.CORS_ORIGIN ??
-    'http://localhost:5173,http://127.0.0.1:5173')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+  const corsOrigins = Array.from(
+    new Set(
+      (process.env.CORS_ORIGIN ?? 'http://localhost:5173,http://127.0.0.1:5173')
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean),
+    ),
+  );
 
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
@@ -29,10 +32,10 @@ async function bootstrap() {
     origin: corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
   });
 
-  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalFilters(new HttpExceptionFilter(app.get(HttpAdapterHost)));
 
   const port = Number(process.env.PORT ?? 3000);
   await app.listen({ port, host: '127.0.0.1' });

@@ -27,3 +27,7 @@ export const signUpWithEmail = (email: string, password: string) => {
     },
   });
 };
+
+export const signOut = () => {
+  return postJson("/auth/sign-out");
+};

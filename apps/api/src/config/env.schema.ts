@@ -5,7 +5,9 @@ export const envSchema = z.object({
     .enum(['development', 'production', 'test'])
     .default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
-  CORS_ORIGIN: z.string().default('http://localhost:5173,http://127.0.0.1:5173'),
+  CORS_ORIGIN: z
+    .string()
+    .default('http://localhost:5173,http://127.0.0.1:5173'),
   DATABASE_URL: z.url(),
   DIRECT_URL: z.url(),
   REDIS_URL: z.string().min(1),
