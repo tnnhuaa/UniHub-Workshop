@@ -35,7 +35,7 @@ const getApiBaseUrl = () => {
     return configuredBaseUrl.replace(/\/+$/, "");
   }
 
-  return "http://localhost:3000/api/v1";
+  return "http://localhost:4000/api/v1";
 };
 
 const buildUrl = (

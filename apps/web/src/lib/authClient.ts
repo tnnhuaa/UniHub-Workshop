@@ -1,4 +1,4 @@
-import { postMockAuth } from "./mockApi.ts";
+import { postJson } from "./apiClient.ts";
 
 export type AuthResult = Awaited<ReturnType<typeof signInWithEmail>>;
 
@@ -7,18 +7,23 @@ export const signInWithEmail = (
   password: string,
   remember: boolean,
 ) => {
-  // Replace this mock auth call with the real sign-in endpoint integration later.
-  return postMockAuth("/auth/sign-in/email", {
-    email,
-    password,
-    remember,
+  return postJson("/auth/sign-in/email", {
+    body: {
+      email,
+      password,
+      rememberMe: remember,
+    },
   });
 };
 
 export const signUpWithEmail = (email: string, password: string) => {
-  // Replace this mock auth call with the real sign-up endpoint integration later.
-  return postMockAuth("/auth/sign-up/email", {
-    email,
-    password,
+  const displayName = email.split("@")[0] || email;
+
+  return postJson("/auth/sign-up/email", {
+    body: {
+      email,
+      password,
+      name: displayName,
+    },
   });
 };

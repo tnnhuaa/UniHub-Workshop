@@ -1,7 +1,6 @@
 import { useState } from "react";
 import AuthLayout from "../components/AuthLayout.tsx";
 import { signUpWithEmail } from "../lib/authClient.ts";
-import { formatMockRequestAlert } from "../lib/mockApi.ts";
 
 const SignUp = () => {
   const [email, setEmail] = useState("");
@@ -31,8 +30,6 @@ const SignUp = () => {
     }
 
     setSuccess(true);
-    // Remove this debug alert when the page is connected to the real auth flow.
-    window.alert(formatMockRequestAlert(result.request));
   };
 
   return (

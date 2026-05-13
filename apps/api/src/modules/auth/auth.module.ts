@@ -24,6 +24,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
         const env: Env = {
           NODE_ENV: config.getOrThrow('NODE_ENV'),
           PORT: config.getOrThrow('PORT'),
+          CORS_ORIGIN: config.getOrThrow('CORS_ORIGIN'),
           DATABASE_URL: config.getOrThrow('DATABASE_URL'),
           DIRECT_URL: config.getOrThrow('DIRECT_URL'),
           REDIS_URL: config.getOrThrow('REDIS_URL'),
