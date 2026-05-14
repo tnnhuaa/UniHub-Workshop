@@ -2,7 +2,6 @@ import {
   AlertTriangle,
   Calendar,
   CheckCircle2,
-  MapPin,
   User,
   Users,
   XCircle,
@@ -251,16 +250,25 @@ const getStatusMeta = (
 
 export const mapWorkshopToCard = (
   workshop: WorkshopApiDto,
-  index: number,
+  _index: number,
+  options?: {
+    isNew?: boolean;
+    isRegistered?: boolean;
+  },
 ): WorkshopCardData => {
   const metadata = getWorkshopMetadata(workshop.id);
   const remainingSeats = getRemainingSeats(workshop);
-  const isFeatured = index === 0;
+  const isRegistered = options?.isRegistered ?? false;
+  const classNames = [workshop.status === 'cancelled' ? 'cancelled' : '']
+    .filter(Boolean)
+    .join(' ');
 
   return {
     id: workshop.id,
-    variant: isFeatured ? 'featured' : 'standard',
-    className: workshop.status === 'cancelled' ? 'cancelled' : undefined,
+    variant: 'standard',
+    className: classNames || undefined,
+    isNew: options?.isNew ?? false,
+    isRegistered,
     status: getStatusMeta(workshop),
     price: {
       label:
@@ -270,7 +278,7 @@ export const mapWorkshopToCard = (
       highlight: toNumber(workshop.price) > 0,
     },
     title: workshop.title,
-    description: isFeatured ? (workshop.description ?? undefined) : undefined,
+    description: workshop.description ?? metadata.summary,
     meta: [
       {
         icon: Calendar,
@@ -282,58 +290,38 @@ export const mapWorkshopToCard = (
         }),
       },
       {
-        icon: isFeatured ? MapPin : User,
+        icon: User,
         label: workshop.speaker ?? metadata.speakerTitle,
       },
-      ...(isFeatured
-        ? [
-            {
-              icon: MapPin,
-              label: workshop.room ?? metadata.locationLabel,
-            },
-          ]
-        : []),
     ],
-    speaker: isFeatured
-      ? {
-          name: workshop.speaker ?? 'Guest Speaker',
-          title: metadata.speakerTitle,
-          avatar: metadata.speakerAvatar,
-        }
-      : undefined,
+    speaker: undefined,
     seats:
       workshop.status === 'cancelled'
         ? {
             label: 'Session Cancelled',
             tone: 'danger',
           }
-        : isFeatured
-          ? {
-              label: `${remainingSeats} seats left`,
-              tone: remainingSeats <= 2 ? 'warning' : 'success',
-              progress:
-                workshop.capacity === 0
-                  ? 0
-                  : Math.round(
-                      (workshop.registeredCount / workshop.capacity) * 100,
-                    ),
-            }
-          : {
-              label:
-                remainingSeats === 0
-                  ? '0 seats left'
-                  : remainingSeats <= 2
-                    ? `Only ${remainingSeats} seats left`
-                    : `${remainingSeats} seats left`,
-              tone:
-                remainingSeats === 0
-                  ? 'neutral'
-                  : remainingSeats <= 2
-                    ? 'warning'
-                    : 'success',
-            },
-    action:
-      workshop.status === 'cancelled'
+        : {
+            label:
+              remainingSeats === 0
+                ? '0 seats left'
+                : remainingSeats <= 2
+                  ? `Only ${remainingSeats} seats left`
+                  : `${remainingSeats} seats left`,
+            tone:
+              remainingSeats === 0
+                ? 'neutral'
+                : remainingSeats <= 2
+                  ? 'warning'
+                  : 'success',
+          },
+    action: isRegistered
+      ? {
+          label: 'Registered',
+          variant: 'ghost-muted',
+          disabled: true,
+        }
+      : workshop.status === 'cancelled'
         ? {
             label: 'Unavailable',
             variant: 'ghost-muted',
@@ -345,7 +333,7 @@ export const mapWorkshopToCard = (
               variant: 'ghost',
             }
           : {
-              label: isFeatured ? 'Register Now' : 'Register',
+              label: 'Register',
               variant: 'primary',
             },
     strikeTitle: workshop.status === 'cancelled',

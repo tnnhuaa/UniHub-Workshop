@@ -299,7 +299,7 @@ const WorkshopSchedule = () => {
                             {registration.workshopTitle}
                           </h3>
                           <p>
-                            {registration.speaker} • {registration.location}
+                            {registration.speaker} � {registration.location}
                           </p>
                         </div>
                         {isPending ? (

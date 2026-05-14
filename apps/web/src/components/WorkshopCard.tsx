@@ -24,9 +24,10 @@ const getStatusTextClassName = (tone?: WorkshopBadgeTone) => {
 const WorkshopCard = ({ workshop }: { workshop: WorkshopCardData }) => {
   const navigate = useNavigate();
   const StatusIcon = workshop.status.icon;
+  const isInteractive = !workshop.isRegistered;
   const cardClassName = [
     'workshop-card',
-    'is-clickable',
+    isInteractive ? 'is-clickable' : 'is-disabled',
     workshop.variant === 'featured' ? 'featured' : '',
     workshop.className ?? '',
   ]
@@ -44,22 +45,33 @@ const WorkshopCard = ({ workshop }: { workshop: WorkshopCardData }) => {
   return (
     <article
       className={cardClassName}
-      role="link"
-      tabIndex={0}
-      aria-label={`Open workshop ${workshop.title}`}
-      onClick={() => navigate(`/workshops/${workshop.id}`)}
+      role={isInteractive ? 'link' : undefined}
+      tabIndex={isInteractive ? 0 : -1}
+      aria-label={
+        isInteractive
+          ? `Open workshop ${workshop.title}`
+          : `${workshop.title} already registered`
+      }
+      onClick={() => {
+        if (isInteractive) {
+          navigate(`/workshops/${workshop.id}`);
+        }
+      }}
       onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
+        if (isInteractive && (event.key === 'Enter' || event.key === ' ')) {
           event.preventDefault();
           navigate(`/workshops/${workshop.id}`);
         }
       }}
     >
       <div className="card-top">
-        <span className={`badge ${workshop.status.tone}`}>
-          <StatusIcon className="icon icon-xs" aria-hidden="true" />
-          {workshop.status.label}
-        </span>
+        <div className="card-top-left">
+          <span className={`badge ${workshop.status.tone}`}>
+            <StatusIcon className="icon icon-xs" aria-hidden="true" />
+            {workshop.status.label}
+          </span>
+          {workshop.isNew ? <span className="badge new">New</span> : null}
+        </div>
         <span
           className={`badge price${
             workshop.price.highlight ? ' highlight' : ''
