@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout.tsx';
-import { signInWithEmail, signOut } from '../lib/authClient.ts';
+import { fetchAuthSession, signInWithEmail, signOut } from '../lib/authClient.ts';
 import { saveStoredStudentSession } from '../lib/studentSessionStore.ts';
 import { mapStudentToProfileViewModel } from '../lib/unihubAdapters.ts';
 import { fetchCurrentStudent } from '../lib/unihubApi.ts';
@@ -35,10 +35,26 @@ const SignIn = () => {
       return;
     }
 
+    const authSessionResult = await fetchAuthSession();
+    const effectiveRole: string | null = authSessionResult.ok
+      ? authSessionResult.data.role
+      : null;
+    if (effectiveRole === 'organizer' || effectiveRole === 'checkin_staff') {
+      setSuccess(true);
+      void navigate('/admin/dashboard');
+      return;
+    }
+
     const studentResult = await fetchCurrentStudent();
 
     if (!studentResult.ok) {
       if (studentResult.statusCode === 403) {
+        if (effectiveRole === 'organizer' || effectiveRole === 'checkin_staff') {
+          setSuccess(true);
+          void navigate('/admin/dashboard');
+          return;
+        }
+
         await signOut();
         setError(
           'This account is not linked to a student profile. Please use the email already synced from the student list or ask an organizer to sync your account.',

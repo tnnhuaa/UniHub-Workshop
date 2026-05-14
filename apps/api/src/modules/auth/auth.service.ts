@@ -53,6 +53,17 @@ export class AuthService {
     return roles.map((entry) => entry.role);
   }
 
+  getPrimaryRole(roles: UserRoleType[]): UserRoleType | null {
+    const priority: UserRoleType[] = ['organizer', 'checkin_staff', 'student'];
+    for (const role of priority) {
+      if (roles.includes(role)) {
+        return role;
+      }
+    }
+
+    return roles[0] ?? null;
+  }
+
   async hasRole(userId: string, role: UserRoleType): Promise<boolean> {
     const count = await this.prisma.userRole.count({
       where: { userId, role },
