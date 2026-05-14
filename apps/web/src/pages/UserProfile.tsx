@@ -14,8 +14,7 @@ import { signOut } from '../lib/authClient.ts';
 import { mapStudentToProfileViewModel } from '../lib/unihubAdapters.ts';
 import { fetchCurrentStudent } from '../lib/unihubApi.ts';
 
-const imgProfilePicture =
-  'https://www.figma.com/api/mcp/asset/8b5490f6-451d-4c0e-b17e-9b43a0619761';
+const imgProfilePicture = '/figma-mcp/8b5490f6-451d-4c0e-b17e-9b43a0619761.jpg';
 
 const UserProfile = () => {
   const navigate = useNavigate();

@@ -11,8 +11,7 @@ import {
   type NotificationApiDto,
 } from '../lib/unihubApi.ts';
 
-const imgStudentProfile =
-  'https://www.figma.com/api/mcp/asset/646bd94c-8822-432f-be1f-38d08a09df59';
+const imgStudentProfile = '/figma-mcp/646bd94c-8822-432f-be1f-38d08a09df59.jpg';
 
 const formatDateTime = (value?: string) => {
   if (!value) {

@@ -4,36 +4,22 @@ import AdminSidebar from '../components/AdminSidebar.tsx';
 import { fetchAdminDashboard } from '../lib/unihubApi.ts';
 import type { AdminDashboardResponseDto } from '../lib/unihubApi.ts';
 
-const imgNewWorkshop =
-  'https://www.figma.com/api/mcp/asset/1c3b467b-1867-4898-8ec4-83dffde5d81d';
-const imgKpiWorkshops =
-  'https://www.figma.com/api/mcp/asset/e37d5346-d57c-46b7-9647-6408c9aeecfc';
+const imgNewWorkshop = '/figma-mcp/1c3b467b-1867-4898-8ec4-83dffde5d81d.svg';
+const imgKpiWorkshops = '/figma-mcp/e37d5346-d57c-46b7-9647-6408c9aeecfc.svg';
 const imgKpiRegistrations =
-  'https://www.figma.com/api/mcp/asset/f7d6772e-df2f-4691-842e-bbd919fe3fc3';
-const imgKpiRevenue =
-  'https://www.figma.com/api/mcp/asset/146d85ff-8453-4021-a05a-10f0eff1956d';
-const imgSearch =
-  'https://www.figma.com/api/mcp/asset/637616ad-aaa3-43fd-96fd-1f03ae58b88c';
-const imgFilter =
-  'https://www.figma.com/api/mcp/asset/0d80eeb8-22a3-46f3-b9eb-24d3be3c75ff';
-const imgActionOpen =
-  'https://www.figma.com/api/mcp/asset/9dccb94a-b415-474b-8fea-b2a93810b36c';
-const imgActionEdit =
-  'https://www.figma.com/api/mcp/asset/e04d9ab0-18f6-41f6-9cc3-88616dcabdd0';
-const imgActionDelete =
-  'https://www.figma.com/api/mcp/asset/107b852e-134f-4a99-9c6f-27c3726592c9';
-const imgSystemHealth =
-  'https://www.figma.com/api/mcp/asset/db6cf4a4-c436-47a6-b528-58e93275b0a6';
-const imgJobFailed =
-  'https://www.figma.com/api/mcp/asset/85795ce2-9a08-42e2-b83c-adfa1e08d7ed';
-const imgJobPending =
-  'https://www.figma.com/api/mcp/asset/9313d707-6643-4ed6-b6a9-ddcaa33345c3';
-const imgAiDescription =
-  'https://www.figma.com/api/mcp/asset/42b80789-2465-4f91-81dd-d5596dd8f5f5';
-const imgAiOptimization =
-  'https://www.figma.com/api/mcp/asset/ea93dad6-6c5e-4dee-850b-2ff14b192819';
-const imgAiDone =
-  'https://www.figma.com/api/mcp/asset/284ef3fe-cc12-4bc9-8b67-31ab681d3a57';
+  '/figma-mcp/f7d6772e-df2f-4691-842e-bbd919fe3fc3.svg';
+const imgKpiRevenue = '/figma-mcp/146d85ff-8453-4021-a05a-10f0eff1956d.svg';
+const imgSearch = '/figma-mcp/637616ad-aaa3-43fd-96fd-1f03ae58b88c.svg';
+const imgFilter = '/figma-mcp/0d80eeb8-22a3-46f3-b9eb-24d3be3c75ff.svg';
+const imgActionOpen = '/figma-mcp/9dccb94a-b415-474b-8fea-b2a93810b36c.svg';
+const imgActionEdit = '/figma-mcp/e04d9ab0-18f6-41f6-9cc3-88616dcabdd0.svg';
+const imgActionDelete = '/figma-mcp/107b852e-134f-4a99-9c6f-27c3726592c9.svg';
+const imgSystemHealth = '/figma-mcp/db6cf4a4-c436-47a6-b528-58e93275b0a6.svg';
+const imgJobFailed = '/figma-mcp/85795ce2-9a08-42e2-b83c-adfa1e08d7ed.svg';
+const imgJobPending = '/figma-mcp/9313d707-6643-4ed6-b6a9-ddcaa33345c3.svg';
+const imgAiDescription = '/figma-mcp/42b80789-2465-4f91-81dd-d5596dd8f5f5.svg';
+const imgAiOptimization = '/figma-mcp/ea93dad6-6c5e-4dee-850b-2ff14b192819.svg';
+const imgAiDone = '/figma-mcp/284ef3fe-cc12-4bc9-8b67-31ab681d3a57.svg';
 
 type TrendTone = 'up' | 'down' | 'neutral';
 

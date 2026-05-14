@@ -2,18 +2,12 @@ import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { fetchAuthSession, signOut } from '../lib/authClient.ts';
 
-const imgAdminAvatar =
-  'https://www.figma.com/api/mcp/asset/42495168-978f-40e2-a3d5-907b4c5a9554';
-const imgNavDashboard =
-  'https://www.figma.com/api/mcp/asset/c3696c49-ed29-492f-9f00-ec04f06c80d3';
-const imgNavWorkshops =
-  'https://www.figma.com/api/mcp/asset/1577639d-1c2e-4a57-a1b8-a631613991c3';
-const imgNavSettings =
-  'https://www.figma.com/api/mcp/asset/ae27d1cc-cf71-49ea-bbe0-46927cba9e10';
-const imgNavLogout =
-  'https://www.figma.com/api/mcp/asset/dc86654a-6ad1-4cd3-9c5d-953234a9bebb';
-const imgNavCsv =
-  'https://www.figma.com/api/mcp/asset/0d80eeb8-22a3-46f3-b9eb-24d3be3c75ff';
+const imgAdminAvatar = '/figma-mcp/42495168-978f-40e2-a3d5-907b4c5a9554.jpg';
+const imgNavDashboard = '/figma-mcp/c3696c49-ed29-492f-9f00-ec04f06c80d3.svg';
+const imgNavWorkshops = '/figma-mcp/1577639d-1c2e-4a57-a1b8-a631613991c3.svg';
+const imgNavSettings = '/figma-mcp/ae27d1cc-cf71-49ea-bbe0-46927cba9e10.svg';
+const imgNavLogout = '/figma-mcp/dc86654a-6ad1-4cd3-9c5d-953234a9bebb.svg';
+const imgNavCsv = '/figma-mcp/0d80eeb8-22a3-46f3-b9eb-24d3be3c75ff.svg';
 
 type AdminIdentity = {
   name: string;
