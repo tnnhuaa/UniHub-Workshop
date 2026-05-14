@@ -40,10 +40,10 @@ const WorkshopDetail = () => {
       : hasPendingPayment
         ? 'Complete Payment'
         : workshop?.isSoldOut
-        ? 'Sold Out'
-        : workshop?.price && workshop.price > 0
-          ? 'Reserve Seat'
-          : 'Register Now';
+          ? 'Sold Out'
+          : workshop?.price && workshop.price > 0
+            ? 'Reserve Seat'
+            : 'Register Now';
   const showPaidHoldNote =
     (workshop?.price ?? 0) > 0 &&
     workshop?.status !== 'cancelled' &&

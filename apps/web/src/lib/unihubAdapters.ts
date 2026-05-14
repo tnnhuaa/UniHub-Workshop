@@ -346,28 +346,28 @@ export const mapWorkshopToCard = (
           to: `/workshops/${workshop.id}/register`,
         }
       : isRegistered
-      ? {
-          label: 'Registered',
-          variant: 'ghost-muted',
-          disabled: true,
-        }
-      : workshop.status === 'cancelled'
         ? {
-            label: 'Unavailable',
+            label: 'Registered',
             variant: 'ghost-muted',
             disabled: true,
           }
-        : getIsSoldOut(workshop)
+        : workshop.status === 'cancelled'
           ? {
-              label: 'Sold Out',
+              label: 'Unavailable',
               variant: 'ghost-muted',
               disabled: true,
             }
-          : {
-              label: 'Register',
-              variant: 'primary',
-              to: `/workshops/${workshop.id}`,
-            },
+          : getIsSoldOut(workshop)
+            ? {
+                label: 'Sold Out',
+                variant: 'ghost-muted',
+                disabled: true,
+              }
+            : {
+                label: 'Register',
+                variant: 'primary',
+                to: `/workshops/${workshop.id}`,
+              },
     strikeTitle: workshop.status === 'cancelled',
     metaFaded: workshop.status === 'cancelled',
   };

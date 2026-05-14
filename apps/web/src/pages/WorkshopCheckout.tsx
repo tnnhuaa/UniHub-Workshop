@@ -484,9 +484,7 @@ const WorkshopCheckout = () => {
   const showRegistrationStatusCard =
     showWorkshopFullState || (!isPaidWorkshop && Boolean(submissionMessage));
   const paymentResultTitle =
-    paymentResultModalState === 'paid'
-      ? 'Payment confirmed'
-      : 'Payment failed';
+    paymentResultModalState === 'paid' ? 'Payment confirmed' : 'Payment failed';
   const paymentResultDescription =
     paymentResultModalState === 'paid'
       ? 'Your seat is secured and the QR code is now available from My Schedule.'
@@ -719,7 +717,10 @@ const WorkshopCheckout = () => {
             <h3>{paymentResultTitle}</h3>
             <p>{paymentResultDescription}</p>
             {paymentActionError ? (
-              <p className="helper-text" style={{ textAlign: 'left', margin: 0 }}>
+              <p
+                className="helper-text"
+                style={{ textAlign: 'left', margin: 0 }}
+              >
                 {paymentActionError}
               </p>
             ) : null}
