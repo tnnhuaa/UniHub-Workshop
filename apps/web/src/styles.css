@@ -2251,6 +2251,21 @@ label {
   padding-top: 8px;
 }
 
+.profile-logout {
+  border: 1px solid rgba(243, 111, 111, 0.35);
+  background: #fff4f4;
+  color: #b24141;
+  border-radius: 999px;
+  padding: 10px 24px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
 .profile-cancel {
   border: 1px solid rgba(190, 202, 190, 0.5);
   background: var(--profile-soft);

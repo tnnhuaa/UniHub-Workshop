@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout.tsx";
 import { signInWithEmail } from "../lib/authClient.ts";
-import { formatMockRequestAlert } from "../lib/mockApi.ts";
 
 const SignIn = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -32,8 +33,7 @@ const SignIn = () => {
     }
 
     setSuccess(true);
-    // Remove this debug alert when the page is connected to the real auth flow.
-    window.alert(formatMockRequestAlert(result.request));
+    void navigate("/workshops");
   };
 
   return (

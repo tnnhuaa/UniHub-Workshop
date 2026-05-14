@@ -1,20 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ComponentType } from "react";
-import {
-  AlertTriangle,
-  Calendar,
-  CheckCircle2,
-  MapPin,
-  User,
-  Users,
-  XCircle,
-} from "lucide-react";
-import {
-  formatMockRequestAlert,
-  getMockWorkshops,
-  type MockWorkshopSummary,
-  type WorkshopStatus,
-} from "../lib/mockApi.ts";
+import { mapWorkshopToCard } from "../lib/unihubAdapters.ts";
+import { fetchWorkshops, type WorkshopApiDto, type WorkshopStatus } from "../lib/unihubApi.ts";
 
 type IconType = ComponentType<{ className?: string }>;
 
@@ -84,145 +71,8 @@ const getDateRange = (filter: WorkshopDateFilter) => {
   return { startFrom: start, startTo: undefined };
 };
 
-const getWorkshopStatusMeta = (
-  workshop: MockWorkshopSummary,
-): WorkshopCardData["status"] => {
-  const remainingSeats = Math.max(workshop.capacity - workshop.registeredCount, 0);
-
-  if (workshop.status === "cancelled") {
-    return {
-      label: "Cancelled",
-      tone: "danger",
-      icon: XCircle,
-    };
-  }
-
-  if (remainingSeats === 0) {
-    return {
-      label: "Full",
-      tone: "neutral",
-      icon: Users,
-    };
-  }
-
-  if (remainingSeats <= 2) {
-    return {
-      label: "Almost Full",
-      tone: "warning",
-      icon: AlertTriangle,
-    };
-  }
-
-  return {
-    label: "Open",
-    tone: "success",
-    icon: CheckCircle2,
-  };
-};
-
-const mapWorkshopToCard = (
-  workshop: MockWorkshopSummary,
-  index: number,
-): WorkshopCardData => {
-  const remainingSeats = Math.max(workshop.capacity - workshop.registeredCount, 0);
-  const status = getWorkshopStatusMeta(workshop);
-  const isFeatured = index === 0;
-
-  const defaultAction =
-    workshop.status === "cancelled"
-      ? {
-          label: "Unavailable",
-          variant: "ghost-muted" as const,
-          disabled: true,
-        }
-      : remainingSeats === 0
-        ? {
-            label: "Join Waitlist",
-            variant: "ghost" as const,
-          }
-        : {
-            label: isFeatured ? "Register Now" : "Register",
-            variant: "primary" as const,
-          };
-
-  return {
-    id: workshop.id,
-    variant: isFeatured ? "featured" : "standard",
-    className: workshop.status === "cancelled" ? "cancelled" : undefined,
-    status,
-    price: {
-      label: workshop.price === 0 ? "Free" : `$${workshop.price.toFixed(2)}`,
-      highlight: workshop.price > 0,
-    },
-    title: workshop.title,
-    description: isFeatured ? workshop.description : undefined,
-    meta: [
-      {
-        icon: Calendar,
-        label: new Date(workshop.startTime).toLocaleString("en-US", {
-          month: "short",
-          day: "2-digit",
-          hour: "numeric",
-          minute: "2-digit",
-        }),
-      },
-      {
-        icon: isFeatured ? MapPin : User,
-        label: isFeatured ? workshop.room : workshop.speaker,
-      },
-      ...(isFeatured
-        ? []
-        : [
-            {
-              icon: MapPin,
-              label: workshop.room,
-            },
-          ]),
-    ],
-    speaker: isFeatured
-      ? {
-          name: workshop.speaker,
-          title: workshop.speakerTitle,
-          avatar: workshop.speakerAvatar,
-        }
-      : undefined,
-    seats:
-      workshop.status === "cancelled"
-        ? {
-            label: "Session Cancelled",
-            tone: "danger",
-          }
-        : isFeatured
-          ? {
-              label: `${remainingSeats} seats left`,
-              tone: remainingSeats <= 2 ? "warning" : "success",
-              progress:
-                workshop.capacity === 0
-                  ? 0
-                  : Math.round((workshop.registeredCount / workshop.capacity) * 100),
-            }
-          : {
-              label:
-                remainingSeats === 0
-                  ? "0 seats left"
-                  : remainingSeats <= 2
-                    ? `Only ${remainingSeats} seats left`
-                    : `${remainingSeats} seats left`,
-              tone:
-                remainingSeats === 0
-                  ? "neutral"
-                  : remainingSeats <= 2
-                    ? "warning"
-                    : "success",
-            },
-    action: defaultAction,
-    strikeTitle: workshop.status === "cancelled",
-    metaFaded: workshop.status === "cancelled",
-  };
-};
-
 const filterByPrice = (
-  workshops: MockWorkshopSummary[],
+  workshops: WorkshopApiDto[],
   filters: WorkshopPriceFilter[],
 ) => {
   if (filters.length === 0 || filters.length === 2) {
@@ -235,7 +85,7 @@ const filterByPrice = (
 };
 
 const filterByAvailability = (
-  workshops: MockWorkshopSummary[],
+  workshops: WorkshopApiDto[],
   availability: WorkshopAvailabilityFilter,
 ) => {
   return workshops.filter((workshop) => {
@@ -250,7 +100,7 @@ const filterByAvailability = (
 };
 
 const useWorkshopList = () => {
-  const [rawWorkshops, setRawWorkshops] = useState<MockWorkshopSummary[]>([]);
+  const [rawWorkshops, setRawWorkshops] = useState<WorkshopApiDto[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState<WorkshopDateFilter>("upcoming");
   const [priceFilters, setPriceFilters] = useState<WorkshopPriceFilter[]>([
@@ -262,13 +112,12 @@ const useWorkshopList = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadWorkshops = async (showAlert = false) => {
+  const loadWorkshops = async () => {
     setIsLoading(true);
     setError(null);
 
     const dateRange = getDateRange(dateFilter);
-    // Replace this mock workshop fetch with the real list endpoint later.
-    const result = await getMockWorkshops({
+    const result = await fetchWorkshops({
       q: searchTerm.trim() || undefined,
       status: "published" satisfies WorkshopStatus,
       startFrom: dateRange.startFrom,
@@ -285,15 +134,10 @@ const useWorkshopList = () => {
     }
 
     setRawWorkshops(result.data);
-
-    if (showAlert) {
-      // Remove this alert after wiring the page to the real API flow.
-      window.alert(formatMockRequestAlert(result.request));
-    }
   };
 
   useEffect(() => {
-    void loadWorkshops(false);
+    void loadWorkshops();
   }, []);
 
   const workshops = filterByAvailability(
@@ -323,7 +167,7 @@ const useWorkshopList = () => {
     togglePriceFilter,
     availability,
     setAvailability,
-    applyFilters: () => loadWorkshops(true),
+    applyFilters: () => loadWorkshops(),
   };
 };
 

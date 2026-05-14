@@ -4,22 +4,36 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import { HttpAdapterHost } from '@nestjs/core';
+import type { FastifyRequest } from 'fastify';
 import { z } from 'zod/v4';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(HttpExceptionFilter.name);
+  constructor(private readonly adapterHost: HttpAdapterHost) {}
+
+  private reply(
+    host: ArgumentsHost,
+    statusCode: number,
+    body: Record<string, unknown>,
+  ) {
+    const { httpAdapter } = this.adapterHost;
+    const response: unknown = host.switchToHttp().getResponse();
+    httpAdapter.reply(response, body, statusCode);
+  }
+
   catch(exception: unknown, host: ArgumentsHost) {
     const context = host.switchToHttp();
     const request = context.getRequest<FastifyRequest>();
-    const reply = context.getResponse<FastifyReply>();
 
     const timestamp = new Date().toISOString();
     const path = request.url ?? request.raw.url ?? '';
 
     if (exception instanceof z.ZodError) {
-      reply.status(HttpStatus.BAD_REQUEST).send({
+      this.reply(host, HttpStatus.BAD_REQUEST, {
         statusCode: HttpStatus.BAD_REQUEST,
         code: 'VALIDATION_ERROR',
         message: 'Validation failed',
@@ -43,9 +57,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
         ? rawMessage.join(', ')
         : (rawMessage as string | undefined);
 
-      reply.status(status).send({
+      this.reply(host, status, {
         statusCode: status,
-        code: (responseBody.code as string) ?? HttpStatus[status] ?? 'ERROR',
+        code: responseBody.code ?? HttpStatus[status] ?? 'ERROR',
         message: message ?? HttpStatus[status] ?? 'Error',
         details: responseBody.details ?? responseBody.errors ?? null,
         path,
@@ -54,7 +68,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
       return;
     }
 
-    reply.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
+    this.logger.error('Unhandled exception', exception);
+
+    this.reply(host, HttpStatus.INTERNAL_SERVER_ERROR, {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       code: 'INTERNAL_SERVER_ERROR',
       message: 'Unexpected error',

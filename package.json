@@ -25,6 +25,7 @@
     "api:prisma:migrate": "pnpm -C apps/api prisma:migrate"
   },
   "dependencies": {
-    "@prisma/client": "6.19.3"
+    "@prisma/client": "6.19.3",
+    "cors": "^2.8.6"
   }
 }

@@ -55,7 +55,7 @@ pnpm lint
 
 ## API Endpoints
 
-Base URL: `http://localhost:3000/api/v1`
+Base URL: `http://localhost:4000/api/v1`
 
 | Path                                                         | Method             | Module       | Notes                  |
 | ------------------------------------------------------------ | ------------------ | ------------ | ---------------------- |

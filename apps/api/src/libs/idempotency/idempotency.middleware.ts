@@ -8,6 +8,11 @@ import type { FastifyRequest, FastifyReply } from 'fastify';
 @Injectable()
 export class IdempotencyMiddleware implements NestMiddleware {
   use(request: FastifyRequest, _response: FastifyReply, next: () => void) {
+    if (request.method.toUpperCase() !== 'POST') {
+      next();
+      return;
+    }
+
     const rawKey = request.headers['idempotency-key'];
     const key = Array.isArray(rawKey) ? rawKey[0] : rawKey;
 

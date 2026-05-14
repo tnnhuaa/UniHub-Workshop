@@ -1,6 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { bearer, jwt } from 'better-auth/plugins';
+import { bearer } from 'better-auth/plugins';
 import type { Env } from '../../config/env.schema.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
 
@@ -32,12 +32,41 @@ const parseDurationToSeconds = (value: string): number => {
 export const createBetterAuthInstance = (prisma: PrismaService, env: Env) => {
   const secureCookies = env.NODE_ENV === 'production';
   const redirectUri = env.GOOGLE_OAUTH_REDIRECT_URI;
+  const authOrigin = new URL(env.BETTER_AUTH_URL).origin;
+  const corsOrigins = String(env.CORS_ORIGIN)
+    .split(',')
+    .map((origin: string) => origin.trim())
+    .filter((origin: string) => origin.length > 0);
+
+  const trustedOrigins = Array.from(
+    new Set<string>([
+      ...corsOrigins,
+      authOrigin,
+      `http://127.0.0.1:${env.PORT}`,
+      `http://localhost:${env.PORT}`,
+      `http://0.0.0.0:${env.PORT}`,
+    ]),
+  );
 
   return betterAuth({
     basePath: BASE_PATH,
     baseURL: env.BETTER_AUTH_URL,
+    trustedOrigins,
     secret: env.BETTER_AUTH_SECRET,
     database: prismaAdapter(prisma, { provider: 'postgresql' }),
+    user: {
+      modelName: 'BetterAuthUser',
+    },
+    session: {
+      modelName: 'BetterAuthSession',
+      expiresIn: parseDurationToSeconds(env.BETTER_AUTH_SESSION_TTL),
+    },
+    account: {
+      modelName: 'BetterAuthAccount',
+    },
+    verification: {
+      modelName: 'BetterAuthVerification',
+    },
     emailAndPassword: { enabled: true },
     socialProviders: {
       google: {
@@ -46,19 +75,7 @@ export const createBetterAuthInstance = (prisma: PrismaService, env: Env) => {
         ...(redirectUri ? { redirectURI: redirectUri } : {}),
       },
     },
-    session: {
-      expiresIn: parseDurationToSeconds(env.BETTER_AUTH_SESSION_TTL),
-    },
-    plugins: [
-      bearer(),
-      jwt({
-        jwt: {
-          issuer: env.BETTER_AUTH_JWT_ISSUER,
-          audience: env.BETTER_AUTH_JWT_AUDIENCE,
-          expirationTime: env.BETTER_AUTH_JWT_TTL,
-        },
-      }),
-    ],
+    plugins: [bearer()],
     advanced: {
       defaultCookieAttributes: {
         sameSite: 'strict',

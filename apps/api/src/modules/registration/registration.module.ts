@@ -23,7 +23,7 @@ import { RegistrationCleanupService } from './registration.cleanup.js';
 })
 export class RegistrationModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(IdempotencyMiddleware).forRoutes({
+    consumer.apply(IdempotencyMiddleware).forRoutes(RegistrationController, {
       path: 'registrations',
       method: RequestMethod.POST,
     });
