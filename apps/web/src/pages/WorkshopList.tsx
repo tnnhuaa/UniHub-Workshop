@@ -94,6 +94,20 @@ const WorkshopList = () => {
     { value: 'almost-full', label: 'Almost Full' },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="workshop-list-page">
+        <WorkshopHeader
+          activeTab="workshops"
+          profileImage={imgStudentProfile}
+          profileLink="/profile"
+        />
+        <main className="workshop-layout">
+          <LoadingSpinner label="Loading workshops..." />
+        </main>
+      </div>
+    );
+  }
   const sortOptions: Array<{ value: WorkshopSortFilter; label: string }> = [
     { value: 'event-date', label: 'Event Date' },
     { value: 'newest', label: 'Newest' },

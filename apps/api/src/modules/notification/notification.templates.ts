@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import type { NotificationType } from '@prisma/client';
-import type { NotificationRenderable } from './notification.types.js';
+import type {
+  NotificationRenderable,
+  NotificationType,
+} from './notification.types.js';
 
 type WorkshopRegistrationTemplateInput = {
   registrationId: string;

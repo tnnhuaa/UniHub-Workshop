@@ -4,8 +4,8 @@ import { DocumentController } from './document.controller.js';
 import { DocumentService } from './document.service.js';
 import { LLM_CLIENT, OBJECT_STORAGE } from './document.adapters.js';
 import {
-  MockLlmClientProvider,
-  MockObjectStorageProvider,
+  GeminiLlmClientProvider,
+  LocalObjectStorageProvider,
 } from './document.providers.js';
 
 @Module({
@@ -15,11 +15,11 @@ import {
     DocumentService,
     {
       provide: OBJECT_STORAGE,
-      useClass: MockObjectStorageProvider,
+      useClass: LocalObjectStorageProvider,
     },
     {
       provide: LLM_CLIENT,
-      useClass: MockLlmClientProvider,
+      useClass: GeminiLlmClientProvider,
     },
   ],
   exports: [DocumentService],

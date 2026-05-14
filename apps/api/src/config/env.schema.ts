@@ -11,6 +11,7 @@ export const envSchema = z.object({
   DATABASE_URL: z.url(),
   DIRECT_URL: z.url(),
   REDIS_URL: z.string().min(1),
+  RABBITMQ_URL: z.string().url().default('amqp://localhost:5672'),
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.url(),
   BETTER_AUTH_JWT_ISSUER: z.string().default('unihub-api'),
@@ -32,6 +33,10 @@ export const envSchema = z.object({
   SMTP_PASS: z.string().min(1).optional(),
   SMTP_FROM_NAME: z.string().min(1).optional(),
   SMTP_FROM_EMAIL: z.email().optional(),
+  GEMINI_API_KEY: z.string().min(1),
+  CSV_DROP_LOCATION: z.string().default('/tmp/csv-drop'),
+  CSV_SYNC_TIMEZONE: z.string().default('UTC'),
+  DOCUMENT_STORAGE_PATH: z.string().default('/tmp/unihub-documents'),
 });
 
 export type Env = z.infer<typeof envSchema>;

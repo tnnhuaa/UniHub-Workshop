@@ -6,7 +6,9 @@ import {
   Clock,
   DollarSign,
   MapPin,
+  MoreHorizontal,
   QrCode,
+  XCircle,
 } from 'lucide-react';
 import WorkshopHeader from '../components/WorkshopHeader.tsx';
 import SessionGate from '../components/SessionGate.tsx';
@@ -297,7 +299,7 @@ const WorkshopSchedule = () => {
                             {registration.workshopTitle}
                           </h3>
                           <p>
-                            {registration.speaker} • {registration.location}
+                            {registration.speaker} � {registration.location}
                           </p>
                         </div>
                         {isPending ? (
@@ -358,6 +360,14 @@ const WorkshopSchedule = () => {
 
             <aside className="schedule-panel" aria-label="Registration details">
               <div className="schedule-panel-header">
+                <div className="schedule-panel-actions">
+                  <button type="button" className="schedule-icon-button">
+                    <MoreHorizontal
+                      className="icon icon-sm"
+                      aria-hidden="true"
+                    />
+                  </button>
+                </div>
                 <span className="schedule-panel-code">
                   {selectedRegistration?.registrationCode ?? 'REG-000-X'}
                 </span>
@@ -413,6 +423,16 @@ const WorkshopSchedule = () => {
                     </strong>
                   </div>
                 </div>
+
+                <button
+                  type="button"
+                  className="schedule-cancel"
+                  disabled
+                  title="Cancellation is not available in the current backend contract"
+                >
+                  <XCircle className="icon icon-sm" aria-hidden="true" />
+                  Cancel Registration
+                </button>
               </div>
             </aside>
           </div>

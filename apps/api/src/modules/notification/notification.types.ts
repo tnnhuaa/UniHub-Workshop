@@ -1,8 +1,6 @@
-import type {
-  NotificationChannel,
-  NotificationDelivery,
-  NotificationType,
-} from '@prisma/client';
+import type { NotificationChannel, NotificationDelivery } from '@prisma/client';
+
+export type NotificationType = 'custom' | 'workshop_registration_confirmed';
 
 export type NotificationRenderable = {
   type: NotificationType;
@@ -36,7 +34,6 @@ export type NotificationProviderPayload = {
 
 export type NotificationProviderResult = {
   status: 'sent' | 'failed';
-  providerRef?: string;
   errorMessage?: string;
 };
 

@@ -1,16 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type {
-  Prisma,
-  Notification as NotificationModel,
-  NotificationChannel,
-  NotificationType,
-} from '@prisma/client';
+import type { NotificationChannel } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NOTIFICATION_PROVIDERS } from './notification.constants.js';
 import { NotificationTemplateRenderer } from './notification.templates.js';
 import type {
   NotificationProvider,
   NotificationProviderPayload,
+  NotificationType,
   NotificationWorkflowEvent,
 } from './notification.types.js';
 
@@ -25,56 +21,53 @@ export class NotificationOrchestrator {
 
   async dispatchWorkshopRegistrationConfirmed(
     event: NotificationWorkflowEvent,
-  ) {
+  ): Promise<null | {
+    deliveries: Array<{
+      id: string;
+      channel: NotificationChannel;
+      status: string;
+    }>;
+  }> {
     if (event.type !== 'workshop_registration_confirmed') {
       return null;
     }
 
-    try {
-      const registration = await this.prisma.registration.findUnique({
-        where: { id: event.registrationId },
-        include: {
-          student: {
-            include: {
-              user: true,
-            },
+    const registration = await this.prisma.registration.findUnique({
+      where: { id: event.registrationId },
+      include: {
+        student: {
+          include: {
+            user: true,
           },
-          workshop: true,
         },
-      });
+        workshop: true,
+      },
+    });
 
-      if (
-        !registration?.student.betterAuthUserId ||
-        !registration.student.user
-      ) {
-        return null;
-      }
-
-      const renderable = this.renderer.renderWorkshopRegistrationConfirmed({
-        registrationId: registration.id,
-        workshopId: registration.workshopId,
-        workshopTitle: registration.workshop.title,
-        startTime: registration.workshop.startTime.toISOString(),
-        endTime: registration.workshop.endTime.toISOString(),
-        room: registration.workshop.room ?? null,
-        qrCode: registration.qrCode ?? null,
-      });
-
-      return this.deliverNotification({
-        userId: registration.student.betterAuthUserId,
-        recipientEmail:
-          registration.student.user.email ?? registration.student.email ?? null,
-        recipientName:
-          registration.student.user.name ??
-          registration.student.fullName ??
-          null,
-        eventKey: `registration-confirmed:${registration.id}`,
-        channels: ['in_app', 'email'],
-        renderable,
-      });
-    } catch {
+    if (!registration?.student.betterAuthUserId || !registration.student.user) {
       return null;
     }
+
+    const renderable = this.renderer.renderWorkshopRegistrationConfirmed({
+      registrationId: registration.id,
+      workshopId: registration.workshopId,
+      workshopTitle: registration.workshop.title,
+      startTime: registration.workshop.startTime.toISOString(),
+      endTime: registration.workshop.endTime.toISOString(),
+      room: registration.workshop.room ?? null,
+      qrCode: registration.qrCode ?? null,
+    });
+
+    return this.deliverNotification({
+      userId: registration.student.betterAuthUserId,
+      recipientEmail:
+        registration.student.user.email ?? registration.student.email ?? null,
+      recipientName:
+        registration.student.user.name ?? registration.student.fullName ?? null,
+      channels: ['in_app', 'email'],
+      renderable,
+      dedupePrefix: `registration-confirmed:${registration.id}`,
+    });
   }
 
   async sendManual(input: {
@@ -84,14 +77,11 @@ export class NotificationOrchestrator {
     body: string;
     data?: Record<string, unknown>;
     type?: NotificationType;
+    dedupeKey?: string;
   }) {
     const user = await this.prisma.betterAuthUser.findUniqueOrThrow({
       where: { id: input.userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-      },
+      select: { id: true, email: true, name: true },
     });
 
     const renderable = this.renderer.renderManual({
@@ -107,6 +97,7 @@ export class NotificationOrchestrator {
       recipientName: user.name ?? null,
       channels: [input.channel],
       renderable,
+      dedupePrefix: input.dedupeKey,
     });
   }
 
@@ -121,81 +112,64 @@ export class NotificationOrchestrator {
       data?: Record<string, unknown>;
     };
     channels: NotificationChannel[];
-    eventKey?: string;
+    dedupePrefix?: string;
   }) {
-    const notification = await this.findOrCreateNotification({
-      userId: input.userId,
-      type: input.renderable.type,
-      title: input.renderable.title,
-      body: input.renderable.body,
-      data: input.renderable.data,
-      eventKey: input.eventKey,
-    });
+    const deliveries: Array<{
+      id: string;
+      channel: NotificationChannel;
+      status: string;
+    }> = [];
 
-    const deliveries: Awaited<ReturnType<typeof this.sendToChannel>>[] = [];
     for (const channel of input.channels) {
+      const dedupeKey = input.dedupePrefix
+        ? `${input.dedupePrefix}:${channel}`
+        : `notification:${input.userId}:${channel}:${Date.now()}`;
+
       deliveries.push(
-        await this.sendToChannel(notification, channel, {
-          email: input.recipientEmail,
-          name: input.recipientName,
-        }),
+        await this.sendToChannel(
+          input.userId,
+          channel,
+          dedupeKey,
+          input.renderable,
+          {
+            email: input.recipientEmail,
+            name: input.recipientName,
+          },
+        ),
       );
     }
 
-    return {
-      ...notification,
-      deliveries,
-    };
-  }
-
-  private async findOrCreateNotification(input: {
-    userId: string;
-    type: NotificationType;
-    title: string;
-    body: string;
-    data?: Record<string, unknown>;
-    eventKey?: string;
-  }) {
-    if (input.eventKey) {
-      const existing = await this.prisma.notification.findUnique({
-        where: { eventKey: input.eventKey },
-      });
-
-      if (existing) {
-        return existing;
-      }
-    }
-
-    return this.prisma.notification.create({
-      data: {
-        userId: input.userId,
-        type: input.type,
-        title: input.title,
-        body: input.body,
-        data: input.data as Prisma.InputJsonValue | undefined,
-        eventKey: input.eventKey,
-      },
-    });
+    return { deliveries };
   }
 
   private async sendToChannel(
-    notification: NotificationModel,
+    userId: string,
     channel: NotificationChannel,
+    dedupeKey: string,
+    renderable: {
+      type: NotificationType;
+      title: string;
+      body: string;
+      data?: Record<string, unknown>;
+    },
     recipient: { email: string | null; name: string | null },
-  ) {
-    const dedupeKey = `notification:${notification.id}:${channel}`;
+  ): Promise<{ id: string; channel: NotificationChannel; status: string }> {
     const existing = await this.prisma.notificationDelivery.findUnique({
       where: { dedupeKey },
     });
-
     if (existing) {
-      return existing;
+      return {
+        id: existing.id,
+        channel: existing.channel,
+        status: existing.status,
+      };
     }
 
     const delivery = await this.prisma.notificationDelivery.create({
       data: {
-        notificationId: notification.id,
+        userId,
         channel,
+        templateCode: renderable.type,
         status: 'pending',
         dedupeKey,
       },
@@ -203,28 +177,30 @@ export class NotificationOrchestrator {
 
     const provider = this.providers.find((entry) => entry.channel === channel);
     if (!provider) {
-      return this.prisma.notificationDelivery.update({
+      const failed = await this.prisma.notificationDelivery.update({
         where: { id: delivery.id },
-        data: {
-          status: 'failed',
-          errorMessage: 'Notification channel is not supported yet',
-        },
+        data: { status: 'failed' },
       });
+      return { id: failed.id, channel: failed.channel, status: failed.status };
     }
 
     const payload: NotificationProviderPayload = {
       channel,
-      delivery,
+      delivery: {
+        id: delivery.id,
+        channel: delivery.channel,
+        createdAt: delivery.createdAt,
+      },
       notification: {
-        id: notification.id,
-        type: notification.type,
-        title: notification.title,
-        body: notification.body,
-        data: (notification.data as Record<string, unknown> | null) ?? null,
-        createdAt: notification.createdAt,
+        id: delivery.id,
+        type: renderable.type,
+        title: renderable.title,
+        body: renderable.body,
+        data: renderable.data ?? null,
+        createdAt: delivery.createdAt,
       },
       recipient: {
-        userId: notification.userId,
+        userId,
         email: recipient.email,
         name: recipient.name,
       },
@@ -232,26 +208,24 @@ export class NotificationOrchestrator {
 
     try {
       const result = await provider.send(payload);
-      return this.prisma.notificationDelivery.update({
+      const updated = await this.prisma.notificationDelivery.update({
         where: { id: delivery.id },
         data: {
           status: result.status,
-          providerRef: result.providerRef,
-          errorMessage: result.errorMessage,
           sentAt: result.status === 'sent' ? new Date() : null,
         },
       });
-    } catch (error) {
-      return this.prisma.notificationDelivery.update({
+      return {
+        id: updated.id,
+        channel: updated.channel,
+        status: updated.status,
+      };
+    } catch {
+      const failed = await this.prisma.notificationDelivery.update({
         where: { id: delivery.id },
-        data: {
-          status: 'failed',
-          errorMessage:
-            error instanceof Error
-              ? error.message
-              : 'Notification delivery failed',
-        },
+        data: { status: 'failed' },
       });
+      return { id: failed.id, channel: failed.channel, status: failed.status };
     }
   }
 }

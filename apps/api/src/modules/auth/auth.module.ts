@@ -28,6 +28,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
           DATABASE_URL: config.getOrThrow('DATABASE_URL'),
           DIRECT_URL: config.getOrThrow('DIRECT_URL'),
           REDIS_URL: config.getOrThrow('REDIS_URL'),
+          RABBITMQ_URL: config.get('RABBITMQ_URL') || 'amqp://localhost:5672',
           BETTER_AUTH_SECRET: config.getOrThrow('BETTER_AUTH_SECRET'),
           BETTER_AUTH_URL: config.getOrThrow('BETTER_AUTH_URL'),
           BETTER_AUTH_JWT_ISSUER: config.getOrThrow('BETTER_AUTH_JWT_ISSUER'),
@@ -48,6 +49,11 @@ import { PrismaService } from '../prisma/prisma.service.js';
           SMTP_PASS: config.getOrThrow('SMTP_PASS'),
           SMTP_FROM_NAME: config.getOrThrow('SMTP_FROM_NAME'),
           SMTP_FROM_EMAIL: config.getOrThrow('SMTP_FROM_EMAIL'),
+          GEMINI_API_KEY: config.get('GEMINI_API_KEY') || '',
+          CSV_DROP_LOCATION: config.get('CSV_DROP_LOCATION') || '/tmp/csv-drop',
+          CSV_SYNC_TIMEZONE: config.get('CSV_SYNC_TIMEZONE') || 'UTC',
+          DOCUMENT_STORAGE_PATH:
+            config.get('DOCUMENT_STORAGE_PATH') || '/tmp/unihub-documents',
         };
 
         return createBetterAuthInstance(prisma, env);
