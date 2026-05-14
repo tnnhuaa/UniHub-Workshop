@@ -1,25 +1,27 @@
-import { useEffect, useState } from "react";
-import { Calendar, Check, Clock, MapPin, Sparkles } from "lucide-react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import WorkshopHeader from "../components/WorkshopHeader.tsx";
-import { mapWorkshopToDetailViewModel } from "../lib/unihubAdapters.ts";
-import { fetchWorkshop } from "../lib/unihubApi.ts";
-import type { WorkshopDetailViewModel } from "../lib/unihubAdapters.ts";
+import { useEffect, useState } from 'react';
+import { Calendar, Check, Clock, MapPin, Sparkles } from 'lucide-react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import WorkshopHeader from '../components/WorkshopHeader.tsx';
+import { mapWorkshopToDetailViewModel } from '../lib/unihubAdapters.ts';
+import { fetchWorkshop } from '../lib/unihubApi.ts';
+import type { WorkshopDetailViewModel } from '../lib/unihubAdapters.ts';
 
 const imgStudentProfile =
-  "https://www.figma.com/api/mcp/asset/22492359-f12d-464a-b95a-fb292c891cc8";
+  'https://www.figma.com/api/mcp/asset/22492359-f12d-464a-b95a-fb292c891cc8';
 const imgSpeakerProfile =
-  "https://www.figma.com/api/mcp/asset/d068b264-bedc-481e-99ad-9b6f92676680";
+  'https://www.figma.com/api/mcp/asset/d068b264-bedc-481e-99ad-9b6f92676680';
 const imgMapLocation =
-  "https://www.figma.com/api/mcp/asset/2bdc588e-4301-40b3-8b99-53cbc5b02add";
+  'https://www.figma.com/api/mcp/asset/2bdc588e-4301-40b3-8b99-53cbc5b02add';
 
-const defaultWorkshopId = "1f5b7b88-2f2a-4ff0-9fb8-0f8b51a58f01";
+const defaultWorkshopId = '1f5b7b88-2f2a-4ff0-9fb8-0f8b51a58f01';
 
 const WorkshopDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const workshopId = id ?? defaultWorkshopId;
-  const [workshop, setWorkshop] = useState<WorkshopDetailViewModel | null>(null);
+  const [workshop, setWorkshop] = useState<WorkshopDetailViewModel | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,7 +68,7 @@ const WorkshopDetail = () => {
           profileLink="/profile"
         />
         <main className="workshop-detail-main">
-          <p className="helper-text">{error ?? "Workshop not found."}</p>
+          <p className="helper-text">{error ?? 'Workshop not found.'}</p>
         </main>
       </div>
     );
@@ -89,11 +91,11 @@ const WorkshopDetail = () => {
             <div className="detail-hero">
               <div className="detail-hero-tags">
                 <span className="detail-pill">
-                  {workshop.status === "cancelled"
-                    ? "Cancelled"
+                  {workshop.status === 'cancelled'
+                    ? 'Cancelled'
                     : workshop.registeredCount < workshop.capacity
-                      ? "Open"
-                      : "Full"}
+                      ? 'Open'
+                      : 'Full'}
                 </span>
                 <span className="detail-tag">{workshop.category}</span>
               </div>
@@ -113,7 +115,10 @@ const WorkshopDetail = () => {
 
             <section className="detail-speaker">
               <div className="speaker-avatar">
-                <img src={workshop.speakerAvatar ?? imgSpeakerProfile} alt={workshop.speaker} />
+                <img
+                  src={workshop.speakerAvatar ?? imgSpeakerProfile}
+                  alt={workshop.speaker}
+                />
               </div>
               <div>
                 <h3>{workshop.speaker}</h3>
@@ -137,9 +142,13 @@ const WorkshopDetail = () => {
               <div className="action-top">
                 <div>
                   <h3>
-                    {workshop.price === 0 ? "Free" : `$${workshop.price.toFixed(2)}`}
+                    {workshop.price === 0
+                      ? 'Free'
+                      : `$${workshop.price.toFixed(2)}`}
                   </h3>
-                  <span>{workshop.price === 0 ? "For Students" : "Paid Workshop"}</span>
+                  <span>
+                    {workshop.price === 0 ? 'For Students' : 'Paid Workshop'}
+                  </span>
                 </div>
                 <div className="action-seats">
                   <span>
@@ -160,22 +169,22 @@ const WorkshopDetail = () => {
               <div className="action-meta">
                 <div>
                   <Calendar className="icon icon-md" aria-hidden="true" />
-                  {new Date(workshop.startTime).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "2-digit",
-                    year: "numeric",
+                  {new Date(workshop.startTime).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: '2-digit',
+                    year: 'numeric',
                   })}
                 </div>
                 <div>
                   <Clock className="icon icon-md" aria-hidden="true" />
-                  {new Date(workshop.startTime).toLocaleTimeString("en-US", {
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}{" "}
-                  -{" "}
-                  {new Date(workshop.endTime).toLocaleTimeString("en-US", {
-                    hour: "numeric",
-                    minute: "2-digit",
+                  {new Date(workshop.startTime).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })}{' '}
+                  -{' '}
+                  {new Date(workshop.endTime).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
                   })}
                 </div>
                 <div>

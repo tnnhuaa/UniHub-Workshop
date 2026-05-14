@@ -2,6 +2,7 @@
   "private": true,
   "devDependencies": {
     "@babel/eslint-parser": "^7.28.6",
+    "@typescript-eslint/parser": "^8.59.2",
     "@types/jest": "^30.0.0",
     "eslint": "^10.3.0",
     "eslint-config-prettier": "^10.1.8",
@@ -12,11 +13,12 @@
   },
   "scripts": {
     "prepare": "husky",
-    "format": "prettier --write .",
-    "build": "pnpm -r build",
+    "format": "pnpm -r --parallel format",
+    "build": "pnpm -r --parallel build",
+    "dev": "pnpm -r --parallel dev",
     "db:init": "node data/init-db.js",
     "db:seed": "node data/seed.js",
-    "lint": "pnpm -C apps/api lint",
+    "lint": "pnpm -r --parallel lint",
     "lint:fix": "pnpm -C apps/api lint",
     "api:build": "pnpm -C apps/api build",
     "api:dev": "pnpm -C apps/api start:dev",

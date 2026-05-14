@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
   BadgeCheck,
@@ -9,25 +9,29 @@ import {
   MoreHorizontal,
   QrCode,
   XCircle,
-} from "lucide-react";
-import WorkshopHeader from "../components/WorkshopHeader.tsx";
+} from 'lucide-react';
+import WorkshopHeader from '../components/WorkshopHeader.tsx';
 import {
   getQrImageSource,
   mapRegistrationToScheduleViewModel,
-} from "../lib/unihubAdapters.ts";
+} from '../lib/unihubAdapters.ts';
 import {
   fetchMyRegistrations,
   fetchRegistrationQr,
   fetchWorkshop,
-} from "../lib/unihubApi.ts";
-import type { ScheduleRegistrationViewModel } from "../lib/unihubAdapters.ts";
+} from '../lib/unihubApi.ts';
+import type { ScheduleRegistrationViewModel } from '../lib/unihubAdapters.ts';
 
 const imgStudentProfile =
-  "https://www.figma.com/api/mcp/asset/646bd94c-8822-432f-be1f-38d08a09df59";
+  'https://www.figma.com/api/mcp/asset/646bd94c-8822-432f-be1f-38d08a09df59';
 
 const WorkshopSchedule = () => {
-  const [registrations, setRegistrations] = useState<ScheduleRegistrationViewModel[]>([]);
-  const [selectedRegistrationId, setSelectedRegistrationId] = useState<string | null>(null);
+  const [registrations, setRegistrations] = useState<
+    ScheduleRegistrationViewModel[]
+  >([]);
+  const [selectedRegistrationId, setSelectedRegistrationId] = useState<
+    string | null
+  >(null);
   const [selectedQrCode, setSelectedQrCode] = useState(getQrImageSource(null));
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +40,10 @@ const WorkshopSchedule = () => {
     setIsLoading(true);
     setError(null);
 
-    const registrationResult = await fetchMyRegistrations({ page: 1, pageSize: 20 });
+    const registrationResult = await fetchMyRegistrations({
+      page: 1,
+      pageSize: 20,
+    });
 
     if (!registrationResult.ok) {
       setIsLoading(false);
@@ -53,7 +60,9 @@ const WorkshopSchedule = () => {
     }
 
     const workshopResults = await Promise.all(
-      registrationResult.data.map((registration) => fetchWorkshop(registration.workshopId)),
+      registrationResult.data.map((registration) =>
+        fetchWorkshop(registration.workshopId),
+      ),
     );
 
     const firstFailure = workshopResults.find((result) => !result.ok);
@@ -63,15 +72,23 @@ const WorkshopSchedule = () => {
       return;
     }
 
-    const hydratedRegistrations = registrationResult.data.map((registration, index) =>
-      mapRegistrationToScheduleViewModel(
-        registration,
-        (workshopResults[index] as Extract<(typeof workshopResults)[number], { ok: true }>).data,
-      ),
+    const hydratedRegistrations = registrationResult.data.map(
+      (registration, index) =>
+        mapRegistrationToScheduleViewModel(
+          registration,
+          (
+            workshopResults[index] as Extract<
+              (typeof workshopResults)[number],
+              { ok: true }
+            >
+          ).data,
+        ),
     );
 
     setRegistrations(hydratedRegistrations);
-    setSelectedRegistrationId((current) => current ?? hydratedRegistrations[0]?.id ?? null);
+    setSelectedRegistrationId(
+      (current) => current ?? hydratedRegistrations[0]?.id ?? null,
+    );
     setIsLoading(false);
   };
 
@@ -81,7 +98,9 @@ const WorkshopSchedule = () => {
 
   const selectedRegistration = useMemo(
     () =>
-      registrations.find((registration) => registration.id === selectedRegistrationId) ??
+      registrations.find(
+        (registration) => registration.id === selectedRegistrationId,
+      ) ??
       registrations[0] ??
       null,
     [registrations, selectedRegistrationId],
@@ -94,7 +113,7 @@ const WorkshopSchedule = () => {
         return;
       }
 
-      if (selectedRegistration.status !== "confirmed") {
+      if (selectedRegistration.status !== 'confirmed') {
         setSelectedQrCode(getQrImageSource(null));
         return;
       }
@@ -113,38 +132,41 @@ const WorkshopSchedule = () => {
   }, [selectedRegistration]);
 
   const getCardClassName = (registration: ScheduleRegistrationViewModel) =>
-    `schedule-card${selectedRegistrationId === registration.id ? " is-selected" : ""} ${
-      registration.status === "confirmed"
-        ? "registered"
-        : registration.status === "pending"
-          ? "pending"
-          : "pending"
+    `schedule-card${selectedRegistrationId === registration.id ? ' is-selected' : ''} ${
+      registration.status === 'confirmed'
+        ? 'registered'
+        : registration.status === 'pending'
+          ? 'pending'
+          : 'pending'
     }`;
 
   const getStatusLabel = (registration: ScheduleRegistrationViewModel) => {
-    if (registration.status === "confirmed" && registration.paymentStatus === "paid") {
-      return "Confirmed";
+    if (
+      registration.status === 'confirmed' &&
+      registration.paymentStatus === 'paid'
+    ) {
+      return 'Confirmed';
     }
 
-    if (registration.status === "confirmed") {
-      return "Registered";
+    if (registration.status === 'confirmed') {
+      return 'Registered';
     }
 
-    if (registration.status === "pending") {
-      return "Pending Payment";
+    if (registration.status === 'pending') {
+      return 'Pending Payment';
     }
 
-    if (registration.status === "cancelled") {
-      return "Cancelled";
+    if (registration.status === 'cancelled') {
+      return 'Cancelled';
     }
 
-    return "Expired";
+    return 'Expired';
   };
 
   const selectedQrCaption =
-    selectedRegistration?.status === "confirmed"
-      ? "Scan at entrance"
-      : "QR code becomes available after confirmation";
+    selectedRegistration?.status === 'confirmed'
+      ? 'Scan at entrance'
+      : 'QR code becomes available after confirmation';
 
   return (
     <div className="schedule-page">
@@ -172,12 +194,14 @@ const WorkshopSchedule = () => {
           </div>
         </div>
         {error ? <p className="helper-text">{error}</p> : null}
-        {isLoading ? <p className="helper-text">Loading registrations...</p> : null}
+        {isLoading ? (
+          <p className="helper-text">Loading registrations...</p>
+        ) : null}
 
         <div className="schedule-grid">
           <section className="schedule-list" aria-label="Registrations">
             {registrations.map((registration) => {
-              const isPending = registration.status === "pending";
+              const isPending = registration.status === 'pending';
 
               return (
                 <article
@@ -188,35 +212,46 @@ const WorkshopSchedule = () => {
                   aria-pressed={selectedRegistrationId === registration.id}
                   onClick={() => setSelectedRegistrationId(registration.id)}
                   onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
+                    if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault();
                       setSelectedRegistrationId(registration.id);
                     }
                   }}
                 >
-                  <div className={`schedule-card-media${isPending ? " muted" : ""}`}>
-                    <img src={registration.coverImage} alt={`${registration.workshopTitle} workshop`} />
+                  <div
+                    className={`schedule-card-media${isPending ? ' muted' : ''}`}
+                  >
+                    <img
+                      src={registration.coverImage}
+                      alt={`${registration.workshopTitle} workshop`}
+                    />
                   </div>
                   <div className="schedule-card-body">
                     <div className="schedule-card-head">
                       <div>
                         <span
                           className={`schedule-tag ${
-                            registration.status === "confirmed"
-                              ? "registered"
-                              : registration.status === "pending"
-                                ? "pending"
-                                : "registered"
+                            registration.status === 'confirmed'
+                              ? 'registered'
+                              : registration.status === 'pending'
+                                ? 'pending'
+                                : 'registered'
                           }`}
                         >
-                          {registration.status === "pending" ? (
-                            <AlertCircle className="icon icon-xs" aria-hidden="true" />
+                          {registration.status === 'pending' ? (
+                            <AlertCircle
+                              className="icon icon-xs"
+                              aria-hidden="true"
+                            />
                           ) : (
-                            <BadgeCheck className="icon icon-xs" aria-hidden="true" />
+                            <BadgeCheck
+                              className="icon icon-xs"
+                              aria-hidden="true"
+                            />
                           )}
                           {getStatusLabel(registration)}
                         </span>
-                        <h3 className={isPending ? "muted" : undefined}>
+                        <h3 className={isPending ? 'muted' : undefined}>
                           {registration.workshopTitle}
                         </h3>
                         <p>
@@ -224,7 +259,11 @@ const WorkshopSchedule = () => {
                         </p>
                       </div>
                       {isPending ? (
-                        <button type="button" className="schedule-pay-now" disabled>
+                        <button
+                          type="button"
+                          className="schedule-pay-now"
+                          disabled
+                        >
                           Awaiting Payment
                         </button>
                       ) : (
@@ -248,11 +287,16 @@ const WorkshopSchedule = () => {
                       </div>
                       <div>
                         {isPending ? (
-                          <DollarSign className="icon icon-xs" aria-hidden="true" />
+                          <DollarSign
+                            className="icon icon-xs"
+                            aria-hidden="true"
+                          />
                         ) : (
                           <Clock className="icon icon-xs" aria-hidden="true" />
                         )}
-                        {isPending ? registration.priceLabel : registration.timeLabel}
+                        {isPending
+                          ? registration.priceLabel
+                          : registration.timeLabel}
                       </div>
                     </div>
                   </div>
@@ -269,9 +313,12 @@ const WorkshopSchedule = () => {
                 </button>
               </div>
               <span className="schedule-panel-code">
-                {selectedRegistration?.registrationCode ?? "REG-000-X"}
+                {selectedRegistration?.registrationCode ?? 'REG-000-X'}
               </span>
-              <h2>{selectedRegistration?.workshopTitle ?? "No registration selected"}</h2>
+              <h2>
+                {selectedRegistration?.workshopTitle ??
+                  'No registration selected'}
+              </h2>
             </div>
 
             <div className="schedule-panel-body">
@@ -287,33 +334,37 @@ const WorkshopSchedule = () => {
                   <span>DATE</span>
                   <div>
                     <Calendar className="icon icon-xs" aria-hidden="true" />
-                    {selectedRegistration?.dateLabel ?? "N/A"}
+                    {selectedRegistration?.dateLabel ?? 'N/A'}
                   </div>
                 </div>
                 <div className="schedule-detail-card">
                   <span>TIME</span>
                   <div>
                     <Clock className="icon icon-xs" aria-hidden="true" />
-                    {selectedRegistration?.timeLabel ?? "N/A"}
+                    {selectedRegistration?.timeLabel ?? 'N/A'}
                   </div>
                 </div>
                 <div className="schedule-detail-card full">
                   <span>LOCATION</span>
                   <div>
                     <MapPin className="icon icon-xs" aria-hidden="true" />
-                    {selectedRegistration?.location ?? "N/A"}
+                    {selectedRegistration?.location ?? 'N/A'}
                   </div>
                 </div>
               </div>
 
               <div className="schedule-instructor">
                 <img
-                  src={selectedRegistration?.instructorImage ?? imgStudentProfile}
-                  alt={selectedRegistration?.instructorName ?? "Instructor"}
+                  src={
+                    selectedRegistration?.instructorImage ?? imgStudentProfile
+                  }
+                  alt={selectedRegistration?.instructorName ?? 'Instructor'}
                 />
                 <div>
                   <span>INSTRUCTOR</span>
-                  <strong>{selectedRegistration?.instructorName ?? "N/A"}</strong>
+                  <strong>
+                    {selectedRegistration?.instructorName ?? 'N/A'}
+                  </strong>
                 </div>
               </div>
 

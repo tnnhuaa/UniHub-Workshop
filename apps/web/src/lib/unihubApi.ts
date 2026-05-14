@@ -1,8 +1,12 @@
-import { getJson, postJson, withIdempotencyKey } from "./apiClient.ts";
+import { getJson, postJson, withIdempotencyKey } from './apiClient.ts';
 
-export type WorkshopStatus = "draft" | "published" | "cancelled" | "completed";
-export type RegistrationStatus = "pending" | "confirmed" | "cancelled" | "expired";
-export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
+export type WorkshopStatus = 'draft' | 'published' | 'cancelled' | 'completed';
+export type RegistrationStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'cancelled'
+  | 'expired';
+export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 
 export type WorkshopApiDto = {
   id: string;
@@ -91,16 +95,18 @@ export type RegistrationListQuery = {
 };
 
 export const fetchWorkshops = (query: WorkshopListQuery) =>
-  getJson<WorkshopApiDto[]>("/workshops", { query });
+  getJson<WorkshopApiDto[]>('/workshops', { query });
 
-export const fetchWorkshop = (id: string) => getJson<WorkshopApiDto>(`/workshops/${id}`);
+export const fetchWorkshop = (id: string) =>
+  getJson<WorkshopApiDto>(`/workshops/${id}`);
 
-export const fetchCurrentStudent = () => getJson<StudentApiDto>("/students/me");
+export const fetchCurrentStudent = () => getJson<StudentApiDto>('/students/me');
 
-export const fetchStudent = (mssv: string) => getJson<StudentApiDto>(`/students/${mssv}`);
+export const fetchStudent = (mssv: string) =>
+  getJson<StudentApiDto>(`/students/${mssv}`);
 
 export const fetchMyRegistrations = (query: RegistrationListQuery) =>
-  getJson<RegistrationApiDto[]>("/registrations/me", { query });
+  getJson<RegistrationApiDto[]>('/registrations/me', { query });
 
 export const fetchRegistrationQr = (id: string) =>
   getJson<RegistrationQrDto>(`/registrations/${id}/qr`);
@@ -109,10 +115,10 @@ export const createRegistration = (
   body: { mssv: string; workshopId: string },
   idempotencyKey: string,
 ) =>
-  postJson<RegistrationCheckoutResponseDto, { mssv: string; workshopId: string }>(
-    "/registrations",
-    {
-      body,
-      headers: withIdempotencyKey(idempotencyKey),
-    },
-  );
+  postJson<
+    RegistrationCheckoutResponseDto,
+    { mssv: string; workshopId: string }
+  >('/registrations', {
+    body,
+    headers: withIdempotencyKey(idempotencyKey),
+  });

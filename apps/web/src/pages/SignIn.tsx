@@ -1,12 +1,12 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import AuthLayout from "../components/AuthLayout.tsx";
-import { signInWithEmail } from "../lib/authClient.ts";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import AuthLayout from '../components/AuthLayout.tsx';
+import { signInWithEmail } from '../lib/authClient.ts';
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +19,7 @@ const SignIn = () => {
     setSuccess(false);
 
     if (!email || !password) {
-      setError("Please enter your email and password.");
+      setError('Please enter your email and password.');
       return;
     }
 
@@ -33,7 +33,7 @@ const SignIn = () => {
     }
 
     setSuccess(true);
-    void navigate("/workshops");
+    void navigate('/workshops');
   };
 
   return (
@@ -106,7 +106,7 @@ const SignIn = () => {
             </span>
             <input
               id="signin-password"
-              type={showPassword ? "text" : "password"}
+              type={showPassword ? 'text' : 'password'}
               autoComplete="current-password"
               placeholder="********"
               value={password}
@@ -116,9 +116,9 @@ const SignIn = () => {
               type="button"
               className="input-action"
               onClick={() => setShowPassword((value) => !value)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
-              {showPassword ? "Hide" : "Show"}
+              {showPassword ? 'Hide' : 'Show'}
             </button>
           </div>
         </div>
@@ -131,14 +131,14 @@ const SignIn = () => {
             />
             Keep me logged in
           </label>
-          <span style={{ color: "transparent" }}>.</span>
+          <span style={{ color: 'transparent' }}>.</span>
         </div>
         <button
           className="primary-button"
           type="submit"
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Signing in..." : "Log In"}
+          {isSubmitting ? 'Signing in...' : 'Log In'}
         </button>
         <p className="helper-text">
           Signing in uses your <strong>BetterAuth</strong> session cookie.

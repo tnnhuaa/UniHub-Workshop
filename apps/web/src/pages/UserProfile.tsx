@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import {
   Camera,
   Check,
@@ -6,27 +6,27 @@ import {
   ChevronDown,
   LogOut,
   X,
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import WorkshopHeader from "../components/WorkshopHeader.tsx";
-import { signOut } from "../lib/authClient.ts";
-import { mapStudentToProfileViewModel } from "../lib/unihubAdapters.ts";
-import { fetchCurrentStudent } from "../lib/unihubApi.ts";
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import WorkshopHeader from '../components/WorkshopHeader.tsx';
+import { signOut } from '../lib/authClient.ts';
+import { mapStudentToProfileViewModel } from '../lib/unihubAdapters.ts';
+import { fetchCurrentStudent } from '../lib/unihubApi.ts';
 
 const imgStudentProfile =
-  "https://www.figma.com/api/mcp/asset/3e16b081-8990-428b-bada-53ad0e6d75e8";
+  'https://www.figma.com/api/mcp/asset/3e16b081-8990-428b-bada-53ad0e6d75e8';
 const imgProfilePicture =
-  "https://www.figma.com/api/mcp/asset/8b5490f6-451d-4c0e-b17e-9b43a0619761";
+  'https://www.figma.com/api/mcp/asset/8b5490f6-451d-4c0e-b17e-9b43a0619761';
 
 const UserProfile = () => {
   const navigate = useNavigate();
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [bio, setBio] = useState("");
-  const [mssv, setMssv] = useState("STU-84920");
-  const [major, setMajor] = useState("");
-  const [year, setYear] = useState("");
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [bio, setBio] = useState('');
+  const [mssv, setMssv] = useState('STU-84920');
+  const [major, setMajor] = useState('');
+  const [year, setYear] = useState('');
   const [avatar, setAvatar] = useState(imgProfilePicture);
   const [verified, setVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -99,15 +99,12 @@ const UserProfile = () => {
       return;
     }
 
-    void navigate("/sign-in");
+    void navigate('/sign-in');
   };
 
   return (
     <div className="profile-page">
-      <WorkshopHeader
-        profileImage={imgStudentProfile}
-        profileLink="/profile"
-      />
+      <WorkshopHeader profileImage={imgStudentProfile} profileLink="/profile" />
 
       <main className="profile-main">
         <h1>Personal Profile</h1>
@@ -148,11 +145,7 @@ const UserProfile = () => {
               <label className="profile-field">
                 <span>Email</span>
                 <div className="profile-input success">
-                  <input
-                    type="email"
-                    value={email}
-                    readOnly
-                  />
+                  <input type="email" value={email} readOnly />
                   <CheckCircle2 className="icon icon-sm" aria-hidden="true" />
                 </div>
               </label>
@@ -216,7 +209,7 @@ const UserProfile = () => {
             disabled={isSigningOut}
           >
             <LogOut className="icon icon-sm" aria-hidden="true" />
-            {isSigningOut ? "Signing out..." : "Log out"}
+            {isSigningOut ? 'Signing out...' : 'Log out'}
           </button>
           <button
             type="button"

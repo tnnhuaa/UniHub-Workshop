@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import {
   Calendar,
   CreditCard,
@@ -7,27 +7,30 @@ import {
   Timer,
   UserRound,
   X,
-} from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+} from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   mapStudentToProfileViewModel,
   mapWorkshopToDetailViewModel,
-} from "../lib/unihubAdapters.ts";
+} from '../lib/unihubAdapters.ts';
 import {
   createRegistration,
   fetchCurrentStudent,
   fetchWorkshop,
-} from "../lib/unihubApi.ts";
-import type { RegistrationCheckoutResponseDto } from "../lib/unihubApi.ts";
-import type { WorkshopDetailViewModel, UserProfileViewModel } from "../lib/unihubAdapters.ts";
+} from '../lib/unihubApi.ts';
+import type { RegistrationCheckoutResponseDto } from '../lib/unihubApi.ts';
+import type {
+  WorkshopDetailViewModel,
+  UserProfileViewModel,
+} from '../lib/unihubAdapters.ts';
 
-const defaultWorkshopId = "1f5b7b88-2f2a-4ff0-9fb8-0f8b51a58f01";
+const defaultWorkshopId = '1f5b7b88-2f2a-4ff0-9fb8-0f8b51a58f01';
 
 const splitFullName = (fullName: string) => {
   const parts = fullName.trim().split(/\s+/);
   return {
-    firstName: parts[0] ?? "",
-    lastName: parts.slice(1).join(" "),
+    firstName: parts[0] ?? '',
+    lastName: parts.slice(1).join(' '),
   };
 };
 
@@ -35,17 +38,22 @@ const WorkshopCheckout = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const workshopId = id ?? defaultWorkshopId;
-  const [workshop, setWorkshop] = useState<WorkshopDetailViewModel | null>(null);
+  const [workshop, setWorkshop] = useState<WorkshopDetailViewModel | null>(
+    null,
+  );
   const [student, setStudent] = useState<UserProfileViewModel | null>(null);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [cardholderName, setCardholderName] = useState("");
-  const [cardNumber] = useState("");
-  const [expiryDate] = useState("");
-  const [cvc] = useState("");
-  const [registrationResult, setRegistrationResult] = useState<RegistrationCheckoutResponseDto | null>(null);
-  const [submissionMessage, setSubmissionMessage] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [cardholderName, setCardholderName] = useState('');
+  const [cardNumber] = useState('');
+  const [expiryDate] = useState('');
+  const [cvc] = useState('');
+  const [registrationResult, setRegistrationResult] =
+    useState<RegistrationCheckoutResponseDto | null>(null);
+  const [submissionMessage, setSubmissionMessage] = useState<string | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -133,7 +141,7 @@ const WorkshopCheckout = () => {
     return (
       <div className="checkout-page">
         <main className="checkout-main">
-          <p className="helper-text">{error ?? "Workshop not found."}</p>
+          <p className="helper-text">{error ?? 'Workshop not found.'}</p>
         </main>
       </div>
     );
@@ -158,7 +166,9 @@ const WorkshopCheckout = () => {
         </div>
         <div className="checkout-topbar-right">
           <Lock className="icon icon-xs" aria-hidden="true" />
-          <span>{isPaidWorkshop ? "Secure Checkout" : "Instant Registration"}</span>
+          <span>
+            {isPaidWorkshop ? 'Secure Checkout' : 'Instant Registration'}
+          </span>
         </div>
       </header>
 
@@ -171,16 +181,18 @@ const WorkshopCheckout = () => {
                 <Timer className="icon icon-sm" aria-hidden="true" />
               </div>
               <div>
-                <h2>{isPaidWorkshop ? "Reservation Held" : "Ready to Register"}</h2>
+                <h2>
+                  {isPaidWorkshop ? 'Reservation Held' : 'Ready to Register'}
+                </h2>
                 <p>
                   {isPaidWorkshop
-                    ? "Your spot is temporarily locked while the backend prepares the payment record."
-                    : "This workshop is free. Submit once to confirm your registration."}
+                    ? 'Your spot is temporarily locked while the backend prepares the payment record.'
+                    : 'This workshop is free. Submit once to confirm your registration.'}
                 </p>
               </div>
             </div>
             <div className="reservation-timer">
-              <span>{isPaidWorkshop ? "09:45" : "FREE"}</span>
+              <span>{isPaidWorkshop ? '09:45' : 'FREE'}</span>
             </div>
           </section>
 
@@ -190,22 +202,34 @@ const WorkshopCheckout = () => {
                 <Lock className="icon icon-sm" aria-hidden="true" />
                 <h2>Registration Status</h2>
               </div>
-              <p className="helper-text" style={{ textAlign: "left", marginTop: 0 }}>
+              <p
+                className="helper-text"
+                style={{ textAlign: 'left', marginTop: 0 }}
+              >
                 {submissionMessage}
               </p>
-              {registrationResult?.paymentRequired && registrationResult.payment ? (
+              {registrationResult?.paymentRequired &&
+              registrationResult.payment ? (
                 <div className="checkout-pricing">
                   <div className="checkout-price-row">
                     <span>Payment ID</span>
-                    <span>{registrationResult.payment.paymentId ?? "Pending"}</span>
+                    <span>
+                      {registrationResult.payment.paymentId ?? 'Pending'}
+                    </span>
                   </div>
                   <div className="checkout-price-row">
                     <span>Success endpoint</span>
-                    <span>{registrationResult.payment.mockActions?.successEndpoint ?? "N/A"}</span>
+                    <span>
+                      {registrationResult.payment.mockActions
+                        ?.successEndpoint ?? 'N/A'}
+                    </span>
                   </div>
                   <div className="checkout-price-row">
                     <span>Failure endpoint</span>
-                    <span>{registrationResult.payment.mockActions?.failureEndpoint ?? "N/A"}</span>
+                    <span>
+                      {registrationResult.payment.mockActions
+                        ?.failureEndpoint ?? 'N/A'}
+                    </span>
                   </div>
                 </div>
               ) : null}
@@ -222,27 +246,15 @@ const WorkshopCheckout = () => {
                 <div className="checkout-form-grid">
                   <label className="checkout-field">
                     <span>First Name</span>
-                    <input
-                      type="text"
-                      value={firstName}
-                      readOnly
-                    />
+                    <input type="text" value={firstName} readOnly />
                   </label>
                   <label className="checkout-field">
                     <span>Last Name</span>
-                    <input
-                      type="text"
-                      value={lastName}
-                      readOnly
-                    />
+                    <input type="text" value={lastName} readOnly />
                   </label>
                   <label className="checkout-field full">
                     <span>Email Address</span>
-                    <input
-                      type="email"
-                      value={email}
-                      readOnly
-                    />
+                    <input type="email" value={email} readOnly />
                   </label>
                 </div>
               </section>
@@ -251,7 +263,9 @@ const WorkshopCheckout = () => {
                 <div className="checkout-card-accent" aria-hidden="true" />
                 <div className="checkout-card-header">
                   <CreditCard className="icon icon-sm" aria-hidden="true" />
-                  <h2>{isPaidWorkshop ? "Payment Method" : "Payment Not Required"}</h2>
+                  <h2>
+                    {isPaidWorkshop ? 'Payment Method' : 'Payment Not Required'}
+                  </h2>
                 </div>
                 <div className="checkout-form-stack">
                   <label className="checkout-field">
@@ -294,13 +308,17 @@ const WorkshopCheckout = () => {
                           value={cvc}
                           readOnly
                         />
-                        <ShieldCheck className="icon icon-sm" aria-hidden="true" />
+                        <ShieldCheck
+                          className="icon icon-sm"
+                          aria-hidden="true"
+                        />
                       </div>
                     </label>
                   </div>
                   {!isPaidWorkshop ? (
-                    <p className="checkout-note" style={{ textAlign: "left" }}>
-                      This workshop is free, so the backend confirms the registration immediately.
+                    <p className="checkout-note" style={{ textAlign: 'left' }}>
+                      This workshop is free, so the backend confirms the
+                      registration immediately.
                     </p>
                   ) : null}
                 </div>
@@ -314,29 +332,32 @@ const WorkshopCheckout = () => {
               <div className="checkout-summary-content">
                 <div className="checkout-tags">
                   <span className="checkout-tag">In-Person</span>
-                  <span className="checkout-tag secondary">{workshop.category}</span>
+                  <span className="checkout-tag secondary">
+                    {workshop.category}
+                  </span>
                 </div>
-                <h3>
-                  {workshop.title}
-                </h3>
-                <p className="checkout-note" style={{ textAlign: "left", marginTop: 0 }}>
+                <h3>{workshop.title}</h3>
+                <p
+                  className="checkout-note"
+                  style={{ textAlign: 'left', marginTop: 0 }}
+                >
                   {workshop.summary}
                 </p>
                 <div className="checkout-date">
                   <Calendar className="icon icon-xs" aria-hidden="true" />
-                  {new Date(workshop.startTime).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "2-digit",
-                  })}{" "}
-                  •{" "}
-                  {new Date(workshop.startTime).toLocaleTimeString("en-US", {
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}{" "}
-                  -{" "}
-                  {new Date(workshop.endTime).toLocaleTimeString("en-US", {
-                    hour: "numeric",
-                    minute: "2-digit",
+                  {new Date(workshop.startTime).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: '2-digit',
+                  })}{' '}
+                  •{' '}
+                  {new Date(workshop.startTime).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })}{' '}
+                  -{' '}
+                  {new Date(workshop.endTime).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
                   })}
                 </div>
                 <div className="checkout-divider" />
@@ -359,15 +380,15 @@ const WorkshopCheckout = () => {
                 >
                   <Lock className="icon icon-sm" aria-hidden="true" />
                   {isSubmitting
-                    ? "Processing..."
+                    ? 'Processing...'
                     : isPaidWorkshop
-                      ? "Pay & Register"
-                      : "Register Now"}
+                      ? 'Pay & Register'
+                      : 'Register Now'}
                 </button>
                 <p className="checkout-note">
                   {isPaidWorkshop
-                    ? "By paying, you agree to the UniHub cancellation policy."
-                    : "No payment is required for this workshop."}
+                    ? 'By paying, you agree to the UniHub cancellation policy.'
+                    : 'No payment is required for this workshop.'}
                 </p>
               </div>
             </aside>

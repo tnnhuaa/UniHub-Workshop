@@ -1,21 +1,22 @@
-import { useNavigate } from "react-router-dom";
-import type { WorkshopBadgeTone, WorkshopCardData } from "../hooks/useWorkshopList.ts";
+import { useNavigate } from 'react-router-dom';
+import type {
+  WorkshopBadgeTone,
+  WorkshopCardData,
+} from '../hooks/useWorkshopList.ts';
 
-const getActionClassName = (
-  variant: WorkshopCardData["action"]["variant"],
-) => {
-  if (variant === "ghost-muted") {
-    return "ghost-button muted";
+const getActionClassName = (variant: WorkshopCardData['action']['variant']) => {
+  if (variant === 'ghost-muted') {
+    return 'ghost-button muted';
   }
-  if (variant === "ghost") {
-    return "ghost-button";
+  if (variant === 'ghost') {
+    return 'ghost-button';
   }
-  return "action-button";
+  return 'action-button';
 };
 
 const getStatusTextClassName = (tone?: WorkshopBadgeTone) => {
   if (!tone) {
-    return "status-text";
+    return 'status-text';
   }
   return `status-text ${tone}`;
 };
@@ -24,21 +25,21 @@ const WorkshopCard = ({ workshop }: { workshop: WorkshopCardData }) => {
   const navigate = useNavigate();
   const StatusIcon = workshop.status.icon;
   const cardClassName = [
-    "workshop-card",
-    "is-clickable",
-    workshop.variant === "featured" ? "featured" : "",
-    workshop.className ?? "",
+    'workshop-card',
+    'is-clickable',
+    workshop.variant === 'featured' ? 'featured' : '',
+    workshop.className ?? '',
   ]
     .filter(Boolean)
-    .join(" ");
+    .join(' ');
 
   const metaClassName = [
-    "card-meta",
-    workshop.variant === "featured" ? "" : "stack",
-    workshop.metaFaded ? "faded" : "",
+    'card-meta',
+    workshop.variant === 'featured' ? '' : 'stack',
+    workshop.metaFaded ? 'faded' : '',
   ]
     .filter(Boolean)
-    .join(" ");
+    .join(' ');
 
   return (
     <article
@@ -48,7 +49,7 @@ const WorkshopCard = ({ workshop }: { workshop: WorkshopCardData }) => {
       aria-label={`Open workshop ${workshop.title}`}
       onClick={() => navigate(`/workshops/${workshop.id}`)}
       onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
+        if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
           navigate(`/workshops/${workshop.id}`);
         }
@@ -61,14 +62,14 @@ const WorkshopCard = ({ workshop }: { workshop: WorkshopCardData }) => {
         </span>
         <span
           className={`badge price${
-            workshop.price.highlight ? " highlight" : ""
+            workshop.price.highlight ? ' highlight' : ''
           }`}
         >
           {workshop.price.label}
         </span>
       </div>
       <div className="card-body">
-        <h3 className={workshop.strikeTitle ? "strike" : undefined}>
+        <h3 className={workshop.strikeTitle ? 'strike' : undefined}>
           {workshop.title}
         </h3>
         {workshop.description ? <p>{workshop.description}</p> : null}

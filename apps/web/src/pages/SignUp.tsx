@@ -1,10 +1,10 @@
-import { useState } from "react";
-import AuthLayout from "../components/AuthLayout.tsx";
-import { signUpWithEmail } from "../lib/authClient.ts";
+import { useState } from 'react';
+import AuthLayout from '../components/AuthLayout.tsx';
+import { signUpWithEmail } from '../lib/authClient.ts';
 
 const SignUp = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -16,7 +16,7 @@ const SignUp = () => {
     setSuccess(false);
 
     if (!email || !password) {
-      setError("Please enter your email and password.");
+      setError('Please enter your email and password.');
       return;
     }
 
@@ -99,7 +99,7 @@ const SignUp = () => {
             </span>
             <input
               id="signup-password"
-              type={showPassword ? "text" : "password"}
+              type={showPassword ? 'text' : 'password'}
               autoComplete="new-password"
               placeholder="Create a strong password"
               value={password}
@@ -109,9 +109,9 @@ const SignUp = () => {
               type="button"
               className="input-action"
               onClick={() => setShowPassword((value) => !value)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
-              {showPassword ? "Hide" : "Show"}
+              {showPassword ? 'Hide' : 'Show'}
             </button>
           </div>
         </div>
@@ -120,7 +120,7 @@ const SignUp = () => {
           type="submit"
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Creating account..." : "Create account"}
+          {isSubmitting ? 'Creating account...' : 'Create account'}
         </button>
         <p className="helper-text">
           Your account will be linked to BetterAuth for secure sessions.

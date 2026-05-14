@@ -1,4 +1,4 @@
-import { postJson } from "./apiClient.ts";
+import { postJson } from './apiClient.ts';
 
 export type AuthResult = Awaited<ReturnType<typeof signInWithEmail>>;
 
@@ -7,7 +7,7 @@ export const signInWithEmail = (
   password: string,
   remember: boolean,
 ) => {
-  return postJson("/auth/sign-in/email", {
+  return postJson('/auth/sign-in/email', {
     body: {
       email,
       password,
@@ -17,9 +17,9 @@ export const signInWithEmail = (
 };
 
 export const signUpWithEmail = (email: string, password: string) => {
-  const displayName = email.split("@")[0] || email;
+  const displayName = email.split('@')[0] || email;
 
-  return postJson("/auth/sign-up/email", {
+  return postJson('/auth/sign-up/email', {
     body: {
       email,
       password,
@@ -29,5 +29,5 @@ export const signUpWithEmail = (email: string, password: string) => {
 };
 
 export const signOut = () => {
-  return postJson("/auth/sign-out");
+  return postJson('/auth/sign-out');
 };

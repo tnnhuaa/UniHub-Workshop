@@ -1,5 +1,5 @@
 export type ApiRequestSnapshot = {
-  method: "GET" | "POST" | "PATCH" | "DELETE";
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   url: string;
   headers: Record<string, string>;
   query?: Record<string, string>;
@@ -32,10 +32,10 @@ const getApiBaseUrl = () => {
   const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
 
   if (configuredBaseUrl) {
-    return configuredBaseUrl.replace(/\/+$/, "");
+    return configuredBaseUrl.replace(/\/+$/, '');
   }
 
-  return "http://localhost:4000/api/v1";
+  return 'http://localhost:4000/api/v1';
 };
 
 const buildUrl = (
@@ -43,7 +43,7 @@ const buildUrl = (
   query?: Record<string, string | number | boolean | undefined>,
 ) => {
   const baseUrl = getApiBaseUrl();
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   const url = new URL(`${baseUrl}${normalizedPath}`);
 
   if (query) {
@@ -60,22 +60,26 @@ const buildUrl = (
 };
 
 const normalizeMessage = (payload: unknown, fallback: string) => {
-  if (!payload || typeof payload !== "object") {
+  if (!payload || typeof payload !== 'object') {
     return fallback;
   }
 
-  const body = payload as { message?: unknown; error?: unknown; code?: unknown };
+  const body = payload as {
+    message?: unknown;
+    error?: unknown;
+    code?: unknown;
+  };
   const message = body.message ?? body.error;
 
   if (Array.isArray(message)) {
-    return message.map((item) => String(item)).join(", ");
+    return message.map((item) => String(item)).join(', ');
   }
 
-  if (typeof message === "string" && message.trim().length > 0) {
+  if (typeof message === 'string' && message.trim().length > 0) {
     return message;
   }
 
-  if (typeof body.code === "string" && body.code.trim().length > 0) {
+  if (typeof body.code === 'string' && body.code.trim().length > 0) {
     return body.code;
   }
 
@@ -83,9 +87,9 @@ const normalizeMessage = (payload: unknown, fallback: string) => {
 };
 
 const readJson = async (response: Response) => {
-  const contentType = response.headers.get("content-type") ?? "";
+  const contentType = response.headers.get('content-type') ?? '';
 
-  if (!contentType.includes("application/json")) {
+  if (!contentType.includes('application/json')) {
     return response.text();
   }
 
@@ -93,14 +97,16 @@ const readJson = async (response: Response) => {
 };
 
 export const requestJson = async <TData, TBody = undefined>(
-  method: ApiRequestSnapshot["method"],
+  method: ApiRequestSnapshot['method'],
   path: string,
   options?: RequestOptions<TBody>,
 ): Promise<ApiResult<TData>> => {
   const url = buildUrl(path, options?.query);
   const headers: Record<string, string> = {
-    Accept: "application/json",
-    ...(options?.body !== undefined ? { "Content-Type": "application/json" } : {}),
+    Accept: 'application/json',
+    ...(options?.body !== undefined
+      ? { 'Content-Type': 'application/json' }
+      : {}),
     ...(options?.headers ?? {}),
   };
 
@@ -122,9 +128,10 @@ export const requestJson = async <TData, TBody = undefined>(
   try {
     const response = await fetch(url, {
       method,
-      credentials: "include",
+      credentials: 'include',
       headers,
-      body: options?.body === undefined ? undefined : JSON.stringify(options.body),
+      body:
+        options?.body === undefined ? undefined : JSON.stringify(options.body),
     });
 
     const payload = await readJson(response);
@@ -134,10 +141,13 @@ export const requestJson = async <TData, TBody = undefined>(
         ok: false,
         statusCode: response.status,
         code:
-          typeof payload === "object" && payload && "code" in payload
-            ? String((payload as { code?: unknown }).code ?? "")
+          typeof payload === 'object' && payload && 'code' in payload
+            ? String((payload as { code?: unknown }).code ?? '')
             : undefined,
-        error: normalizeMessage(payload, response.statusText || "Request failed"),
+        error: normalizeMessage(
+          payload,
+          response.statusText || 'Request failed',
+        ),
         request,
       };
     }
@@ -150,32 +160,30 @@ export const requestJson = async <TData, TBody = undefined>(
   } catch {
     return {
       ok: false,
-      error: "Unable to reach the API.",
+      error: 'Unable to reach the API.',
       request,
     };
   }
 };
 
-export const getJson = <TData>(
-  path: string,
-  options?: RequestOptions<never>,
-) => requestJson<TData>("GET", path, options);
+export const getJson = <TData>(path: string, options?: RequestOptions<never>) =>
+  requestJson<TData>('GET', path, options);
 
 export const postJson = <TData, TBody = undefined>(
   path: string,
   options?: RequestOptions<TBody>,
-) => requestJson<TData, TBody>("POST", path, options);
+) => requestJson<TData, TBody>('POST', path, options);
 
 export const patchJson = <TData, TBody = undefined>(
   path: string,
   options?: RequestOptions<TBody>,
-) => requestJson<TData, TBody>("PATCH", path, options);
+) => requestJson<TData, TBody>('PATCH', path, options);
 
 export const deleteJson = <TData>(
   path: string,
   options?: RequestOptions<never>,
-) => requestJson<TData>("DELETE", path, options);
+) => requestJson<TData>('DELETE', path, options);
 
 export const withIdempotencyKey = (idempotencyKey: string) => ({
-  "Idempotency-Key": idempotencyKey,
+  'Idempotency-Key': idempotencyKey,
 });

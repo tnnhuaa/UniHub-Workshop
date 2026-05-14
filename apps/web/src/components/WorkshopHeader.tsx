@@ -1,7 +1,7 @@
-import { Bell } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Bell } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-type WorkshopHeaderTab = "workshops" | "schedule";
+type WorkshopHeaderTab = 'workshops' | 'schedule';
 
 type WorkshopHeaderProps = {
   profileImage: string;
@@ -16,10 +16,16 @@ const WorkshopHeader = ({
 }: WorkshopHeaderProps) => {
   const nav = (
     <nav className="workshop-topbar-nav" aria-label="Workshop navigation">
-      <Link className={activeTab === "workshops" ? "active" : undefined} to="/workshops">
+      <Link
+        className={activeTab === 'workshops' ? 'active' : undefined}
+        to="/workshops"
+      >
         Workshops
       </Link>
-      <Link className={activeTab === "schedule" ? "active" : undefined} to="/schedule">
+      <Link
+        className={activeTab === 'schedule' ? 'active' : undefined}
+        to="/schedule"
+      >
         My Schedule
       </Link>
     </nav>

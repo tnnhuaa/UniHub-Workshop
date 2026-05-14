@@ -1,13 +1,13 @@
-import { Navigate, Route, Routes } from "react-router-dom";
-import AdminDashboard from "./pages/AdminDashboard.tsx";
-import AdminSchedule from "./pages/AdminSchedule.tsx";
-import SignIn from "./pages/SignIn.tsx";
-import SignUp from "./pages/SignUp.tsx";
-import WorkshopCheckout from "./pages/WorkshopCheckout.tsx";
-import WorkshopList from "./pages/WorkshopList.tsx";
-import WorkshopDetail from "./pages/WorkshopDetail.tsx";
-import WorkshopSchedule from "./pages/WorkshopSchedule.tsx";
-import UserProfile from "./pages/UserProfile.tsx";
+import { Navigate, Route, Routes } from 'react-router-dom';
+import AdminDashboard from './pages/AdminDashboard.tsx';
+import AdminSchedule from './pages/AdminSchedule.tsx';
+import SignIn from './pages/SignIn.tsx';
+import SignUp from './pages/SignUp.tsx';
+import WorkshopCheckout from './pages/WorkshopCheckout.tsx';
+import WorkshopList from './pages/WorkshopList.tsx';
+import WorkshopDetail from './pages/WorkshopDetail.tsx';
+import WorkshopSchedule from './pages/WorkshopSchedule.tsx';
+import UserProfile from './pages/UserProfile.tsx';
 
 const App = () => {
   return (

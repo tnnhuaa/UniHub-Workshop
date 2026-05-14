@@ -1,14 +1,14 @@
-import { Check, LayoutGrid, List, Search } from "lucide-react";
-import WorkshopHeader from "../components/WorkshopHeader.tsx";
-import WorkshopCard from "../components/WorkshopCard.tsx";
+import { Check, LayoutGrid, List, Search } from 'lucide-react';
+import WorkshopHeader from '../components/WorkshopHeader.tsx';
+import WorkshopCard from '../components/WorkshopCard.tsx';
 import useWorkshopList, {
   type WorkshopAvailabilityFilter,
   type WorkshopDateFilter,
   type WorkshopPriceFilter,
-} from "../hooks/useWorkshopList.ts";
+} from '../hooks/useWorkshopList.ts';
 
 const imgStudentProfile =
-  "https://www.figma.com/api/mcp/asset/065a2bff-6d30-4eb7-9d26-b63b86059f0d";
+  'https://www.figma.com/api/mcp/asset/065a2bff-6d30-4eb7-9d26-b63b86059f0d';
 
 const WorkshopList = () => {
   const {
@@ -27,22 +27,22 @@ const WorkshopList = () => {
   } = useWorkshopList();
 
   const dateOptions: Array<{ value: WorkshopDateFilter; label: string }> = [
-    { value: "upcoming", label: "Upcoming" },
-    { value: "this-week", label: "This Week" },
-    { value: "next-month", label: "Next Month" },
+    { value: 'upcoming', label: 'Upcoming' },
+    { value: 'this-week', label: 'This Week' },
+    { value: 'next-month', label: 'Next Month' },
   ];
 
   const priceOptions: Array<{ value: WorkshopPriceFilter; label: string }> = [
-    { value: "free", label: "Free" },
-    { value: "paid", label: "Paid" },
+    { value: 'free', label: 'Free' },
+    { value: 'paid', label: 'Paid' },
   ];
 
   const availabilityOptions: Array<{
     value: WorkshopAvailabilityFilter;
     label: string;
   }> = [
-    { value: "open", label: "Open" },
-    { value: "almost-full", label: "Almost Full" },
+    { value: 'open', label: 'Open' },
+    { value: 'almost-full', label: 'Almost Full' },
   ];
 
   return (
@@ -64,7 +64,7 @@ const WorkshopList = () => {
                   key={option.value}
                   type="button"
                   className={`filter-option${
-                    dateFilter === option.value ? " selected" : ""
+                    dateFilter === option.value ? ' selected' : ''
                   }`}
                   onClick={() => setDateFilter(option.value)}
                 >
@@ -89,7 +89,7 @@ const WorkshopList = () => {
                     key={option.value}
                     type="button"
                     className={`filter-option square${
-                      isSelected ? " selected" : ""
+                      isSelected ? ' selected' : ''
                     }`}
                     onClick={() => togglePriceFilter(option.value)}
                   >
@@ -112,7 +112,7 @@ const WorkshopList = () => {
                   key={option.value}
                   type="button"
                   className={`filter-pill${
-                    availability === option.value ? " active" : ""
+                    availability === option.value ? ' active' : ''
                   }`}
                   onClick={() => setAvailability(option.value)}
                 >
@@ -121,7 +121,11 @@ const WorkshopList = () => {
               ))}
             </div>
           </div>
-          <button type="button" className="primary-button" onClick={applyFilters}>
+          <button
+            type="button"
+            className="primary-button"
+            onClick={applyFilters}
+          >
             Apply Filters
           </button>
         </aside>
@@ -150,14 +154,20 @@ const WorkshopList = () => {
               >
                 <LayoutGrid className="icon icon-sm" aria-hidden="true" />
               </button>
-              <button type="button" className="toggle-button" aria-label="List view">
+              <button
+                type="button"
+                className="toggle-button"
+                aria-label="List view"
+              >
                 <List className="icon icon-sm" aria-hidden="true" />
               </button>
             </div>
           </div>
 
           {error ? <p className="helper-text">{error}</p> : null}
-          {isLoading ? <p className="helper-text">Loading workshops...</p> : null}
+          {isLoading ? (
+            <p className="helper-text">Loading workshops...</p>
+          ) : null}
 
           <div className="workshop-grid">
             {workshops.map((workshop) => (

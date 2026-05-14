@@ -1,46 +1,46 @@
-import { Link } from "react-router-dom";
-import AdminSidebar from "../components/AdminSidebar.tsx";
+import { Link } from 'react-router-dom';
+import AdminSidebar from '../components/AdminSidebar.tsx';
 
 const imgBack =
-  "https://www.figma.com/api/mcp/asset/b5782a50-bb86-4df4-ad5c-eae9bec1a501";
+  'https://www.figma.com/api/mcp/asset/b5782a50-bb86-4df4-ad5c-eae9bec1a501';
 const imgSave =
-  "https://www.figma.com/api/mcp/asset/4c887932-c917-4777-ab6d-a9f718724f24";
+  'https://www.figma.com/api/mcp/asset/4c887932-c917-4777-ab6d-a9f718724f24';
 const imgSpeaker =
-  "https://www.figma.com/api/mcp/asset/71a0a35a-c9aa-455c-980e-658e90444090";
+  'https://www.figma.com/api/mcp/asset/71a0a35a-c9aa-455c-980e-658e90444090';
 const imgLocation =
-  "https://www.figma.com/api/mcp/asset/e9c1f6d1-e4dc-447e-b63a-893c755fded6";
+  'https://www.figma.com/api/mcp/asset/e9c1f6d1-e4dc-447e-b63a-893c755fded6';
 const imgDate =
-  "https://www.figma.com/api/mcp/asset/1767af85-7c7a-4f16-84e5-4fb396aa3ad9";
+  'https://www.figma.com/api/mcp/asset/1767af85-7c7a-4f16-84e5-4fb396aa3ad9';
 const imgCapacity =
-  "https://www.figma.com/api/mcp/asset/597340f1-8ec4-427f-9f8e-014f2ddf90f2";
+  'https://www.figma.com/api/mcp/asset/597340f1-8ec4-427f-9f8e-014f2ddf90f2';
 const imgPrice =
-  "https://www.figma.com/api/mcp/asset/d1e11ae4-aa19-482b-a3bc-64a786fa9244";
+  'https://www.figma.com/api/mcp/asset/d1e11ae4-aa19-482b-a3bc-64a786fa9244';
 const imgTranscript =
-  "https://www.figma.com/api/mcp/asset/a5f54d4e-a0a6-436c-8a7d-746c84f09d21";
+  'https://www.figma.com/api/mcp/asset/a5f54d4e-a0a6-436c-8a7d-746c84f09d21';
 const imgTranscriptStatus =
-  "https://www.figma.com/api/mcp/asset/f6847724-7a0a-44ff-9e88-efb2b6b813b7";
+  'https://www.figma.com/api/mcp/asset/f6847724-7a0a-44ff-9e88-efb2b6b813b7';
 const imgExport =
-  "https://www.figma.com/api/mcp/asset/a8559913-825d-42b5-89ee-132355562ff3";
+  'https://www.figma.com/api/mcp/asset/a8559913-825d-42b5-89ee-132355562ff3';
 const imgStudentA =
-  "https://www.figma.com/api/mcp/asset/6ba2d58a-f19f-4796-81d3-1f114b5889d7";
+  'https://www.figma.com/api/mcp/asset/6ba2d58a-f19f-4796-81d3-1f114b5889d7';
 const imgStudentB =
-  "https://www.figma.com/api/mcp/asset/eefbc52b-1ab0-45cf-9cc6-0a027b4aa065";
+  'https://www.figma.com/api/mcp/asset/eefbc52b-1ab0-45cf-9cc6-0a027b4aa065';
 
 const attendees = [
   {
-    name: "Elena Rostova",
-    email: "elena.r@university.edu",
+    name: 'Elena Rostova',
+    email: 'elena.r@university.edu',
     avatar: imgStudentA,
   },
   {
-    name: "Michael Chen",
-    email: "m.chen@university.edu",
+    name: 'Michael Chen',
+    email: 'm.chen@university.edu',
     avatar: imgStudentB,
   },
   {
-    name: "Sarah Jenkins",
-    email: "s.jenkins@university.edu",
-    initials: "SJ",
+    name: 'Sarah Jenkins',
+    email: 's.jenkins@university.edu',
+    initials: 'SJ',
   },
 ];
 
