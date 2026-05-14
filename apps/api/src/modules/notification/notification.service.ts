@@ -1,93 +1,43 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
-import type { NotificationChannel } from '@prisma/client';
+import { ForbiddenException, Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RabbitMqService, EVENTS_KEYS } from '../rabbitmq/index.js';
 import { NOTIFICATION_PROVIDERS } from './notification.constants.js';
+import { NotificationOrchestrator } from './notification.orchestrator.js';
+import type { NotificationProvider } from './notification.types.js';
 import type {
-  NotificationProvider,
-  NotificationSendPayload,
-  NotificationSendResult,
-} from './notification.providers.js';
-import type {
+  NotificationIdParam,
   NotificationListQuery,
   NotificationSendInput,
 } from './notification.schemas.js';
 
-/**
- * NotificationService — adapter layer for notification delivery.
- * Implements INotificationProvider interface (to be defined).
- * Supports email, in-app, and Telegram channels.
- *
- * @see blueprint/IMPLEMENTATION-GUIDE.md §1
- */
 @Injectable()
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly orchestrator: NotificationOrchestrator,
     @Inject(NOTIFICATION_PROVIDERS)
     private readonly providers: NotificationProvider[],
     private readonly rabbitmq: RabbitMqService,
   ) {}
 
   async send(input: NotificationSendInput) {
-    if (input.dedupeKey) {
-      const existing = await this.prisma.notificationDelivery.findUnique({
-        where: { dedupeKey: input.dedupeKey },
-      });
-
-      if (existing) {
-        return existing;
-      }
-    }
-
-    const provider = this.getProvider(input.channel);
-
-    const delivery = await this.prisma.notificationDelivery.create({
-      data: {
-        userId: input.userId,
-        channel: input.channel,
-        templateCode: input.templateCode,
-        status: 'pending',
-        dedupeKey: input.dedupeKey,
-      },
-    });
-
-    const result = await this.sendWithProvider(provider, {
-      notificationId: delivery.id,
-      userId: input.userId,
-      channel: input.channel,
-      templateCode: input.templateCode,
-    });
-
-    return this.prisma.notificationDelivery.update({
-      where: { id: delivery.id },
-      data: {
-        status: result.status,
-        sentAt: result.status === 'sent' ? new Date() : null,
-      },
-    });
+    return this.orchestrator.sendManual(input);
   }
 
   findByUser(userId: string, query: NotificationListQuery) {
     const where: {
       userId: string;
-      channel?: NotificationChannel;
       status?: 'pending' | 'sent' | 'failed';
     } = { userId };
 
-    if (query.channel) {
-      where.channel = query.channel;
+    if (query.readStatus === 'unread') {
+      where.status = 'pending';
     }
 
-    if (query.status) {
-      where.status = query.status;
+    if (query.readStatus === 'read') {
+      where.status = 'sent';
     }
 
     const page = query.page;
@@ -101,27 +51,26 @@ export class NotificationService {
     });
   }
 
-  private getProvider(channel: NotificationChannel) {
-    const provider = this.providers.find((entry) => entry.channel === channel);
-    if (!provider) {
-      throw new BadRequestException({
-        code: 'NOTIFICATION_CHANNEL_UNSUPPORTED',
-        message: 'Notification channel is not supported yet',
+  async markAsRead(userId: string, params: NotificationIdParam) {
+    const existing = await this.prisma.notificationDelivery.findUniqueOrThrow({
+      where: { id: params.id },
+      select: { userId: true },
+    });
+
+    if (existing.userId !== userId) {
+      throw new ForbiddenException({
+        code: 'NOTIFICATION_FORBIDDEN',
+        message: 'Cannot update another user notification',
       });
     }
 
-    return provider;
-  }
-
-  private async sendWithProvider(
-    provider: NotificationProvider,
-    payload: NotificationSendPayload,
-  ): Promise<NotificationSendResult> {
-    try {
-      return await provider.send(payload);
-    } catch {
-      return { status: 'failed' };
-    }
+    return this.prisma.notificationDelivery.update({
+      where: { id: params.id },
+      data: {
+        status: 'sent',
+        sentAt: new Date(),
+      },
+    });
   }
 
   /**
@@ -138,8 +87,8 @@ export class NotificationService {
           correlationId,
           userId: input.userId,
           channel: input.channel,
-          templateCode: input.templateCode,
-          dedupeKey: input.dedupeKey,
+          templateCode: input.type ?? 'custom',
+          dedupeKey: undefined,
           publishedAt: new Date().toISOString(),
         },
         {

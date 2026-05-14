@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CircuitBreaker } from '../../libs/circuit-breaker/index.js';
+import { NotificationOrchestrator } from '../notification/notification.orchestrator.js';
 import type {
   PaymentMockActionInput,
   PaymentWebhookInput,
@@ -22,7 +23,10 @@ export class PaymentService {
     openDurationMs: 60_000,
   });
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationOrchestrator: NotificationOrchestrator,
+  ) {}
 
   async handleWebhook(payload: PaymentWebhookInput) {
     if (payload.status === 'success') {
@@ -73,7 +77,7 @@ export class PaymentService {
   }
 
   async markPaymentSuccess(input: PaymentMockActionInput) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const payment = await tx.payment.findUniqueOrThrow({
         where: { id: input.paymentId },
         include: { registration: true },
@@ -121,6 +125,13 @@ export class PaymentService {
 
       return { payment: updatedPayment, registration };
     });
+
+    await this.notificationOrchestrator.dispatchWorkshopRegistrationConfirmed({
+      type: 'workshop_registration_confirmed',
+      registrationId: result.registration.id,
+    });
+
+    return result;
   }
 
   async markPaymentFailure(input: PaymentMockActionInput) {

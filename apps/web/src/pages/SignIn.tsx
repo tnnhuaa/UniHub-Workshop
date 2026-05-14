@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout.tsx';
-import { signInWithEmail } from '../lib/authClient.ts';
+import { signInWithEmail, signOut } from '../lib/authClient.ts';
+import { fetchCurrentStudent } from '../lib/unihubApi.ts';
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -30,6 +31,24 @@ const SignIn = () => {
     if (result.error) {
       setError(result.error.message || 'An error occurred while signing in.');
       return;
+    }
+
+    const studentResult = await fetchCurrentStudent();
+
+    if (!studentResult.ok) {
+      if (studentResult.statusCode === 403) {
+        await signOut();
+        setError(
+          'This account is not linked to a student profile. Please use the email already synced from the student list or ask an organizer to sync your account.',
+        );
+        return;
+      }
+
+      if (studentResult.statusCode === 401) {
+        await signOut();
+        setError('Unable to verify your session. Please try signing in again.');
+        return;
+      }
     }
 
     setSuccess(true);

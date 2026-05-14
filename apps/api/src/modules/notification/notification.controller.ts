@@ -3,6 +3,8 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -16,8 +18,10 @@ import { Roles } from '../auth/roles.decorator.js';
 import type { AuthenticatedRequest } from '../auth/auth.types.js';
 import { ZodValidationPipe } from '../../shared/validation/index.js';
 import {
+  notificationIdParamSchema,
   notificationListQuerySchema,
   notificationSendSchema,
+  type NotificationIdParam,
   type NotificationListQuery,
   type NotificationSendInput,
 } from './notification.schemas.js';
@@ -57,5 +61,28 @@ export class NotificationController {
     }
 
     return this.notificationService.findByUser(userId, query);
+  }
+
+  @Patch('me/:id/read')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(
+    'student' satisfies UserRoleType,
+    'organizer' satisfies UserRoleType,
+    'checkin_staff' satisfies UserRoleType,
+  )
+  markAsRead(
+    @Req() request: AuthenticatedRequest,
+    @Param(new ZodValidationPipe(notificationIdParamSchema))
+    params: NotificationIdParam,
+  ) {
+    const userId = request.authUser?.id;
+    if (!userId) {
+      throw new ForbiddenException({
+        code: 'USER_REQUIRED',
+        message: 'User identity is required',
+      });
+    }
+
+    return this.notificationService.markAsRead(userId, params);
   }
 }

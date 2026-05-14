@@ -100,11 +100,17 @@ export class NotificationConsumer extends BaseJobConsumer {
       const result = await this.notificationService.send({
         userId: payload.userId,
         channel: payload.channel,
-        templateCode: payload.templateCode,
-        dedupeKey: payload.dedupeKey,
+        type:
+          payload.templateCode === 'workshop_registration_confirmed'
+            ? 'workshop_registration_confirmed'
+            : 'custom',
+        title: 'Notification',
+        body: payload.templateCode,
       });
 
-      return { success: result.status === 'sent' };
+      return {
+        success: result.deliveries.some((item) => item.status === 'sent'),
+      };
     } catch (error) {
       this.logger.error(
         `[${correlationId}] Failed to send notification:`,

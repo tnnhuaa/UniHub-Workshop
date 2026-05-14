@@ -66,11 +66,16 @@ Base URL: `http://localhost:4000/api/v1`
 | `/registrations/me`                                          | GET                | Registration | My registrations       |
 | `/registrations/:id/qr`                                      | GET                | Registration | QR code                |
 | `/payments/webhook`                                          | POST               | Payment      | Payment webhook        |
+| `/payments/mock/success`                                     | POST               | Payment      | Mock payment success   |
+| `/payments/mock/failure`                                     | POST               | Payment      | Mock payment failure   |
 | `/checkins/scan`                                             | POST               | Checkin      | QR scan                |
 | `/checkins/confirm`                                          | POST               | Checkin      | Confirm check-in       |
 | `/checkins/sync`                                             | POST               | Checkin      | Offline sync           |
 | `/checkins/workshop/:id`                                     | GET                | Checkin      | Workshop checkins      |
 | `/students/:mssv`                                            | GET                | Student      | Student lookup         |
+| `/notifications`                                             | POST               | Notification | Manual notification    |
+| `/notifications/me`                                          | GET                | Notification | Inbox for current user |
+| `/notifications/me/:id/read`                                 | PATCH              | Notification | Mark inbox item read   |
 | `/admin/workshops/:workshopId/documents`                     | GET, POST          | Document     | PDF upload/list        |
 | `/admin/workshops/:workshopId/documents/:documentId/summary` | GET                | Document     | AI summary status/text |
 
@@ -91,6 +96,13 @@ See `.env.example` at project root. Required env vars:
 - `GOOGLE_OAUTH_CLIENT_ID` — Google OAuth client id
 - `GOOGLE_OAUTH_CLIENT_SECRET` — Google OAuth client secret
 - `GOOGLE_OAUTH_REDIRECT_URI` — Optional OAuth redirect override
+- `SMTP_HOST` — SMTP server hostname
+- `SMTP_PORT` — SMTP server port
+- `SMTP_SECURE` — `true` for SMTPS, `false` for STARTTLS/plain SMTP
+- `SMTP_USER` — SMTP username
+- `SMTP_PASS` — SMTP password
+- `SMTP_FROM_NAME` — Display name for outgoing notification email
+- `SMTP_FROM_EMAIL` — Sender email address for outgoing notification email
 
 ## References
 

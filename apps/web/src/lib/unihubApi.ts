@@ -131,6 +131,9 @@ export type RegistrationListQuery = {
 };
 
 export type JobStatus = 'pending' | 'running' | 'completed' | 'failed';
+export type NotificationChannel = 'email' | 'in_app' | 'telegram';
+export type NotificationDeliveryStatus = 'pending' | 'sent' | 'failed';
+export type NotificationType = 'custom' | 'workshop_registration_confirmed';
 
 export type WorkshopDocumentApiDto = {
   id: string;
@@ -202,6 +205,41 @@ export type AdminDashboardQuery = {
   q?: string;
 };
 
+export type NotificationDeliveryApiDto = {
+  id: string;
+  channel: NotificationChannel;
+  status: NotificationDeliveryStatus;
+  providerRef?: string | null;
+  errorMessage?: string | null;
+  sentAt?: string | null;
+  createdAt?: string;
+};
+
+export type NotificationApiDto = {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  data?: {
+    registrationId?: string;
+    workshopId?: string;
+    workshopTitle?: string;
+    startTime?: string;
+    endTime?: string;
+    room?: string | null;
+    qrCode?: string | null;
+  } | null;
+  readAt?: string | null;
+  createdAt: string;
+  deliveries: NotificationDeliveryApiDto[];
+};
+
+export type NotificationListQuery = {
+  readStatus?: 'unread' | 'read' | 'all';
+  page?: number;
+  pageSize?: number;
+};
+
 export type WorkshopCreateInput = {
   title: string;
   description?: string;
@@ -230,6 +268,12 @@ export const fetchStudent = (mssv: string) =>
 
 export const fetchMyRegistrations = (query: RegistrationListQuery) =>
   getJson<RegistrationApiDto[]>('/registrations/me', { query });
+
+export const fetchMyNotifications = (query: NotificationListQuery) =>
+  getJson<NotificationApiDto[]>('/notifications/me', { query });
+
+export const markMyNotificationRead = (id: string) =>
+  patchJson<NotificationApiDto>(`/notifications/me/${id}/read`);
 
 export const fetchRegistrationQr = (id: string) =>
   getJson<RegistrationQrDto>(`/registrations/${id}/qr`);

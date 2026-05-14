@@ -128,8 +128,8 @@ const WorkshopCheckout = () => {
     setRegistrationResult(result.data);
     setSubmissionMessage(
       result.data.paymentRequired
-        ? `Payment was created for registration ${result.data.registration.id}. The backend returned mock payment endpoints for the next step.`
-        : `Registration confirmed for ${student.fullName}. The QR code is now available from your schedule.`,
+        ? `Your workshop registration is pending payment. Complete payment to receive the final confirmation in the app and by email.`
+        : `Your workshop registration is confirmed. A confirmation is now available in the app and has been queued for email delivery.`,
     );
     if (result.data.paymentRequired) {
       setIsPaymentModalOpen(true);
@@ -173,7 +173,7 @@ const WorkshopCheckout = () => {
     if (action === 'success') {
       setPaymentState('paid');
       setSubmissionMessage(
-        `Payment confirmed for registration ${result.data.registration.id}. Your seat is secured and the QR code will appear in My Schedule.`,
+        'Your workshop registration is confirmed. The app inbox has been updated and the email confirmation has been queued.',
       );
       return;
     }

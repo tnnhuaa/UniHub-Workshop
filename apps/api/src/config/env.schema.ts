@@ -21,6 +21,18 @@ export const envSchema = z.object({
   GOOGLE_OAUTH_CLIENT_ID: z.string(),
   GOOGLE_OAUTH_CLIENT_SECRET: z.string(),
   GOOGLE_OAUTH_REDIRECT_URI: z.url().optional(),
+  SMTP_HOST: z.string().min(1).optional(),
+  SMTP_PORT: z.coerce.number().int().positive().optional(),
+  SMTP_SECURE: z
+    .union([z.boolean(), z.string()])
+    .transform((value) =>
+      typeof value === 'boolean' ? value : value === 'true',
+    )
+    .optional(),
+  SMTP_USER: z.string().min(1).optional(),
+  SMTP_PASS: z.string().min(1).optional(),
+  SMTP_FROM_NAME: z.string().min(1).optional(),
+  SMTP_FROM_EMAIL: z.email().optional(),
   GEMINI_API_KEY: z.string().min(1),
   CSV_DROP_LOCATION: z.string().default('/tmp/csv-drop'),
   CSV_SYNC_TIMEZONE: z.string().default('UTC'),
