@@ -106,13 +106,11 @@ export class AuthController {
     }
 
     const roles = await this.authService.getUserRolesValues(session.user.id);
-    const role = this.authService.getPrimaryRole(roles);
 
     return {
       session: session.session,
       user: session.user,
       roles,
-      role,
     };
   }
 
