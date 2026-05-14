@@ -2224,6 +2224,9 @@ label {
 
 .schedule-panel {
   grid-column: span 5;
+  position: sticky;
+  top: 96px;
+  align-self: start;
   background: var(--schedule-card);
   border: 1px solid rgba(150, 247, 183, 0.4);
   border-radius: 12px;
@@ -2231,6 +2234,9 @@ label {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  height: fit-content;
+  max-height: calc(100vh - 128px);
 }
 
 .schedule-panel-header {
@@ -2243,12 +2249,6 @@ label {
   flex-direction: column;
   justify-content: flex-end;
   gap: 8px;
-}
-
-.schedule-panel-actions {
-  position: absolute;
-  top: 16px;
-  right: 16px;
 }
 
 .schedule-panel-code {
@@ -2364,21 +2364,6 @@ label {
 .schedule-instructor strong {
   font-size: 14px;
   color: var(--schedule-text);
-}
-
-.schedule-cancel {
-  border: none;
-  background: #eaefe8;
-  color: var(--schedule-text);
-  border-radius: 8px;
-  padding: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  cursor: pointer;
 }
 
 .profile-page {
