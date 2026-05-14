@@ -1,5 +1,17 @@
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import AdminSidebar from '../components/AdminSidebar.tsx';
+import {
+  fetchDocumentSummary,
+  fetchWorkshop,
+  fetchWorkshopDocuments,
+  uploadWorkshopDocument,
+} from '../lib/unihubApi.ts';
+import type {
+  DocumentSummaryApiDto,
+  WorkshopApiDto,
+  WorkshopDocumentApiDto,
+} from '../lib/unihubApi.ts';
 
 const imgBack =
   'https://www.figma.com/api/mcp/asset/b5782a50-bb86-4df4-ad5c-eae9bec1a501';
@@ -21,30 +33,260 @@ const imgTranscriptStatus =
   'https://www.figma.com/api/mcp/asset/f6847724-7a0a-44ff-9e88-efb2b6b813b7';
 const imgExport =
   'https://www.figma.com/api/mcp/asset/a8559913-825d-42b5-89ee-132355562ff3';
-const imgStudentA =
-  'https://www.figma.com/api/mcp/asset/6ba2d58a-f19f-4796-81d3-1f114b5889d7';
-const imgStudentB =
-  'https://www.figma.com/api/mcp/asset/eefbc52b-1ab0-45cf-9cc6-0a027b4aa065';
 
-const attendees = [
-  {
-    name: 'Elena Rostova',
-    email: 'elena.r@university.edu',
-    avatar: imgStudentA,
-  },
-  {
-    name: 'Michael Chen',
-    email: 'm.chen@university.edu',
-    avatar: imgStudentB,
-  },
-  {
-    name: 'Sarah Jenkins',
-    email: 's.jenkins@university.edu',
-    initials: 'SJ',
-  },
-];
+const formatDate = (value: string) =>
+  new Date(value).toLocaleDateString('en-US', {
+    month: '2-digit',
+    day: '2-digit',
+    year: 'numeric',
+  });
+
+const formatTime = (value: string) =>
+  new Date(value).toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+const formatUploadedAt = (value: string) =>
+  new Date(value).toLocaleString('en-US', {
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+const readFileAsBase64 = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== 'string') {
+        reject(new Error('Unable to read file.'));
+        return;
+      }
+
+      const [, base64] = result.split(',');
+      if (!base64) {
+        reject(new Error('Unable to parse file.'));
+        return;
+      }
+
+      resolve(base64);
+    };
+    reader.onerror = () => reject(new Error('Unable to read file.'));
+    reader.readAsDataURL(file);
+  });
+
+const getSummaryStatusLabel = (status: DocumentSummaryApiDto['status']) => {
+  if (status === 'completed') {
+    return 'Completed';
+  }
+
+  if (status === 'failed') {
+    return 'Failed';
+  }
+
+  if (status === 'running') {
+    return 'Running';
+  }
+
+  return 'Pending';
+};
 
 const AdminSchedule = () => {
+  const { id } = useParams();
+  const workshopId = id ?? '';
+  const [workshop, setWorkshop] = useState<WorkshopApiDto | null>(null);
+  const [documents, setDocuments] = useState<WorkshopDocumentApiDto[]>([]);
+  const [summary, setSummary] = useState<DocumentSummaryApiDto | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+
+  const latestDocument = documents[0] ?? null;
+
+  const registrationProgress = useMemo(() => {
+    if (!workshop) {
+      return 0;
+    }
+
+    if (workshop.capacity === 0) {
+      return 0;
+    }
+
+    return Math.min(
+      Math.round((workshop.registeredCount / workshop.capacity) * 100),
+      100,
+    );
+  }, [workshop]);
+
+  const registrationLabel = useMemo(() => {
+    if (!workshop) {
+      return 'Registration Status';
+    }
+
+    if (workshop.status === 'cancelled') {
+      return 'Registration Closed';
+    }
+
+    if (workshop.registeredCount >= workshop.capacity) {
+      return 'Registration Full';
+    }
+
+    return 'Registration Open';
+  }, [workshop]);
+
+  useEffect(() => {
+    if (!workshopId) {
+      setError('Workshop ID is required.');
+      setIsLoading(false);
+      return;
+    }
+
+    localStorage.setItem('admin:lastWorkshopId', workshopId);
+
+    const loadWorkshop = async () => {
+      const result = await fetchWorkshop(workshopId);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+
+      setWorkshop(result.data);
+    };
+
+    const loadDocuments = async () => {
+      const result = await fetchWorkshopDocuments(workshopId);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+
+      setDocuments(result.data);
+      if (result.data.length === 0) {
+        setSummary(null);
+        return;
+      }
+
+      const latest = result.data[0];
+      const summaryResult = await fetchDocumentSummary(
+        workshopId,
+        latest.id,
+      );
+
+      if (!summaryResult.ok) {
+        setSummaryError(summaryResult.error);
+        setSummary(null);
+        return;
+      }
+
+      setSummary(summaryResult.data);
+    };
+
+    const loadAll = async () => {
+      setIsLoading(true);
+      setError(null);
+      setSummaryError(null);
+      await Promise.all([loadWorkshop(), loadDocuments()]);
+      setIsLoading(false);
+    };
+
+    void loadAll();
+  }, [workshopId]);
+
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file || !workshopId) {
+      return;
+    }
+
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      setUploadError('Only PDF files are supported.');
+      return;
+    }
+
+    setUploadError(null);
+    setIsUploading(true);
+
+    try {
+      const base64 = await readFileAsBase64(file);
+      const result = await uploadWorkshopDocument(workshopId, {
+        fileName: file.name,
+        contentBase64: base64,
+        contentType: file.type || 'application/pdf',
+      });
+
+      if (!result.ok) {
+        setUploadError(result.error);
+        return;
+      }
+
+      const docsResult = await fetchWorkshopDocuments(workshopId);
+      if (docsResult.ok) {
+        setDocuments(docsResult.data);
+      }
+
+      const latest = docsResult.ok ? docsResult.data[0] : null;
+      if (latest) {
+        const summaryResult = await fetchDocumentSummary(
+          workshopId,
+          latest.id,
+        );
+        if (summaryResult.ok) {
+          setSummary(summaryResult.data);
+        }
+      }
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const refreshSummary = async () => {
+    if (!latestDocument || !workshopId) {
+      return;
+    }
+
+    setSummaryError(null);
+    const summaryResult = await fetchDocumentSummary(
+      workshopId,
+      latestDocument.id,
+    );
+
+    if (!summaryResult.ok) {
+      setSummaryError(summaryResult.error);
+      return;
+    }
+
+    setSummary(summaryResult.data);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="admin-page">
+        <AdminSidebar />
+        <main className="admin-main admin-schedule-main">
+          <p className="helper-text">Loading workshop details...</p>
+        </main>
+      </div>
+    );
+  }
+
+  if (error || !workshop) {
+    return (
+      <div className="admin-page">
+        <AdminSidebar />
+        <main className="admin-main admin-schedule-main">
+          <p className="helper-text">{error ?? 'Workshop not found.'}</p>
+        </main>
+      </div>
+    );
+  }
   return (
     <div className="admin-page">
       <AdminSidebar />
@@ -81,7 +323,7 @@ const AdminSchedule = () => {
                     <span>Workshop Title</span>
                     <input
                       type="text"
-                      value="Advanced Machine Learning Methodologies"
+                      value={workshop.title}
                       readOnly
                     />
                   </label>
@@ -90,7 +332,7 @@ const AdminSchedule = () => {
                     <span>Description</span>
                     <textarea
                       rows={5}
-                      value="An in-depth exploration of modern neural network architectures, focusing on transformer models and their applications in natural language processing. Attendees should have a basic understanding of Python and PyTorch."
+                      value={workshop.description ?? 'No description provided.'}
                       readOnly
                     />
                   </label>
@@ -100,7 +342,11 @@ const AdminSchedule = () => {
                       <span>Primary Speaker</span>
                       <div className="admin-input-with-icon">
                         <img src={imgSpeaker} alt="" aria-hidden="true" />
-                        <input type="text" value="Dr. Aris Thorne" readOnly />
+                        <input
+                          type="text"
+                          value={workshop.speaker ?? 'TBD'}
+                          readOnly
+                        />
                       </div>
                     </label>
 
@@ -110,7 +356,7 @@ const AdminSchedule = () => {
                         <img src={imgLocation} alt="" aria-hidden="true" />
                         <input
                           type="text"
-                          value="Engineering Bldg, Room 402"
+                          value={workshop.room ?? 'TBD'}
                           readOnly
                         />
                       </div>
@@ -127,16 +373,28 @@ const AdminSchedule = () => {
                     <span>Date</span>
                     <div className="admin-input-with-icon">
                       <img src={imgDate} alt="" aria-hidden="true" />
-                      <input type="text" value="11/15/2023" readOnly />
+                      <input
+                        type="text"
+                        value={formatDate(workshop.startTime)}
+                        readOnly
+                      />
                     </div>
                   </label>
 
                   <div className="admin-form-field">
                     <span>Time</span>
                     <div className="admin-time-row">
-                      <input type="text" value="02:00 PM" readOnly />
+                      <input
+                        type="text"
+                        value={formatTime(workshop.startTime)}
+                        readOnly
+                      />
                       <span>to</span>
-                      <input type="text" value="04:30 PM" readOnly />
+                      <input
+                        type="text"
+                        value={formatTime(workshop.endTime)}
+                        readOnly
+                      />
                     </div>
                   </div>
 
@@ -144,7 +402,11 @@ const AdminSchedule = () => {
                     <span>Max Capacity</span>
                     <div className="admin-input-with-icon">
                       <img src={imgCapacity} alt="" aria-hidden="true" />
-                      <input type="text" value="50" readOnly />
+                      <input
+                        type="text"
+                        value={workshop.capacity}
+                        readOnly
+                      />
                     </div>
                   </label>
 
@@ -152,7 +414,11 @@ const AdminSchedule = () => {
                     <span>Registration Price ($)</span>
                     <div className="admin-input-with-icon">
                       <img src={imgPrice} alt="" aria-hidden="true" />
-                      <input type="text" value="0.00" readOnly />
+                      <input
+                        type="text"
+                        value={Number(workshop.price).toFixed(2)}
+                        readOnly
+                      />
                     </div>
                     <small>Leave as 0.00 for free workshops.</small>
                   </label>
@@ -165,21 +431,42 @@ const AdminSchedule = () => {
                   Upload syllabus, reading lists, or prerequisite documents.
                 </p>
 
-                <div className="admin-upload-dropzone">
+                <label className="admin-upload-dropzone">
+                  <input
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    onChange={handleFileChange}
+                    disabled={isUploading}
+                    style={{ display: 'none' }}
+                  />
                   <div className="admin-upload-icon">PDF</div>
-                  <strong>Click to upload or drag and drop</strong>
-                  <span>PDF, DOCX up to 10MB</span>
-                </div>
+                  <strong>
+                    {isUploading
+                      ? 'Uploading document...'
+                      : 'Click to upload or drag and drop'}
+                  </strong>
+                  <span>PDF up to 10MB</span>
+                </label>
 
-                <div className="admin-upload-file">
-                  <div>
-                    <strong>ML_Syllabus_Fall23.pdf</strong>
-                    <span>2.4 MB</span>
-                  </div>
-                  <button type="button" aria-label="Delete uploaded file">
-                    Delete
-                  </button>
-                </div>
+                {uploadError ? (
+                  <p className="helper-text">{uploadError}</p>
+                ) : null}
+
+                {documents.length === 0 ? (
+                  <p className="helper-text">No documents uploaded yet.</p>
+                ) : (
+                  documents.map((doc) => (
+                    <div key={doc.id} className="admin-upload-file">
+                      <div>
+                        <strong>{doc.fileName}</strong>
+                        <span>{formatUploadedAt(doc.uploadedAt)}</span>
+                      </div>
+                      <button type="button" disabled>
+                        Delete
+                      </button>
+                    </div>
+                  ))
+                )}
               </article>
             </section>
 
@@ -187,20 +474,32 @@ const AdminSchedule = () => {
               <article className="admin-side-card admin-transcript-card">
                 <div className="admin-side-title">
                   <img src={imgTranscript} alt="" aria-hidden="true" />
-                  <h2>AI Transcript</h2>
+                  <h2>AI Summary</h2>
                   <span className="admin-transcript-status">
                     <img src={imgTranscriptStatus} alt="" aria-hidden="true" />
-                    Pending
+                    {summary ? getSummaryStatusLabel(summary.status) : 'Pending'}
                   </span>
                 </div>
 
                 <p className="admin-transcript-copy">
-                  The recording is scheduled for automated transcription and
-                  summary generation after the event concludes.
+                  {summary?.summaryText
+                    ? summary.summaryText
+                    : latestDocument
+                      ? 'Summary is being prepared. Check back soon.'
+                      : 'Upload a PDF to start AI summarization.'}
                 </p>
 
-                <button type="button" className="admin-outline-button">
-                  Generate Summary Now
+                {summaryError ? (
+                  <p className="helper-text">{summaryError}</p>
+                ) : null}
+
+                <button
+                  type="button"
+                  className="admin-outline-button"
+                  onClick={refreshSummary}
+                  disabled={!latestDocument}
+                >
+                  Refresh Summary
                 </button>
               </article>
 
@@ -209,22 +508,22 @@ const AdminSchedule = () => {
 
                 <div className="admin-registration-stats">
                   <div>
-                    <strong>45</strong>
+                    <strong>{workshop.registeredCount}</strong>
                     <span>Registered</span>
                   </div>
                   <div>
-                    <strong>50</strong>
+                    <strong>{workshop.capacity}</strong>
                     <span>Capacity</span>
                   </div>
                 </div>
 
                 <div className="admin-registration-bar">
-                  <span />
+                  <span style={{ width: `${registrationProgress}%` }} />
                 </div>
 
                 <div className="admin-registration-pill">
                   <span />
-                  Registration Open
+                  {registrationLabel}
                 </div>
               </article>
 
@@ -235,24 +534,16 @@ const AdminSchedule = () => {
                 </div>
 
                 <div className="admin-attendees-list">
-                  {attendees.map((attendee) => (
-                    <div key={attendee.email} className="admin-attendee-row">
-                      {attendee.avatar ? (
-                        <img src={attendee.avatar} alt={attendee.name} />
-                      ) : (
-                        <div className="admin-attendee-initials">
-                          {attendee.initials}
-                        </div>
-                      )}
-                      <div>
-                        <strong>{attendee.name}</strong>
-                        <span>{attendee.email}</span>
-                      </div>
+                  <div className="admin-attendee-row">
+                    <div className="admin-attendee-initials">--</div>
+                    <div>
+                      <strong>No attendee roster yet</strong>
+                      <span>Roster export is not configured.</span>
                     </div>
-                  ))}
+                  </div>
                 </div>
 
-                <button type="button" className="admin-export-button">
+                <button type="button" className="admin-export-button" disabled>
                   <img src={imgExport} alt="" aria-hidden="true" />
                   <span>Export Roster</span>
                 </button>

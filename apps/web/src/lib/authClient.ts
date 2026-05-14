@@ -1,4 +1,4 @@
-import { postJson } from './apiClient.ts';
+import { getJson, postJson } from './apiClient.ts';
 
 export type AuthResult = Awaited<ReturnType<typeof signInWithEmail>>;
 
@@ -30,4 +30,8 @@ export const signUpWithEmail = (email: string, password: string) => {
 
 export const signOut = () => {
   return postJson('/auth/sign-out');
+};
+
+export const fetchAuthSession = () => {
+  return getJson('/auth/get-session');
 };

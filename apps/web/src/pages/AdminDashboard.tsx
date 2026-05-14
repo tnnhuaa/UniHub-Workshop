@@ -1,4 +1,8 @@
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '../components/AdminSidebar.tsx';
+import { fetchAdminDashboard } from '../lib/unihubApi.ts';
+import type { AdminDashboardResponseDto } from '../lib/unihubApi.ts';
 
 const imgNewWorkshop =
   'https://www.figma.com/api/mcp/asset/1c3b467b-1867-4898-8ec4-83dffde5d81d';
@@ -35,65 +39,137 @@ const imgAiOptimization =
 const imgAiDone =
   'https://www.figma.com/api/mcp/asset/284ef3fe-cc12-4bc9-8b67-31ab681d3a57';
 
-const kpiCards = [
-  {
-    label: 'TOTAL WORKSHOPS',
-    value: '142',
-    trend: '12%',
-    trendTone: 'up',
-    icon: imgKpiWorkshops,
-    iconTone: 'blue',
-  },
-  {
-    label: 'REGISTRATIONS',
-    value: '3,845',
-    trend: '8%',
-    trendTone: 'up',
-    icon: imgKpiRegistrations,
-    iconTone: 'green',
-  },
-  {
-    label: 'GROSS REVENUE',
-    value: '$24.5k',
-    trend: '2%',
-    trendTone: 'down',
-    icon: imgKpiRevenue,
-    iconTone: 'neutral',
-  },
-];
+type TrendTone = 'up' | 'down' | 'neutral';
 
-const workshops = [
-  {
-    title: 'Advanced Data Analytics',
-    date: 'Oct 12,\n2023',
-    enrolled: '45 / 50',
-    status: 'Open',
-    statusTone: 'open',
-  },
-  {
-    title: 'Intro to Quantum Computing',
-    date: 'Oct 15,\n2023',
-    enrolled: '30 / 30',
-    status: 'Full',
-    statusTone: 'full',
-  },
-  {
-    title: 'Cybersecurity Fundamentals',
-    date: 'Oct 18,\n2023',
-    enrolled: '0 / 40',
-    status: 'Cancelled',
-    statusTone: 'cancelled',
-  },
-  {
-    title: 'Design Systems at Scale',
-    date: 'Oct 22,\n2023',
-    enrolled: '12 / 25',
-    status: 'Open',
-    statusTone: 'open',
-  },
-];
+const formatDateLines = (isoDate: string) => {
+  const date = new Date(isoDate);
+  return [
+    date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: '2-digit',
+    }),
+    date.toLocaleDateString('en-US', { year: 'numeric' }),
+  ];
+};
+
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(value);
+
+const getWorkshopStatus = (
+  workshop: AdminDashboardResponseDto['workshops'][number],
+) => {
+  if (workshop.status === 'cancelled') {
+    return { label: 'Cancelled', tone: 'cancelled' };
+  }
+
+  if (workshop.registeredCount >= workshop.capacity) {
+    return { label: 'Full', tone: 'full' };
+  }
+
+  return { label: 'Open', tone: 'open' };
+};
+
+const getCsvBadge = (status: string) => {
+  if (status === 'failed') {
+    return { label: 'Sync Failed', tone: 'failed' };
+  }
+
+  if (status === 'running') {
+    return { label: 'Sync Running', tone: 'pending' };
+  }
+
+  if (status === 'completed') {
+    return { label: 'Sync Completed', tone: 'pending' };
+  }
+
+  return { label: 'Sync Pending', tone: 'pending' };
+};
+
+const formatTimestamp = (value: string | null) => {
+  if (!value) {
+    return 'No completed jobs yet.';
+  }
+
+  return new Date(value).toLocaleString('en-US', {
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
+  const [dashboard, setDashboard] = useState<AdminDashboardResponseDto | null>(
+    null,
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      const result = await fetchAdminDashboard();
+      setIsLoading(false);
+
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+
+      setDashboard(result.data);
+    };
+
+    void loadDashboard();
+  }, []);
+
+  const kpiCards = useMemo(() => {
+    if (!dashboard) {
+      return [] as Array<{
+        label: string;
+        value: string;
+        trend?: string;
+        trendTone: TrendTone;
+        icon: string;
+        iconTone: string;
+      }>;
+    }
+
+    return [
+      {
+        label: 'TOTAL WORKSHOPS',
+        value: dashboard.kpis.totalWorkshops.toLocaleString('en-US'),
+        trendTone: 'neutral' as TrendTone,
+        icon: imgKpiWorkshops,
+        iconTone: 'blue',
+      },
+      {
+        label: 'REGISTRATIONS',
+        value: dashboard.kpis.totalRegistrations.toLocaleString('en-US'),
+        trendTone: 'neutral' as TrendTone,
+        icon: imgKpiRegistrations,
+        iconTone: 'green',
+      },
+      {
+        label: 'GROSS REVENUE',
+        value: formatCurrency(dashboard.kpis.grossRevenue),
+        trendTone: 'neutral' as TrendTone,
+        icon: imgKpiRevenue,
+        iconTone: 'neutral',
+      },
+    ];
+  }, [dashboard]);
+
+  const workshops = dashboard?.workshops ?? [];
+  const csvBatches = dashboard?.systemHealth.csvSync.batches ?? [];
+  const aiSummary = dashboard?.systemHealth.aiSummary;
+  const aiRunningCount = aiSummary?.counts.running ?? 0;
+  const aiProgress = Math.min(aiRunningCount * 12, 100);
   return (
     <div className="admin-page">
       <AdminSidebar />
@@ -126,19 +202,32 @@ const AdminDashboard = () => {
                   <div className="admin-kpi-bottom">
                     <strong>{card.value}</strong>
                     <span className={`admin-kpi-trend ${card.trendTone}`}>
-                      <img
-                        src={
-                          card.trendTone === 'up' ? imgTrendUp : imgTrendDown
-                        }
-                        alt=""
-                        aria-hidden="true"
-                      />
-                      {card.trend}
+                      {card.trend ? (
+                        <>
+                          <img
+                            src={
+                              card.trendTone === 'up'
+                                ? imgTrendUp
+                                : imgTrendDown
+                            }
+                            alt=""
+                            aria-hidden="true"
+                          />
+                          {card.trend}
+                        </>
+                      ) : (
+                        '--'
+                      )}
                     </span>
                   </div>
                 </article>
               ))}
             </div>
+
+            {error ? <p className="helper-text">{error}</p> : null}
+            {isLoading ? (
+              <p className="helper-text">Loading dashboard...</p>
+            ) : null}
 
             <section className="admin-table-card">
               <div className="admin-table-toolbar">
@@ -172,49 +261,73 @@ const AdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {workshops.map((workshop) => (
-                      <tr key={workshop.title}>
-                        <td>{workshop.title}</td>
-                        <td>
-                          {workshop.date.split('\n').map((line) => (
-                            <span key={line}>{line}</span>
-                          ))}
-                        </td>
-                        <td>{workshop.enrolled}</td>
-                        <td>
-                          <span
-                            className={`admin-status-pill ${workshop.statusTone}`}
-                          >
-                            {workshop.status}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="admin-row-actions">
-                            <button type="button">
-                              <img
-                                src={imgActionOpen}
-                                alt=""
-                                aria-hidden="true"
-                              />
-                            </button>
-                            <button type="button">
-                              <img
-                                src={imgActionEdit}
-                                alt=""
-                                aria-hidden="true"
-                              />
-                            </button>
-                            <button type="button">
-                              <img
-                                src={imgActionDelete}
-                                alt=""
-                                aria-hidden="true"
-                              />
-                            </button>
-                          </div>
-                        </td>
+                    {workshops.length === 0 ? (
+                      <tr>
+                        <td colSpan={5}>No workshops available.</td>
                       </tr>
-                    ))}
+                    ) : (
+                      workshops.map((workshop) => {
+                        const statusMeta = getWorkshopStatus(workshop);
+                        const [dateLine, yearLine] = formatDateLines(
+                          workshop.startTime,
+                        );
+
+                        return (
+                          <tr key={workshop.id}>
+                            <td>{workshop.title}</td>
+                            <td>
+                              <span>{dateLine}</span>
+                              <span>{yearLine}</span>
+                            </td>
+                            <td>
+                              {workshop.registeredCount} / {workshop.capacity}
+                            </td>
+                            <td>
+                              <span
+                                className={`admin-status-pill ${statusMeta.tone}`}
+                              >
+                                {statusMeta.label}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="admin-row-actions">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    navigate(`/admin/workshops/${workshop.id}`)
+                                  }
+                                >
+                                  <img
+                                    src={imgActionOpen}
+                                    alt=""
+                                    aria-hidden="true"
+                                  />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    navigate(`/admin/workshops/${workshop.id}`)
+                                  }
+                                >
+                                  <img
+                                    src={imgActionEdit}
+                                    alt=""
+                                    aria-hidden="true"
+                                  />
+                                </button>
+                                <button type="button">
+                                  <img
+                                    src={imgActionDelete}
+                                    alt=""
+                                    aria-hidden="true"
+                                  />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -230,24 +343,48 @@ const AdminDashboard = () => {
             <section className="admin-side-section">
               <h3>CSV SYNC JOBS</h3>
 
-              <article className="admin-job-card failed">
-                <img src={imgJobFailed} alt="" aria-hidden="true" />
-                <div className="admin-job-copy">
-                  <strong>Student_Roster_Q3.csv</strong>
-                  <p>Failed at row 42</p>
-                  <p>(Invalid format)</p>
-                </div>
-                <span className="admin-job-badge failed">Sync Failed</span>
-              </article>
+              {csvBatches.length === 0 ? (
+                <p className="helper-text">No CSV sync batches yet.</p>
+              ) : (
+                csvBatches.map((batch) => {
+                  const badge = getCsvBadge(batch.status);
+                  const isFailed = batch.status === 'failed';
+                  const lastError = batch.lastError;
 
-              <article className="admin-job-card pending">
-                <img src={imgJobPending} alt="" aria-hidden="true" />
-                <div className="admin-job-copy">
-                  <strong>Workshop_Catalog_Update.csv</strong>
-                  <p>Queued 2 mins ago</p>
-                </div>
-                <span className="admin-job-badge pending">Sync Pending</span>
-              </article>
+                  return (
+                    <article
+                      key={batch.id}
+                      className={`admin-job-card ${badge.tone}`}
+                    >
+                      <img
+                        src={isFailed ? imgJobFailed : imgJobPending}
+                        alt=""
+                        aria-hidden="true"
+                      />
+                      <div className="admin-job-copy">
+                        <strong>{batch.sourceFile}</strong>
+                        {isFailed && lastError ? (
+                          <>
+                            <p>Failed at row {lastError.rowNumber}</p>
+                            <p>({lastError.message})</p>
+                          </>
+                        ) : (
+                          <p>
+                            {batch.status === 'running'
+                              ? 'Processing batch'
+                              : batch.status === 'completed'
+                                ? 'Completed'
+                                : 'Queued'}
+                          </p>
+                        )}
+                      </div>
+                      <span className={`admin-job-badge ${badge.tone}`}>
+                        {badge.label}
+                      </span>
+                    </article>
+                  );
+                })
+              )}
             </section>
 
             <section className="admin-side-section">
@@ -259,13 +396,17 @@ const AdminDashboard = () => {
                     <img src={imgAiDescription} alt="" aria-hidden="true" />
                   </div>
                   <div>
-                    <strong>Description Generation</strong>
-                    <p>Running for 3 items</p>
+                    <strong>Summary Generation</strong>
+                    <p>
+                      {aiRunningCount > 0
+                        ? `Running for ${aiRunningCount} items`
+                        : 'No jobs running'}
+                    </p>
                   </div>
                 </div>
 
                 <div className="admin-progress">
-                  <span />
+                  <span style={{ width: `${aiProgress}%` }} />
                 </div>
               </div>
 
@@ -275,8 +416,8 @@ const AdminDashboard = () => {
                     <img src={imgAiOptimization} alt="" aria-hidden="true" />
                   </div>
                   <div>
-                    <strong>Schedule Optimization</strong>
-                    <p>Completed (12m ago)</p>
+                    <strong>Last Completed Summary</strong>
+                    <p>{formatTimestamp(aiSummary?.lastCompletedAt ?? null)}</p>
                   </div>
                 </div>
 

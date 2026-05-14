@@ -94,6 +94,74 @@ export type RegistrationListQuery = {
   pageSize?: number;
 };
 
+export type JobStatus = 'pending' | 'running' | 'completed' | 'failed';
+
+export type WorkshopDocumentApiDto = {
+  id: string;
+  workshopId: string;
+  fileUrl: string;
+  fileName: string;
+  processingStatus: 'pending' | 'processing' | 'completed' | 'failed';
+  uploadedAt: string;
+};
+
+export type DocumentSummaryApiDto = {
+  documentId: string;
+  status: JobStatus;
+  summaryText: string | null;
+  retryCount: number;
+  updatedAt: string | null;
+};
+
+export type AdminCsvSyncBatchDto = {
+  id: string;
+  sourceFile: string;
+  status: JobStatus;
+  totalRecords: number;
+  successfulRecords: number;
+  failedRecords: number;
+  conflictRecords: number;
+  startedAt: string;
+  completedAt: string | null;
+  lastError: {
+    rowNumber: number;
+    message: string;
+  } | null;
+};
+
+export type AdminAiSummaryCountsDto = {
+  pending: number;
+  running: number;
+  completed: number;
+  failed: number;
+};
+
+export type AdminDashboardResponseDto = {
+  kpis: {
+    totalWorkshops: number;
+    totalRegistrations: number;
+    grossRevenue: number;
+  };
+  workshops: Array<{
+    id: string;
+    title: string;
+    startTime: string;
+    endTime: string;
+    capacity: number;
+    registeredCount: number;
+    status: WorkshopStatus;
+  }>;
+  systemHealth: {
+    csvSync: {
+      batches: AdminCsvSyncBatchDto[];
+    };
+    aiSummary: {
+      counts: AdminAiSummaryCountsDto;
+      lastCompletedAt: string | null;
+    };
+  };
+};
+
 export const fetchWorkshops = (query: WorkshopListQuery) =>
   getJson<WorkshopApiDto[]>('/workshops', { query });
 
@@ -122,3 +190,43 @@ export const createRegistration = (
     body,
     headers: withIdempotencyKey(idempotencyKey),
   });
+
+export const fetchAdminDashboard = () =>
+  getJson<AdminDashboardResponseDto>('/admin/dashboard');
+
+export const fetchWorkshopDocuments = (workshopId: string) =>
+  getJson<WorkshopDocumentApiDto[]>(
+    `/admin/workshops/${workshopId}/documents`,
+  );
+
+export const uploadWorkshopDocument = (
+  workshopId: string,
+  body: {
+    fileName: string;
+    contentBase64: string;
+    contentType?: string;
+  },
+) =>
+  postJson<
+    {
+      document: WorkshopDocumentApiDto;
+      summaryJob: {
+        id: string;
+        documentId: string;
+        status: JobStatus;
+        summaryText?: string | null;
+        retryCount: number;
+      };
+    },
+    typeof body
+  >(`/admin/workshops/${workshopId}/documents`, {
+    body,
+  });
+
+export const fetchDocumentSummary = (
+  workshopId: string,
+  documentId: string,
+) =>
+  getJson<DocumentSummaryApiDto>(
+    `/admin/workshops/${workshopId}/documents/${documentId}/summary`,
+  );
