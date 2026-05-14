@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout.tsx';
-import { fetchAuthSession, signInWithEmail, signOut } from '../lib/authClient.ts';
+import {
+  fetchAuthSession,
+  signInWithEmail,
+  signOut,
+} from '../lib/authClient.ts';
 import { saveStoredStudentSession } from '../lib/studentSessionStore.ts';
 import { mapStudentToProfileViewModel } from '../lib/unihubAdapters.ts';
 import { fetchCurrentStudent } from '../lib/unihubApi.ts';
@@ -49,7 +53,10 @@ const SignIn = () => {
 
     if (!studentResult.ok) {
       if (studentResult.statusCode === 403) {
-        if (effectiveRole === 'organizer' || effectiveRole === 'checkin_staff') {
+        if (
+          effectiveRole === 'organizer' ||
+          effectiveRole === 'checkin_staff'
+        ) {
           setSuccess(true);
           void navigate('/admin/dashboard');
           return;
