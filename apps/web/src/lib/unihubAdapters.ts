@@ -278,7 +278,7 @@ export const mapWorkshopToCard = (
       highlight: toNumber(workshop.price) > 0,
     },
     title: workshop.title,
-    description: undefined,
+    description: workshop.description ?? metadata.summary,
     meta: [
       {
         icon: Calendar,

@@ -782,6 +782,15 @@ label {
 
 .workshop-grid.workshop-grid-list .card-body p {
   max-width: 72ch;
+  -webkit-line-clamp: 2;
+}
+
+.workshop-grid.workshop-grid-list .ghost-button,
+.workshop-grid.workshop-grid-list .action-button {
+  width: auto;
+  min-height: 0;
+  height: auto;
+  align-self: auto;
 }
 
 .workshop-results-bar {
@@ -1014,6 +1023,14 @@ label {
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.workshop-grid:not(.workshop-grid-list) .card-body h3 {
+  -webkit-line-clamp: 1;
+}
+
+.workshop-grid:not(.workshop-grid-list) .card-body p {
+  -webkit-line-clamp: 1;
 }
 
 .card-meta {
