@@ -53,6 +53,18 @@ export class PaymentService {
         return this.buildMockPaymentResponse(existing.id);
       }
 
+      const pendingPayment = await this.prisma.payment.findFirst({
+        where: {
+          registrationId: input.registrationId,
+          status: 'pending',
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (pendingPayment) {
+        return this.buildMockPaymentResponse(pendingPayment.id);
+      }
+
       const payment = await this.prisma.payment.create({
         data: {
           registrationId: input.registrationId,
@@ -101,6 +113,7 @@ export class PaymentService {
           status: 'confirmed',
           paymentStatus: 'paid',
           paymentCompletedAt: new Date(),
+          heldUntil: null,
           qrCode,
         },
       });

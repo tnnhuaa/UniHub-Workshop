@@ -8,6 +8,7 @@ export class RabbitMqService implements OnModuleDestroy {
   private readonly logger = new Logger(RabbitMqService.name);
   private connection: ChannelModel | null = null;
   private channel: Channel | null = null;
+  private connected = false;
 
   constructor(private rabbitmqUrl: string = 'amqp://localhost:5672') {}
 
@@ -33,11 +34,17 @@ export class RabbitMqService implements OnModuleDestroy {
       // Declare exchanges and queues
       await this.declareInfrastructure();
 
+      this.connected = true;
       this.logger.log('✓ Connected to RabbitMQ');
     } catch (error) {
+      this.connected = false;
       this.logger.error('Failed to connect to RabbitMQ', error);
       throw error;
     }
+  }
+
+  isConnected() {
+    return this.connected;
   }
 
   /**
@@ -159,6 +166,7 @@ export class RabbitMqService implements OnModuleDestroy {
     if (this.connection) {
       await this.connection.close();
     }
+    this.connected = false;
     this.logger.log('Disconnected from RabbitMQ');
   }
 

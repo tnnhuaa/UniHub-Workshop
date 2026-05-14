@@ -16,6 +16,7 @@ const imgMapLocation =
   'https://www.figma.com/api/mcp/asset/2bdc588e-4301-40b3-8b99-53cbc5b02add';
 
 const defaultWorkshopId = '1f5b7b88-2f2a-4ff0-9fb8-0f8b51a58f01';
+const DETAIL_REFRESH_MS = 15_000;
 
 const WorkshopDetail = () => {
   const navigate = useNavigate();
@@ -27,17 +28,36 @@ const WorkshopDetail = () => {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const seatsFilled = workshop ? workshop.occupiedSeats : 0;
+  const capacityUsagePercent =
+    workshop && workshop.capacity > 0
+      ? Math.round((seatsFilled / workshop.capacity) * 100)
+      : 0;
+  const registrationDisabled =
+    workshop?.status === 'cancelled' || workshop?.isSoldOut;
+  const registrationLabel =
+    workshop?.status === 'cancelled'
+      ? 'Unavailable'
+      : workshop?.isSoldOut
+        ? 'Sold Out'
+        : 'Register Now';
 
   useEffect(() => {
-    const loadWorkshop = async () => {
-      setIsLoading(true);
-      setError(null);
+    const loadWorkshop = async (options?: { background?: boolean }) => {
+      if (!options?.background) {
+        setIsLoading(true);
+        setError(null);
+      }
 
       const result = await fetchWorkshop(workshopId);
-      setIsLoading(false);
+      if (!options?.background) {
+        setIsLoading(false);
+      }
 
       if (!result.ok) {
-        setError(result.error);
+        if (!options?.background) {
+          setError(result.error);
+        }
         return;
       }
 
@@ -45,6 +65,13 @@ const WorkshopDetail = () => {
     };
 
     void loadWorkshop();
+    const intervalId = window.setInterval(() => {
+      void loadWorkshop({ background: true });
+    }, DETAIL_REFRESH_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
   }, [workshopId]);
 
   if (isLoading) {
@@ -96,9 +123,9 @@ const WorkshopDetail = () => {
                 <span className="detail-pill">
                   {workshop.status === 'cancelled'
                     ? 'Cancelled'
-                    : workshop.registeredCount < workshop.capacity
-                      ? 'Open'
-                      : 'Full'}
+                    : workshop.isSoldOut
+                      ? 'Sold Out'
+                      : 'Open'}
                 </span>
                 <span className="detail-tag">{workshop.category}</span>
               </div>
@@ -155,15 +182,13 @@ const WorkshopDetail = () => {
                 </div>
                 <div className="action-seats">
                   <span>
-                    {workshop.registeredCount} / {workshop.capacity} Seats
+                    {seatsFilled} / {workshop.capacity} Seats
                   </span>
                   <div className="progress">
                     <div
                       className="progress-bar"
                       style={{
-                        width: `${Math.round(
-                          (workshop.registeredCount / workshop.capacity) * 100,
-                        )}%`,
+                        width: `${capacityUsagePercent}%`,
                       }}
                     />
                   </div>
@@ -197,12 +222,25 @@ const WorkshopDetail = () => {
               </div>
               <button
                 type="button"
-                className="detail-register"
-                onClick={() => navigate(`/workshops/${workshopId}/register`)}
+                className={`detail-register${
+                  registrationDisabled ? ' is-disabled' : ''
+                }`}
+                onClick={() => {
+                  if (!registrationDisabled) {
+                    navigate(`/workshops/${workshopId}/register`);
+                  }
+                }}
+                disabled={registrationDisabled}
               >
                 <Check className="icon icon-md" aria-hidden="true" />
-                Register Now
+                {registrationLabel}
               </button>
+              {workshop.activeHoldCount > 0 && workshop.isSoldOut ? (
+                <p className="helper-text detail-register-note">
+                  The remaining seat is temporarily held by another student.
+                  This page refreshes automatically when the hold expires.
+                </p>
+              ) : null}
             </section>
 
             <section className="detail-card map-card">

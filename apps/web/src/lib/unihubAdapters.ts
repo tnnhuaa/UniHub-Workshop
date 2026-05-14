@@ -31,6 +31,10 @@ export type WorkshopDetailViewModel = {
   price: number;
   capacity: number;
   registeredCount: number;
+  activeHoldCount: number;
+  occupiedSeats: number;
+  remainingSeats: number;
+  isSoldOut: boolean;
   startTime: string;
   endTime: string;
   status: WorkshopStatus;
@@ -209,8 +213,35 @@ const getWorkshopMetadata = (workshopId: string) =>
 const toNumber = (value: string | number) => Number(value);
 
 const getRemainingSeats = (
-  workshop: Pick<WorkshopApiDto, 'capacity' | 'registeredCount'>,
-) => Math.max(workshop.capacity - workshop.registeredCount, 0);
+  workshop: Pick<
+    WorkshopApiDto,
+    'capacity' | 'registeredCount' | 'remainingSeats'
+  >,
+) =>
+  workshop.remainingSeats ??
+  Math.max(workshop.capacity - workshop.registeredCount, 0);
+
+const getActiveHoldCount = (
+  workshop: Pick<WorkshopApiDto, 'activeHoldCount'>,
+) => workshop.activeHoldCount ?? 0;
+
+const getOccupiedSeats = (
+  workshop: Pick<
+    WorkshopApiDto,
+    'capacity' | 'registeredCount' | 'occupiedSeats' | 'remainingSeats'
+  >,
+) =>
+  workshop.occupiedSeats ??
+  Math.min(workshop.capacity - getRemainingSeats(workshop), workshop.capacity);
+
+const getIsSoldOut = (
+  workshop: Pick<
+    WorkshopApiDto,
+    'status' | 'capacity' | 'registeredCount' | 'remainingSeats' | 'isSoldOut'
+  >,
+) =>
+  workshop.isSoldOut ??
+  (workshop.status === 'published' && getRemainingSeats(workshop) === 0);
 
 const getStatusMeta = (
   workshop: WorkshopApiDto,
@@ -327,10 +358,11 @@ export const mapWorkshopToCard = (
             variant: 'ghost-muted',
             disabled: true,
           }
-        : remainingSeats === 0
+        : getIsSoldOut(workshop)
           ? {
-              label: 'Join Waitlist',
-              variant: 'ghost',
+              label: 'Sold Out',
+              variant: 'ghost-muted',
+              disabled: true,
             }
           : {
               label: 'Register',
@@ -363,6 +395,10 @@ export const mapWorkshopToDetailViewModel = (
     price: toNumber(workshop.price),
     capacity: workshop.capacity,
     registeredCount: workshop.registeredCount,
+    activeHoldCount: getActiveHoldCount(workshop),
+    occupiedSeats: getOccupiedSeats(workshop),
+    remainingSeats: getRemainingSeats(workshop),
+    isSoldOut: getIsSoldOut(workshop),
     startTime: workshop.startTime,
     endTime: workshop.endTime,
     status: workshop.status,

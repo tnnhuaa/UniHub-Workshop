@@ -22,6 +22,10 @@ export type WorkshopApiDto = {
   room?: string | null;
   capacity: number;
   registeredCount: number;
+  activeHoldCount?: number;
+  occupiedSeats?: number;
+  remainingSeats?: number;
+  isSoldOut?: boolean;
   price: string | number;
   startTime: string;
   endTime: string;

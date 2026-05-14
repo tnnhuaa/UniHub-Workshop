@@ -8,18 +8,30 @@ describe('WorkshopService', () => {
   type WorkshopRow = {
     id: string;
     organizerId: string;
+    status: string;
     startTime: Date;
     endTime: Date;
     capacity: number;
     registeredCount: number;
   };
 
+  type HoldCountRow = {
+    workshopId: string;
+    _count: {
+      _all: number;
+    };
+  };
+
   type PrismaMock = {
+    registration: {
+      groupBy: jest.Mock<Promise<HoldCountRow[]>, [unknown]>;
+    };
     workshop: {
       create: jest.Mock<
         Promise<{ id: string; title: string; status: string }>,
         [unknown]
       >;
+      findMany: jest.Mock<Promise<WorkshopRow[]>, [unknown]>;
       findUniqueOrThrow: jest.Mock<Promise<WorkshopRow>, [unknown]>;
       update: jest.Mock<Promise<unknown>, [unknown]>;
     };
@@ -47,11 +59,15 @@ describe('WorkshopService', () => {
 
   const createService = (): TestContext => {
     const prismaMock: PrismaMock = {
+      registration: {
+        groupBy: jest.fn<Promise<HoldCountRow[]>, [unknown]>(),
+      },
       workshop: {
         create: jest.fn<
           Promise<{ id: string; title: string; status: string }>,
           [unknown]
         >(),
+        findMany: jest.fn<Promise<WorkshopRow[]>, [unknown]>(),
         findUniqueOrThrow: jest.fn<Promise<WorkshopRow>, [unknown]>(),
         update: jest.fn<Promise<unknown>, [unknown]>(),
       },
@@ -98,12 +114,79 @@ describe('WorkshopService', () => {
     expect(auditServiceMock.log).toHaveBeenCalled();
   });
 
+  it('includes active holds when listing workshop availability', async () => {
+    const { service, prismaMock } = createService();
+
+    prismaMock.workshop.findMany.mockResolvedValue([
+      {
+        id: 'workshop-1',
+        organizerId: 'organizer-1',
+        status: 'published',
+        startTime: baseInput.startTime,
+        endTime: baseInput.endTime,
+        capacity: 2,
+        registeredCount: 1,
+      },
+    ]);
+    prismaMock.registration.groupBy.mockResolvedValue([
+      {
+        workshopId: 'workshop-1',
+        _count: {
+          _all: 1,
+        },
+      },
+    ]);
+
+    await expect(service.findAll({ page: 1, pageSize: 10 })).resolves.toEqual([
+      expect.objectContaining({
+        id: 'workshop-1',
+        activeHoldCount: 1,
+        remainingSeats: 0,
+        occupiedSeats: 2,
+        isSoldOut: true,
+      }),
+    ]);
+  });
+
+  it('includes active holds when loading workshop detail', async () => {
+    const { service, prismaMock } = createService();
+
+    prismaMock.workshop.findUniqueOrThrow.mockResolvedValue({
+      id: 'workshop-1',
+      organizerId: 'organizer-1',
+      status: 'published',
+      startTime: baseInput.startTime,
+      endTime: baseInput.endTime,
+      capacity: 5,
+      registeredCount: 2,
+    });
+    prismaMock.registration.groupBy.mockResolvedValue([
+      {
+        workshopId: 'workshop-1',
+        _count: {
+          _all: 2,
+        },
+      },
+    ]);
+
+    await expect(service.findOne('workshop-1')).resolves.toEqual(
+      expect.objectContaining({
+        id: 'workshop-1',
+        activeHoldCount: 2,
+        remainingSeats: 1,
+        occupiedSeats: 4,
+        isSoldOut: false,
+      }),
+    );
+  });
+
   it('rejects updates from non-owners', async () => {
     const { service, prismaMock } = createService();
 
     prismaMock.workshop.findUniqueOrThrow.mockResolvedValue({
       id: 'workshop-1',
       organizerId: 'organizer-1',
+      status: 'published',
       startTime: baseInput.startTime,
       endTime: baseInput.endTime,
       capacity: baseInput.capacity,
@@ -121,6 +204,7 @@ describe('WorkshopService', () => {
     prismaMock.workshop.findUniqueOrThrow.mockResolvedValue({
       id: 'workshop-1',
       organizerId: 'organizer-1',
+      status: 'published',
       startTime: baseInput.startTime,
       endTime: baseInput.endTime,
       capacity: baseInput.capacity,

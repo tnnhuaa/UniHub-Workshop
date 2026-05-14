@@ -49,18 +49,26 @@ export class NotificationService {
 
     const provider = this.getProvider(input.channel);
 
-    const delivery = await this.prisma.notificationDelivery.create({
+    const notification = await this.prisma.notification.create({
       data: {
         userId: input.userId,
+        type: 'custom',
+        title: input.templateCode,
+        body: input.templateCode,
+      },
+    });
+
+    const delivery = await this.prisma.notificationDelivery.create({
+      data: {
+        notificationId: notification.id,
         channel: input.channel,
-        templateCode: input.templateCode,
         status: 'pending',
         dedupeKey: input.dedupeKey,
       },
     });
 
     const result = await this.sendWithProvider(provider, {
-      notificationId: delivery.id,
+      notificationId: notification.id,
       userId: input.userId,
       channel: input.channel,
       templateCode: input.templateCode,
@@ -77,10 +85,10 @@ export class NotificationService {
 
   findByUser(userId: string, query: NotificationListQuery) {
     const where: {
-      userId: string;
+      notification: { userId: string };
       channel?: NotificationChannel;
       status?: 'pending' | 'sent' | 'failed';
-    } = { userId };
+    } = { notification: { userId } };
 
     if (query.channel) {
       where.channel = query.channel;
