@@ -1,6 +1,7 @@
-import { All, Controller, Inject, Req, Res } from '@nestjs/common';
+import { All, Controller, Get, Inject, Req, Res } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { BetterAuthInstance } from './auth.service.js';
+import { AuthService } from './auth.service.js';
 import { BETTER_AUTH_INSTANCE } from './auth.constants.js';
 
 type FastifyRequestWithRawBody = FastifyRequest & {
@@ -16,6 +17,7 @@ export class AuthController {
   constructor(
     @Inject(BETTER_AUTH_INSTANCE)
     private readonly auth: BetterAuthInstance,
+    private readonly authService: AuthService,
   ) {}
 
   private buildHeaders(request: FastifyRequest) {
@@ -88,6 +90,30 @@ export class AuthController {
     reply.raw.setHeader('Access-Control-Allow-Origin', origin);
     reply.raw.setHeader('Access-Control-Allow-Credentials', 'true');
     reply.raw.setHeader('Vary', 'Origin');
+  }
+
+  @Get('get-session')
+  async getSession(@Req() request: FastifyRequest) {
+    const session = await this.authService.getSessionFromRequest(request);
+
+    if (!session?.user?.id) {
+      return {
+        session: null,
+        user: null,
+        roles: [] as string[],
+        role: null as string | null,
+      };
+    }
+
+    const roles = await this.authService.getUserRolesValues(session.user.id);
+    const role = this.authService.getPrimaryRole(roles);
+
+    return {
+      session: session.session,
+      user: session.user,
+      roles,
+      role,
+    };
   }
 
   @All('*')

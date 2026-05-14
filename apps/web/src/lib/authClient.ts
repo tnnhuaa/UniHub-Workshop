@@ -3,6 +3,18 @@ import { createAuthClient } from 'better-auth/client';
 import { clearStoredStudentSession } from './studentSessionStore.ts';
 
 export type AuthResult = Awaited<ReturnType<typeof authClient.signIn.email>>;
+export type AuthRole = 'student' | 'organizer' | 'checkin_staff';
+export type AuthSessionPayload = {
+  session: unknown | null;
+  user: {
+    id: string;
+    email?: string | null;
+    name?: string | null;
+    image?: string | null;
+  } | null;
+  roles: AuthRole[];
+  role: AuthRole | null;
+};
 
 /**
  * BetterAuth client configured to communicate with the backend auth service.
@@ -45,5 +57,5 @@ export const signOut = async () => {
 };
 
 export const fetchAuthSession = () => {
-  return getJson('/auth/get-session');
+  return getJson<AuthSessionPayload>('/auth/get-session');
 };
