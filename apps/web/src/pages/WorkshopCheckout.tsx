@@ -9,15 +9,10 @@ import {
   X,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  mapStudentToProfileViewModel,
-  mapWorkshopToDetailViewModel,
-} from '../lib/unihubAdapters.ts';
-import {
-  createRegistration,
-  fetchCurrentStudent,
-  fetchWorkshop,
-} from '../lib/unihubApi.ts';
+import SessionGate from '../components/SessionGate.tsx';
+import useStudentSession from '../hooks/useStudentSession.ts';
+import { mapWorkshopToDetailViewModel } from '../lib/unihubAdapters.ts';
+import { createRegistration, fetchWorkshop } from '../lib/unihubApi.ts';
 import type { RegistrationCheckoutResponseDto } from '../lib/unihubApi.ts';
 import type {
   WorkshopDetailViewModel,
@@ -38,6 +33,7 @@ const WorkshopCheckout = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const workshopId = id ?? defaultWorkshopId;
+  const session = useStudentSession();
   const [workshop, setWorkshop] = useState<WorkshopDetailViewModel | null>(
     null,
   );
@@ -63,11 +59,7 @@ const WorkshopCheckout = () => {
       setIsLoading(true);
       setError(null);
 
-      const [workshopResult, studentResult] = await Promise.all([
-        fetchWorkshop(workshopId),
-        fetchCurrentStudent(),
-      ]);
-
+      const workshopResult = await fetchWorkshop(workshopId);
       setIsLoading(false);
 
       if (!workshopResult.ok) {
@@ -75,25 +67,31 @@ const WorkshopCheckout = () => {
         return;
       }
 
-      if (!studentResult.ok) {
-        setError(studentResult.error);
-        return;
-      }
-
       setWorkshop(mapWorkshopToDetailViewModel(workshopResult.data));
-
-      const profile = mapStudentToProfileViewModel(studentResult.data);
-      const nameParts = splitFullName(profile.fullName);
-
-      setStudent(profile);
-      setFirstName(nameParts.firstName);
-      setLastName(nameParts.lastName);
-      setEmail(profile.email);
-      setCardholderName(profile.fullName);
     };
 
     void loadCheckoutData();
   }, [workshopId]);
+
+  useEffect(() => {
+    if (session.status !== 'authenticated' || !session.student) {
+      setStudent(null);
+      setFirstName('');
+      setLastName('');
+      setEmail('');
+      setCardholderName('');
+      return;
+    }
+
+    const profile = session.student;
+    const nameParts = splitFullName(profile.fullName);
+
+    setStudent(profile);
+    setFirstName(nameParts.firstName);
+    setLastName(nameParts.lastName);
+    setEmail(profile.email);
+    setCardholderName(profile.fullName);
+  }, [session.status, session.student]);
 
   const handlePay = async () => {
     if (!workshop || !student) {
@@ -127,7 +125,7 @@ const WorkshopCheckout = () => {
     );
   };
 
-  if (isLoading) {
+  if (isLoading || session.isLoading) {
     return (
       <div className="checkout-page">
         <main className="checkout-main">
@@ -142,6 +140,53 @@ const WorkshopCheckout = () => {
       <div className="checkout-page">
         <main className="checkout-main">
           <p className="helper-text">{error ?? 'Workshop not found.'}</p>
+        </main>
+      </div>
+    );
+  }
+
+  if (session.status === 'error') {
+    return (
+      <div className="checkout-page">
+        <main className="checkout-main">
+          <p className="helper-text">
+            {session.error ?? 'Unable to load your account.'}
+          </p>
+        </main>
+      </div>
+    );
+  }
+
+  if (session.status === 'unauthenticated') {
+    return (
+      <div className="checkout-page">
+        <header className="checkout-topbar">
+          <div className="checkout-topbar-left">
+            <button
+              type="button"
+              className="checkout-close"
+              aria-label="Back to workshop details"
+              onClick={() => navigate(`/workshops/${workshopId}`)}
+            >
+              <X className="icon icon-sm" aria-hidden="true" />
+            </button>
+            <h1>Complete Registration</h1>
+          </div>
+          <div className="checkout-topbar-right">
+            <Lock className="icon icon-xs" aria-hidden="true" />
+            <span>Sign in required</span>
+          </div>
+        </header>
+
+        <main className="checkout-main">
+          <div className="checkout-container">
+            <SessionGate
+              title={`Sign in to register for ${workshop.title}`}
+              description="Log in with your UniHub account to complete this registration and access payment, QR code, and attendance details."
+              primaryActionLabel="Log in"
+              primaryActionTo="/sign-in"
+            />
+          </div>
         </main>
       </div>
     );
