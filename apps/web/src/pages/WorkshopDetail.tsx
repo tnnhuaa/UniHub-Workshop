@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Calendar, Check, Clock, MapPin, Sparkles } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import WorkshopHeader from '../components/WorkshopHeader.tsx';
+import useStudentSession from '../hooks/useStudentSession.ts';
 import { mapWorkshopToDetailViewModel } from '../lib/unihubAdapters.ts';
 import { fetchWorkshop } from '../lib/unihubApi.ts';
 import type { WorkshopDetailViewModel } from '../lib/unihubAdapters.ts';
@@ -19,6 +20,7 @@ const WorkshopDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const workshopId = id ?? defaultWorkshopId;
+  const session = useStudentSession();
   const [workshop, setWorkshop] = useState<WorkshopDetailViewModel | null>(
     null,
   );
@@ -49,8 +51,8 @@ const WorkshopDetail = () => {
       <div className="workshop-detail-page">
         <WorkshopHeader
           activeTab="workshops"
-          profileImage={imgStudentProfile}
-          profileLink="/profile"
+          profileImage={session.student?.avatar ?? imgStudentProfile}
+          profileLink={session.isAuthenticated ? '/profile' : undefined}
         />
         <main className="workshop-detail-main">
           <p className="helper-text">Loading workshop details...</p>
@@ -64,8 +66,8 @@ const WorkshopDetail = () => {
       <div className="workshop-detail-page">
         <WorkshopHeader
           activeTab="workshops"
-          profileImage={imgStudentProfile}
-          profileLink="/profile"
+          profileImage={session.student?.avatar ?? imgStudentProfile}
+          profileLink={session.isAuthenticated ? '/profile' : undefined}
         />
         <main className="workshop-detail-main">
           <p className="helper-text">{error ?? 'Workshop not found.'}</p>
@@ -78,8 +80,8 @@ const WorkshopDetail = () => {
     <div className="workshop-detail-page">
       <WorkshopHeader
         activeTab="workshops"
-        profileImage={imgStudentProfile}
-        profileLink="/profile"
+        profileImage={session.student?.avatar ?? imgStudentProfile}
+        profileLink={session.isAuthenticated ? '/profile' : undefined}
       />
 
       <main className="workshop-detail-main">

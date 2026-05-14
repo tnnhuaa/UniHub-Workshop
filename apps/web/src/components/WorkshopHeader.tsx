@@ -1,10 +1,10 @@
-import { Bell } from 'lucide-react';
+import { Bell, LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 type WorkshopHeaderTab = 'workshops' | 'schedule';
 
 type WorkshopHeaderProps = {
-  profileImage: string;
+  profileImage?: string;
   activeTab?: WorkshopHeaderTab;
   profileLink?: string;
 };
@@ -41,14 +41,19 @@ const WorkshopHeader = ({
         <button type="button" className="icon-button" aria-label="Alerts">
           <Bell className="icon icon-md" aria-hidden="true" />
         </button>
-        {profileLink ? (
+        {profileLink && profileImage ? (
           <Link className="avatar-button" to={profileLink} aria-label="Profile">
             <img src={profileImage} alt="Student profile" />
           </Link>
         ) : (
-          <button type="button" className="avatar-button" aria-label="Profile">
-            <img src={profileImage} alt="Student profile" />
-          </button>
+          <Link
+            className="header-login-button"
+            to="/sign-in"
+            aria-label="Login"
+          >
+            <LogIn className="icon icon-sm" aria-hidden="true" />
+            <span>Login</span>
+          </Link>
         )}
       </div>
     </header>

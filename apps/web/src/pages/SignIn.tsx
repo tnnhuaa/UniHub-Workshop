@@ -79,7 +79,7 @@ const SignIn = () => {
               id="signin-email"
               type="email"
               autoComplete="email"
-              placeholder="admin@unihub.edu"
+              placeholder="Enter your email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
@@ -108,7 +108,7 @@ const SignIn = () => {
               id="signin-password"
               type={showPassword ? 'text' : 'password'}
               autoComplete="current-password"
-              placeholder="********"
+              placeholder="Enter your password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
@@ -140,9 +140,6 @@ const SignIn = () => {
         >
           {isSubmitting ? 'Signing in...' : 'Log In'}
         </button>
-        <p className="helper-text">
-          Signing in uses your <strong>BetterAuth</strong> session cookie.
-        </p>
       </form>
     </AuthLayout>
   );

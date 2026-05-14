@@ -75,7 +75,7 @@ const SignUp = () => {
               id="signup-email"
               type="email"
               autoComplete="email"
-              placeholder="student@unihub.edu"
+              placeholder="Enter your email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
@@ -122,9 +122,6 @@ const SignUp = () => {
         >
           {isSubmitting ? 'Creating account...' : 'Create account'}
         </button>
-        <p className="helper-text">
-          Your account will be linked to BetterAuth for secure sessions.
-        </p>
       </form>
     </AuthLayout>
   );
