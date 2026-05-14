@@ -163,6 +163,16 @@ const AdminSchedule = () => {
     return 'Registration Open';
   }, [workshop]);
 
+  const workshopQrCodeUrl = useMemo(() => {
+    if (!workshop?.id) {
+      return null;
+    }
+
+    return `https://public-api.qr-code-generator.com/v1/create/extended?image_format=PNG&image_width=300&qr_code_text=${encodeURIComponent(
+      workshop.id,
+    )}&foreground_color=%23000000&background_color=%23FFFFFF&frame_name=no-frame`;
+  }, [workshop?.id]);
+
   useEffect(() => {
     let active = true;
 
@@ -729,6 +739,25 @@ const AdminSchedule = () => {
             </section>
 
             <aside className="admin-schedule-side-column">
+              <article className="admin-side-card">
+                <h2>Workshop QR</h2>
+                {workshopQrCodeUrl && workshop ? (
+                  <div style={{ textAlign: 'center' }}>
+                    <img
+                      src={workshopQrCodeUrl}
+                      alt={`Workshop QR code for ${workshop.id}`}
+                      width={120}
+                      height={120}
+                      loading="lazy"
+                    />
+                  </div>
+                ) : (
+                  <p className="helper-text">
+                    Save the workshop to generate QR code.
+                  </p>
+                )}
+              </article>
+
               <article className="admin-side-card admin-transcript-card">
                 <div className="admin-side-title">
                   <img src={imgTranscript} alt="" aria-hidden="true" />
