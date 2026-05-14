@@ -67,7 +67,9 @@ export class WorkshopService {
     });
   }
 
-  private async attachLatestAiSummary<T extends { id: string }>(workshops: T[]) {
+  private async attachLatestAiSummary<T extends { id: string }>(
+    workshops: T[],
+  ) {
     if (workshops.length === 0) {
       return [];
     }

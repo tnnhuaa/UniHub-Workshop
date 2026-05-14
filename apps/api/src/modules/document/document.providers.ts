@@ -110,8 +110,7 @@ export class GeminiLlmClientProvider implements ILLMClient {
           ],
           generationConfig: {
             temperature: 0.2,
-            maxOutputTokens:
-              GeminiLlmClientProvider.MAX_OUTPUT_TOKENS,
+            maxOutputTokens: GeminiLlmClientProvider.MAX_OUTPUT_TOKENS,
           },
         }),
       },
