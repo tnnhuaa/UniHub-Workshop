@@ -240,7 +240,7 @@ export class NotificationOrchestrator {
         where: { id: delivery.id },
         data: {
           status: result.status,
-          providerRef: null,
+          providerRef: result.providerRef ?? null,
           errorMessage: result.errorMessage ?? null,
           sentAt: result.status === 'sent' ? new Date() : null,
         },
