@@ -1,4 +1,4 @@
-import { getJson, postJson, withIdempotencyKey } from './apiClient.ts';
+import { getJson, patchJson, postJson, withIdempotencyKey } from './apiClient.ts';
 
 export type WorkshopStatus = 'draft' | 'published' | 'cancelled' | 'completed';
 export type RegistrationStatus =
@@ -162,6 +162,25 @@ export type AdminDashboardResponseDto = {
   };
 };
 
+export type AdminDashboardQuery = {
+  q?: string;
+};
+
+export type WorkshopCreateInput = {
+  title: string;
+  description?: string;
+  speaker?: string;
+  room?: string;
+  capacity: number;
+  price?: number;
+  startTime: string;
+  endTime: string;
+  floorMapUrl?: string;
+  status?: WorkshopStatus;
+};
+
+export type WorkshopUpdateInput = Partial<WorkshopCreateInput>;
+
 export const fetchWorkshops = (query: WorkshopListQuery) =>
   getJson<WorkshopApiDto[]>('/workshops', { query });
 
@@ -191,13 +210,11 @@ export const createRegistration = (
     headers: withIdempotencyKey(idempotencyKey),
   });
 
-export const fetchAdminDashboard = () =>
-  getJson<AdminDashboardResponseDto>('/admin/dashboard');
+export const fetchAdminDashboard = (query?: AdminDashboardQuery) =>
+  getJson<AdminDashboardResponseDto>('/admin/dashboard', { query });
 
 export const fetchWorkshopDocuments = (workshopId: string) =>
-  getJson<WorkshopDocumentApiDto[]>(
-    `/admin/workshops/${workshopId}/documents`,
-  );
+  getJson<WorkshopDocumentApiDto[]>(`/admin/workshops/${workshopId}/documents`);
 
 export const uploadWorkshopDocument = (
   workshopId: string,
@@ -223,10 +240,17 @@ export const uploadWorkshopDocument = (
     body,
   });
 
-export const fetchDocumentSummary = (
-  workshopId: string,
-  documentId: string,
-) =>
+export const createWorkshop = (body: WorkshopCreateInput) =>
+  postJson<WorkshopApiDto, WorkshopCreateInput>('/admin/workshops', {
+    body,
+  });
+
+export const updateWorkshop = (workshopId: string, body: WorkshopUpdateInput) =>
+  patchJson<WorkshopApiDto, WorkshopUpdateInput>(`/admin/workshops/${workshopId}`, {
+    body,
+  });
+
+export const fetchDocumentSummary = (workshopId: string, documentId: string) =>
   getJson<DocumentSummaryApiDto>(
     `/admin/workshops/${workshopId}/documents/${documentId}/summary`,
   );

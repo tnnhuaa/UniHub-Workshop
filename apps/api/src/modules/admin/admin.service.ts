@@ -1,11 +1,24 @@
 import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import type { AdminDashboardQuery } from './admin.schemas.js';
 
 @Injectable()
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getDashboard() {
+  async getDashboard(query: AdminDashboardQuery = {}) {
+    const workshopWhere: Prisma.WorkshopWhereInput = {};
+
+    if (query.q) {
+      workshopWhere.OR = [
+        { title: { contains: query.q, mode: 'insensitive' } },
+        { description: { contains: query.q, mode: 'insensitive' } },
+        { speaker: { contains: query.q, mode: 'insensitive' } },
+        { room: { contains: query.q, mode: 'insensitive' } },
+      ];
+    }
+
     const [
       totalWorkshops,
       totalRegistrations,
@@ -22,6 +35,7 @@ export class AdminService {
         where: { status: 'paid' },
       }),
       this.prisma.workshop.findMany({
+        where: workshopWhere,
         orderBy: { startTime: 'asc' },
         take: 10,
         select: {

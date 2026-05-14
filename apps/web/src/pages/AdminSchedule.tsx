@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import type { ChangeEvent } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import AdminSidebar from '../components/AdminSidebar.tsx';
 import {
+  createWorkshop,
   fetchDocumentSummary,
   fetchWorkshop,
   fetchWorkshopDocuments,
+  updateWorkshop,
   uploadWorkshopDocument,
 } from '../lib/unihubApi.ts';
 import type {
@@ -34,18 +37,45 @@ const imgTranscriptStatus =
 const imgExport =
   'https://www.figma.com/api/mcp/asset/a8559913-825d-42b5-89ee-132355562ff3';
 
-const formatDate = (value: string) =>
-  new Date(value).toLocaleDateString('en-US', {
-    month: '2-digit',
-    day: '2-digit',
-    year: 'numeric',
-  });
+type WorkshopDraftForm = {
+  title: string;
+  description: string;
+  speaker: string;
+  room: string;
+  capacity: string;
+  price: string;
+  startDate: string;
+  startTime: string;
+  endDate: string;
+  endTime: string;
+  status: WorkshopApiDto['status'];
+  floorMapUrl: string;
+};
 
-const formatTime = (value: string) =>
-  new Date(value).toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+const emptyWorkshopForm = (): WorkshopDraftForm => ({
+  title: '',
+  description: '',
+  speaker: '',
+  room: '',
+  capacity: '50',
+  price: '0',
+  startDate: '',
+  startTime: '',
+  endDate: '',
+  endTime: '',
+  status: 'draft',
+  floorMapUrl: '',
+});
+
+const toDateValue = (value: string) => value.slice(0, 10);
+const toTimeValue = (value: string) => value.slice(11, 16);
+const combineDateTime = (date: string, time: string) =>
+  `${date}T${time.length === 5 ? `${time}:00` : time}`;
+
+const normalizeOptionalString = (value: string) => {
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
 
 const formatUploadedAt = (value: string) =>
   new Date(value).toLocaleString('en-US', {
@@ -94,25 +124,28 @@ const getSummaryStatusLabel = (status: DocumentSummaryApiDto['status']) => {
 };
 
 const AdminSchedule = () => {
+  const navigate = useNavigate();
   const { id } = useParams();
-  const workshopId = id ?? '';
+  const isCreateMode = id === 'new';
+  const workshopId = !id || isCreateMode ? null : id;
+
   const [workshop, setWorkshop] = useState<WorkshopApiDto | null>(null);
+  const [form, setForm] = useState<WorkshopDraftForm>(emptyWorkshopForm());
+  const [initialForm, setInitialForm] = useState<WorkshopDraftForm>(emptyWorkshopForm());
   const [documents, setDocuments] = useState<WorkshopDocumentApiDto[]>([]);
   const [summary, setSummary] = useState<DocumentSummaryApiDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
   const latestDocument = documents[0] ?? null;
 
   const registrationProgress = useMemo(() => {
-    if (!workshop) {
-      return 0;
-    }
-
-    if (workshop.capacity === 0) {
+    if (!workshop || workshop.capacity === 0) {
       return 0;
     }
 
@@ -139,70 +172,223 @@ const AdminSchedule = () => {
   }, [workshop]);
 
   useEffect(() => {
-    if (!workshopId) {
-      setError('Workshop ID is required.');
-      setIsLoading(false);
-      return;
-    }
+    let active = true;
 
-    localStorage.setItem('admin:lastWorkshopId', workshopId);
-
-    const loadWorkshop = async () => {
-      const result = await fetchWorkshop(workshopId);
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-
-      setWorkshop(result.data);
-    };
-
-    const loadDocuments = async () => {
-      const result = await fetchWorkshopDocuments(workshopId);
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-
-      setDocuments(result.data);
-      if (result.data.length === 0) {
+    const load = async () => {
+      if (isCreateMode) {
+        setWorkshop(null);
+        setForm(emptyWorkshopForm());
+        setInitialForm(emptyWorkshopForm());
+        setDocuments([]);
         setSummary(null);
+        setError(null);
+        setIsLoading(false);
         return;
       }
 
-      const latest = result.data[0];
-      const summaryResult = await fetchDocumentSummary(
-        workshopId,
-        latest.id,
-      );
-
-      if (!summaryResult.ok) {
-        setSummaryError(summaryResult.error);
-        setSummary(null);
+      if (!workshopId) {
+        setError('Workshop ID is required.');
+        setIsLoading(false);
         return;
       }
 
-      setSummary(summaryResult.data);
-    };
-
-    const loadAll = async () => {
       setIsLoading(true);
       setError(null);
       setSummaryError(null);
-      await Promise.all([loadWorkshop(), loadDocuments()]);
+      setUploadError(null);
+
+      const workshopResult = await fetchWorkshop(workshopId);
+      if (!active) {
+        return;
+      }
+
+      if (!workshopResult.ok) {
+        setError(workshopResult.error);
+        setIsLoading(false);
+        return;
+      }
+
+      const workshopData = workshopResult.data;
+      const nextForm: WorkshopDraftForm = {
+        title: workshopData.title,
+        description: workshopData.description ?? '',
+        speaker: workshopData.speaker ?? '',
+        room: workshopData.room ?? '',
+        capacity: String(workshopData.capacity),
+        price: String(Number(workshopData.price)),
+        startDate: toDateValue(workshopData.startTime),
+        startTime: toTimeValue(workshopData.startTime),
+        endDate: toDateValue(workshopData.endTime),
+        endTime: toTimeValue(workshopData.endTime),
+        status: workshopData.status,
+        floorMapUrl: workshopData.floorMapUrl ?? '',
+      };
+
+      setWorkshop(workshopData);
+      setForm(nextForm);
+      setInitialForm(nextForm);
+      localStorage.setItem('admin:lastWorkshopId', workshopData.id);
+
+      const documentsResult = await fetchWorkshopDocuments(workshopData.id);
+      if (!active) {
+        return;
+      }
+
+      if (!documentsResult.ok) {
+        setError(documentsResult.error);
+        setDocuments([]);
+        setSummary(null);
+        setIsLoading(false);
+        return;
+      }
+
+      setDocuments(documentsResult.data);
+
+      const firstDocument = documentsResult.data[0];
+      if (firstDocument) {
+        const summaryResult = await fetchDocumentSummary(
+          workshopData.id,
+          firstDocument.id,
+        );
+
+        if (!active) {
+          return;
+        }
+
+        if (summaryResult.ok) {
+          setSummary(summaryResult.data);
+        } else {
+          setSummaryError(summaryResult.error);
+          setSummary(null);
+        }
+      } else {
+        setSummary(null);
+      }
+
       setIsLoading(false);
     };
 
-    void loadAll();
-  }, [workshopId]);
+    void load();
 
-  const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>,
+    return () => {
+      active = false;
+    };
+  }, [isCreateMode, workshopId]);
+
+  const handleFieldChange = <K extends keyof WorkshopDraftForm>(
+    key: K,
+    value: WorkshopDraftForm[K],
   ) => {
+    setForm((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  };
+
+  const handleSave = async () => {
+    setSaveError(null);
+
+    if (!form.title.trim()) {
+      setSaveError('Workshop title is required.');
+      return;
+    }
+
+    if (!form.startDate || !form.startTime || !form.endDate || !form.endTime) {
+      setSaveError('Start and end date/time are required.');
+      return;
+    }
+
+    const payload = {
+      title: form.title.trim(),
+      description: normalizeOptionalString(form.description),
+      speaker: normalizeOptionalString(form.speaker),
+      room: normalizeOptionalString(form.room),
+      capacity: Number(form.capacity),
+      price: Number(form.price),
+      startTime: combineDateTime(form.startDate, form.startTime),
+      endTime: combineDateTime(form.endDate, form.endTime),
+      floorMapUrl: normalizeOptionalString(form.floorMapUrl),
+      status: form.status,
+    };
+
+    if (!Number.isFinite(payload.capacity) || payload.capacity <= 0) {
+      setSaveError('Capacity must be a positive number.');
+      return;
+    }
+
+    if (!Number.isFinite(payload.price) || payload.price < 0) {
+      setSaveError('Price must be zero or greater.');
+      return;
+    }
+
+    if (
+      new Date(payload.endTime).getTime() <= new Date(payload.startTime).getTime()
+    ) {
+      setSaveError('End time must be after start time.');
+      return;
+    }
+
+    setIsSaving(true);
+
+    const result = isCreateMode
+      ? await createWorkshop(payload)
+      : await updateWorkshop(workshopId ?? '', payload);
+
+    setIsSaving(false);
+
+    if (!result.ok) {
+      setSaveError(result.error);
+      return;
+    }
+
+    setWorkshop(result.data);
+
+    const nextForm: WorkshopDraftForm = {
+      title: result.data.title,
+      description: result.data.description ?? '',
+      speaker: result.data.speaker ?? '',
+      room: result.data.room ?? '',
+      capacity: String(result.data.capacity),
+      price: String(Number(result.data.price)),
+      startDate: toDateValue(result.data.startTime),
+      startTime: toTimeValue(result.data.startTime),
+      endDate: toDateValue(result.data.endTime),
+      endTime: toTimeValue(result.data.endTime),
+      status: result.data.status,
+      floorMapUrl: result.data.floorMapUrl ?? '',
+    };
+
+    setForm(nextForm);
+    setInitialForm(nextForm);
+    localStorage.setItem('admin:lastWorkshopId', result.data.id);
+
+    if (isCreateMode) {
+      // After creating a workshop, return to dashboard per UX request.
+      navigate('/admin/dashboard', { replace: true });
+      return;
+    }
+
+    // For edits, also return to dashboard after successful save.
+    navigate('/admin/dashboard', { replace: true });
+  };
+
+  const handleDiscard = () => {
+    if (isCreateMode) {
+      navigate('/admin/dashboard');
+      return;
+    }
+
+    setForm(initialForm);
+    setSaveError(null);
+    setUploadError(null);
+    setSummaryError(null);
+  };
+
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
 
-    if (!file || !workshopId) {
+    if (!file || !workshopId || isCreateMode) {
       return;
     }
 
@@ -230,16 +416,17 @@ const AdminSchedule = () => {
       const docsResult = await fetchWorkshopDocuments(workshopId);
       if (docsResult.ok) {
         setDocuments(docsResult.data);
-      }
 
-      const latest = docsResult.ok ? docsResult.data[0] : null;
-      if (latest) {
-        const summaryResult = await fetchDocumentSummary(
-          workshopId,
-          latest.id,
-        );
-        if (summaryResult.ok) {
-          setSummary(summaryResult.data);
+        const firstDocument = docsResult.data[0];
+        if (firstDocument) {
+          const summaryResult = await fetchDocumentSummary(
+            workshopId,
+            firstDocument.id,
+          );
+
+          if (summaryResult.ok) {
+            setSummary(summaryResult.data);
+          }
         }
       }
     } finally {
@@ -248,7 +435,7 @@ const AdminSchedule = () => {
   };
 
   const refreshSummary = async () => {
-    if (!latestDocument || !workshopId) {
+    if (!latestDocument || !workshopId || isCreateMode) {
       return;
     }
 
@@ -277,16 +464,17 @@ const AdminSchedule = () => {
     );
   }
 
-  if (error || !workshop) {
+  if (error && !isCreateMode) {
     return (
       <div className="admin-page">
         <AdminSidebar />
         <main className="admin-main admin-schedule-main">
-          <p className="helper-text">{error ?? 'Workshop not found.'}</p>
+          <p className="helper-text">{error}</p>
         </main>
       </div>
     );
   }
+
   return (
     <div className="admin-page">
       <AdminSidebar />
@@ -295,20 +483,25 @@ const AdminSchedule = () => {
         <div className="admin-schedule-shell">
           <header className="admin-schedule-header">
             <div className="admin-schedule-heading">
-              <Link to="/admin/dashboard" className="admin-back-link">
+              <button type="button" className="admin-back-link" onClick={handleDiscard}>
                 <img src={imgBack} alt="" aria-hidden="true" />
-                <span>Back to List</span>
-              </Link>
-              <h1>Edit Workshop</h1>
+                <span>{isCreateMode ? 'Back to Dashboard' : 'Back to List'}</span>
+              </button>
+              <h1>{isCreateMode ? 'Create Workshop' : 'Edit Workshop'}</h1>
             </div>
 
             <div className="admin-schedule-header-actions">
-              <button type="button" className="admin-muted-button">
+              <button type="button" className="admin-muted-button" onClick={handleDiscard}>
                 Discard Changes
               </button>
-              <button type="button" className="admin-primary-button">
+              <button
+                type="button"
+                className="admin-primary-button"
+                onClick={() => void handleSave()}
+                disabled={isSaving}
+              >
                 <img src={imgSave} alt="" aria-hidden="true" />
-                <span>Save Workshop</span>
+                <span>{isSaving ? 'Saving...' : 'Save Workshop'}</span>
               </button>
             </div>
           </header>
@@ -323,8 +516,9 @@ const AdminSchedule = () => {
                     <span>Workshop Title</span>
                     <input
                       type="text"
-                      value={workshop.title}
-                      readOnly
+                      value={form.title}
+                      onChange={(event) => handleFieldChange('title', event.target.value)}
+                      placeholder="Enter workshop title"
                     />
                   </label>
 
@@ -332,8 +526,9 @@ const AdminSchedule = () => {
                     <span>Description</span>
                     <textarea
                       rows={5}
-                      value={workshop.description ?? 'No description provided.'}
-                      readOnly
+                      value={form.description}
+                      onChange={(event) => handleFieldChange('description', event.target.value)}
+                      placeholder="Describe the workshop"
                     />
                   </label>
 
@@ -344,8 +539,9 @@ const AdminSchedule = () => {
                         <img src={imgSpeaker} alt="" aria-hidden="true" />
                         <input
                           type="text"
-                          value={workshop.speaker ?? 'TBD'}
-                          readOnly
+                          value={form.speaker}
+                          onChange={(event) => handleFieldChange('speaker', event.target.value)}
+                          placeholder="Speaker name"
                         />
                       </div>
                     </label>
@@ -356,8 +552,9 @@ const AdminSchedule = () => {
                         <img src={imgLocation} alt="" aria-hidden="true" />
                         <input
                           type="text"
-                          value={workshop.room ?? 'TBD'}
-                          readOnly
+                          value={form.room}
+                          onChange={(event) => handleFieldChange('room', event.target.value)}
+                          placeholder="Room or venue"
                         />
                       </div>
                     </label>
@@ -374,9 +571,9 @@ const AdminSchedule = () => {
                     <div className="admin-input-with-icon">
                       <img src={imgDate} alt="" aria-hidden="true" />
                       <input
-                        type="text"
-                        value={formatDate(workshop.startTime)}
-                        readOnly
+                        type="date"
+                        value={form.startDate}
+                        onChange={(event) => handleFieldChange('startDate', event.target.value)}
                       />
                     </div>
                   </label>
@@ -385,15 +582,15 @@ const AdminSchedule = () => {
                     <span>Time</span>
                     <div className="admin-time-row">
                       <input
-                        type="text"
-                        value={formatTime(workshop.startTime)}
-                        readOnly
+                        type="time"
+                        value={form.startTime}
+                        onChange={(event) => handleFieldChange('startTime', event.target.value)}
                       />
                       <span>to</span>
                       <input
-                        type="text"
-                        value={formatTime(workshop.endTime)}
-                        readOnly
+                        type="time"
+                        value={form.endTime}
+                        onChange={(event) => handleFieldChange('endTime', event.target.value)}
                       />
                     </div>
                   </div>
@@ -403,9 +600,10 @@ const AdminSchedule = () => {
                     <div className="admin-input-with-icon">
                       <img src={imgCapacity} alt="" aria-hidden="true" />
                       <input
-                        type="text"
-                        value={workshop.capacity}
-                        readOnly
+                        type="number"
+                        min={1}
+                        value={form.capacity}
+                        onChange={(event) => handleFieldChange('capacity', event.target.value)}
                       />
                     </div>
                   </label>
@@ -415,58 +613,43 @@ const AdminSchedule = () => {
                     <div className="admin-input-with-icon">
                       <img src={imgPrice} alt="" aria-hidden="true" />
                       <input
-                        type="text"
-                        value={Number(workshop.price).toFixed(2)}
-                        readOnly
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={form.price}
+                        onChange={(event) => handleFieldChange('price', event.target.value)}
                       />
                     </div>
                     <small>Leave as 0.00 for free workshops.</small>
                   </label>
+
+                  <label className="admin-form-field">
+                    <span>Status</span>
+                    <select
+                      value={form.status}
+                      onChange={(event) =>
+                        handleFieldChange('status', event.target.value as WorkshopApiDto['status'])
+                      }
+                    >
+                      <option value="draft">Draft</option>
+                      <option value="published">Published</option>
+                      <option value="cancelled">Cancelled</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </label>
+
+                  <label className="admin-form-field">
+                    <span>Floor Map URL</span>
+                    <input
+                      type="url"
+                      value={form.floorMapUrl}
+                      onChange={(event) => handleFieldChange('floorMapUrl', event.target.value)}
+                      placeholder="https://..."
+                    />
+                  </label>
                 </div>
-              </article>
 
-              <article className="admin-form-card">
-                <h2>Course Materials</h2>
-                <p className="admin-card-description">
-                  Upload syllabus, reading lists, or prerequisite documents.
-                </p>
-
-                <label className="admin-upload-dropzone">
-                  <input
-                    type="file"
-                    accept=".pdf,application/pdf"
-                    onChange={handleFileChange}
-                    disabled={isUploading}
-                    style={{ display: 'none' }}
-                  />
-                  <div className="admin-upload-icon">PDF</div>
-                  <strong>
-                    {isUploading
-                      ? 'Uploading document...'
-                      : 'Click to upload or drag and drop'}
-                  </strong>
-                  <span>PDF up to 10MB</span>
-                </label>
-
-                {uploadError ? (
-                  <p className="helper-text">{uploadError}</p>
-                ) : null}
-
-                {documents.length === 0 ? (
-                  <p className="helper-text">No documents uploaded yet.</p>
-                ) : (
-                  documents.map((doc) => (
-                    <div key={doc.id} className="admin-upload-file">
-                      <div>
-                        <strong>{doc.fileName}</strong>
-                        <span>{formatUploadedAt(doc.uploadedAt)}</span>
-                      </div>
-                      <button type="button" disabled>
-                        Delete
-                      </button>
-                    </div>
-                  ))
-                )}
+                {saveError ? <p className="helper-text">{saveError}</p> : null}
               </article>
             </section>
 
@@ -482,22 +665,22 @@ const AdminSchedule = () => {
                 </div>
 
                 <p className="admin-transcript-copy">
-                  {summary?.summaryText
-                    ? summary.summaryText
-                    : latestDocument
-                      ? 'Summary is being prepared. Check back soon.'
-                      : 'Upload a PDF to start AI summarization.'}
+                  {isCreateMode
+                    ? 'Create the workshop first to enable document upload and AI summaries.'
+                    : summary?.summaryText
+                      ? summary.summaryText
+                      : latestDocument
+                        ? 'Summary is being prepared. Check back soon.'
+                        : 'Upload a PDF to start AI summarization.'}
                 </p>
 
-                {summaryError ? (
-                  <p className="helper-text">{summaryError}</p>
-                ) : null}
+                {summaryError ? <p className="helper-text">{summaryError}</p> : null}
 
                 <button
                   type="button"
                   className="admin-outline-button"
                   onClick={refreshSummary}
-                  disabled={!latestDocument}
+                  disabled={!latestDocument || isCreateMode}
                 >
                   Refresh Summary
                 </button>
@@ -506,25 +689,31 @@ const AdminSchedule = () => {
               <article className="admin-side-card admin-registration-card">
                 <h2>Registration Status</h2>
 
-                <div className="admin-registration-stats">
-                  <div>
-                    <strong>{workshop.registeredCount}</strong>
-                    <span>Registered</span>
-                  </div>
-                  <div>
-                    <strong>{workshop.capacity}</strong>
-                    <span>Capacity</span>
-                  </div>
-                </div>
+                {workshop ? (
+                  <>
+                    <div className="admin-registration-stats">
+                      <div>
+                        <strong>{workshop.registeredCount}</strong>
+                        <span>Registered</span>
+                      </div>
+                      <div>
+                        <strong>{workshop.capacity}</strong>
+                        <span>Capacity</span>
+                      </div>
+                    </div>
 
-                <div className="admin-registration-bar">
-                  <span style={{ width: `${registrationProgress}%` }} />
-                </div>
+                    <div className="admin-registration-bar">
+                      <span style={{ width: `${registrationProgress}%` }} />
+                    </div>
 
-                <div className="admin-registration-pill">
-                  <span />
-                  {registrationLabel}
-                </div>
+                    <div className="admin-registration-pill">
+                      <span />
+                      {registrationLabel}
+                    </div>
+                  </>
+                ) : (
+                  <p className="helper-text">Save the workshop to view registration status.</p>
+                )}
               </article>
 
               <article className="admin-side-card admin-attendees-card">
@@ -533,21 +722,67 @@ const AdminSchedule = () => {
                   <a href="#">View All</a>
                 </div>
 
-                <div className="admin-attendees-list">
-                  <div className="admin-attendee-row">
-                    <div className="admin-attendee-initials">--</div>
-                    <div>
-                      <strong>No attendee roster yet</strong>
-                      <span>Roster export is not configured.</span>
+                {isCreateMode ? (
+                  <p className="helper-text">Attendees will appear after the workshop is created.</p>
+                ) : (
+                  <div className="admin-attendees-list">
+                    <div className="admin-attendee-row">
+                      <div className="admin-attendee-initials">--</div>
+                      <div>
+                        <strong>No attendee roster yet</strong>
+                        <span>Roster export is not configured.</span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                <button type="button" className="admin-export-button" disabled>
+                <button type="button" className="admin-export-button" disabled={isCreateMode}>
                   <img src={imgExport} alt="" aria-hidden="true" />
                   <span>Export Roster</span>
                 </button>
               </article>
+
+              {!isCreateMode ? (
+                <article className="admin-form-card">
+                  <h2>Course Materials</h2>
+                  <p className="admin-card-description">
+                    Upload syllabus, reading lists, or prerequisite documents.
+                  </p>
+
+                  <label className="admin-upload-dropzone">
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      onChange={handleFileChange}
+                      disabled={isUploading}
+                      style={{ display: 'none' }}
+                    />
+                    <div className="admin-upload-icon">PDF</div>
+                    <strong>
+                      {isUploading ? 'Uploading document...' : 'Click to upload or drag and drop'}
+                    </strong>
+                    <span>PDF up to 10MB</span>
+                  </label>
+
+                  {uploadError ? <p className="helper-text">{uploadError}</p> : null}
+
+                  {documents.length === 0 ? (
+                    <p className="helper-text">No documents uploaded yet.</p>
+                  ) : (
+                    documents.map((doc) => (
+                      <div key={doc.id} className="admin-upload-file">
+                        <div>
+                          <strong>{doc.fileName}</strong>
+                          <span>{formatUploadedAt(doc.uploadedAt)}</span>
+                        </div>
+                        <button type="button" disabled>
+                          Delete
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </article>
+              ) : null}
             </aside>
           </div>
         </div>

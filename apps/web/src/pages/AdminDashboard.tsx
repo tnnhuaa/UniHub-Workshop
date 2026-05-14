@@ -12,10 +12,6 @@ const imgKpiRegistrations =
   'https://www.figma.com/api/mcp/asset/f7d6772e-df2f-4691-842e-bbd919fe3fc3';
 const imgKpiRevenue =
   'https://www.figma.com/api/mcp/asset/146d85ff-8453-4021-a05a-10f0eff1956d';
-const imgTrendUp =
-  'https://www.figma.com/api/mcp/asset/7844c768-4798-4fbc-9c7d-36747b0d058f';
-const imgTrendDown =
-  'https://www.figma.com/api/mcp/asset/1d8ebd96-b816-481d-9e8d-8c808b384ad6';
 const imgSearch =
   'https://www.figma.com/api/mcp/asset/637616ad-aaa3-43fd-96fd-1f03ae58b88c';
 const imgFilter =
@@ -106,27 +102,43 @@ const AdminDashboard = () => {
   const [dashboard, setDashboard] = useState<AdminDashboardResponseDto | null>(
     null,
   );
+  const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadDashboard = async () => {
-      setIsLoading(true);
-      setError(null);
+    let isActive = true;
+    const debounce = window.setTimeout(() => {
+      const loadDashboard = async () => {
+        setIsLoading(true);
+        setError(null);
 
-      const result = await fetchAdminDashboard();
-      setIsLoading(false);
+        const result = await fetchAdminDashboard({
+          q: searchTerm.trim() || undefined,
+        });
 
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
+        if (!isActive) {
+          return;
+        }
 
-      setDashboard(result.data);
+        setIsLoading(false);
+
+        if (!result.ok) {
+          setError(result.error);
+          return;
+        }
+
+        setDashboard(result.data);
+      };
+
+      void loadDashboard();
+    }, 250);
+
+    return () => {
+      isActive = false;
+      window.clearTimeout(debounce);
     };
-
-    void loadDashboard();
-  }, []);
+  }, [searchTerm]);
 
   const kpiCards = useMemo(() => {
     if (!dashboard) {
@@ -181,7 +193,11 @@ const AdminDashboard = () => {
             <p>Manage active workshops and monitor system health.</p>
           </div>
 
-          <button type="button" className="admin-primary-button">
+          <button
+            type="button"
+            className="admin-primary-button"
+            onClick={() => navigate('/admin/workshops/new')}
+          >
             <img src={imgNewWorkshop} alt="" aria-hidden="true" />
             <span>New Workshop</span>
           </button>
@@ -201,33 +217,14 @@ const AdminDashboard = () => {
 
                   <div className="admin-kpi-bottom">
                     <strong>{card.value}</strong>
-                    <span className={`admin-kpi-trend ${card.trendTone}`}>
-                      {card.trend ? (
-                        <>
-                          <img
-                            src={
-                              card.trendTone === 'up'
-                                ? imgTrendUp
-                                : imgTrendDown
-                            }
-                            alt=""
-                            aria-hidden="true"
-                          />
-                          {card.trend}
-                        </>
-                      ) : (
-                        '--'
-                      )}
-                    </span>
+                    <span className={`admin-kpi-trend ${card.trendTone}`}>--</span>
                   </div>
                 </article>
               ))}
             </div>
 
             {error ? <p className="helper-text">{error}</p> : null}
-            {isLoading ? (
-              <p className="helper-text">Loading dashboard...</p>
-            ) : null}
+            {isLoading ? <p className="helper-text">Loading dashboard...</p> : null}
 
             <section className="admin-table-card">
               <div className="admin-table-toolbar">
@@ -239,6 +236,8 @@ const AdminDashboard = () => {
                     <input
                       id="admin-search"
                       type="search"
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
                       placeholder="Search workshops..."
                     />
                   </label>
@@ -263,14 +262,16 @@ const AdminDashboard = () => {
                   <tbody>
                     {workshops.length === 0 ? (
                       <tr>
-                        <td colSpan={5}>No workshops available.</td>
+                        <td colSpan={5}>
+                          {searchTerm.trim()
+                            ? 'No workshops match your search.'
+                            : 'No workshops available.'}
+                        </td>
                       </tr>
                     ) : (
                       workshops.map((workshop) => {
                         const statusMeta = getWorkshopStatus(workshop);
-                        const [dateLine, yearLine] = formatDateLines(
-                          workshop.startTime,
-                        );
+                        const [dateLine, yearLine] = formatDateLines(workshop.startTime);
 
                         return (
                           <tr key={workshop.id}>
@@ -283,9 +284,7 @@ const AdminDashboard = () => {
                               {workshop.registeredCount} / {workshop.capacity}
                             </td>
                             <td>
-                              <span
-                                className={`admin-status-pill ${statusMeta.tone}`}
-                              >
+                              <span className={`admin-status-pill ${statusMeta.tone}`}>
                                 {statusMeta.label}
                               </span>
                             </td>
@@ -293,34 +292,18 @@ const AdminDashboard = () => {
                               <div className="admin-row-actions">
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    navigate(`/admin/workshops/${workshop.id}`)
-                                  }
+                                  onClick={() => navigate(`/admin/workshops/${workshop.id}`)}
                                 >
-                                  <img
-                                    src={imgActionOpen}
-                                    alt=""
-                                    aria-hidden="true"
-                                  />
+                                  <img src={imgActionOpen} alt="" aria-hidden="true" />
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    navigate(`/admin/workshops/${workshop.id}`)
-                                  }
+                                  onClick={() => navigate(`/admin/workshops/${workshop.id}`)}
                                 >
-                                  <img
-                                    src={imgActionEdit}
-                                    alt=""
-                                    aria-hidden="true"
-                                  />
+                                  <img src={imgActionEdit} alt="" aria-hidden="true" />
                                 </button>
                                 <button type="button">
-                                  <img
-                                    src={imgActionDelete}
-                                    alt=""
-                                    aria-hidden="true"
-                                  />
+                                  <img src={imgActionDelete} alt="" aria-hidden="true" />
                                 </button>
                               </div>
                             </td>
@@ -352,10 +335,7 @@ const AdminDashboard = () => {
                   const lastError = batch.lastError;
 
                   return (
-                    <article
-                      key={batch.id}
-                      className={`admin-job-card ${badge.tone}`}
-                    >
+                    <article key={batch.id} className={`admin-job-card ${badge.tone}`}>
                       <img
                         src={isFailed ? imgJobFailed : imgJobPending}
                         alt=""
@@ -378,9 +358,7 @@ const AdminDashboard = () => {
                           </p>
                         )}
                       </div>
-                      <span className={`admin-job-badge ${badge.tone}`}>
-                        {badge.label}
-                      </span>
+                      <span className={`admin-job-badge ${badge.tone}`}>{badge.label}</span>
                     </article>
                   );
                 })
@@ -421,12 +399,7 @@ const AdminDashboard = () => {
                   </div>
                 </div>
 
-                <img
-                  className="admin-ai-done"
-                  src={imgAiDone}
-                  alt=""
-                  aria-hidden="true"
-                />
+                <img className="admin-ai-done" src={imgAiDone} alt="" aria-hidden="true" />
               </div>
             </section>
 
