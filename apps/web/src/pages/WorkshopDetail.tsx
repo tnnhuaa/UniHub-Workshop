@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Calendar, Check, Clock, MapPin, Sparkles } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import WorkshopHeader from '../components/WorkshopHeader.tsx';
+import LoadingSpinner from '../components/LoadingSpinner.tsx';
 import { mapWorkshopToDetailViewModel } from '../lib/unihubAdapters.ts';
 import { fetchWorkshop } from '../lib/unihubApi.ts';
 import type { WorkshopDetailViewModel } from '../lib/unihubAdapters.ts';
@@ -53,7 +54,7 @@ const WorkshopDetail = () => {
           profileLink="/profile"
         />
         <main className="workshop-detail-main">
-          <p className="helper-text">Loading workshop details...</p>
+          <LoadingSpinner label="Loading workshop details..." />
         </main>
       </div>
     );

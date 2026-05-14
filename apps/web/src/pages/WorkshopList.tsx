@@ -1,6 +1,7 @@
 import { Check, LayoutGrid, List, Search } from 'lucide-react';
 import WorkshopHeader from '../components/WorkshopHeader.tsx';
 import WorkshopCard from '../components/WorkshopCard.tsx';
+import LoadingSpinner from '../components/LoadingSpinner.tsx';
 import useWorkshopList, {
   type WorkshopAvailabilityFilter,
   type WorkshopDateFilter,
@@ -44,6 +45,21 @@ const WorkshopList = () => {
     { value: 'open', label: 'Open' },
     { value: 'almost-full', label: 'Almost Full' },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="workshop-list-page">
+        <WorkshopHeader
+          activeTab="workshops"
+          profileImage={imgStudentProfile}
+          profileLink="/profile"
+        />
+        <main className="workshop-layout">
+          <LoadingSpinner label="Loading workshops..." />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="workshop-list-page">
@@ -165,9 +181,6 @@ const WorkshopList = () => {
           </div>
 
           {error ? <p className="helper-text">{error}</p> : null}
-          {isLoading ? (
-            <p className="helper-text">Loading workshops...</p>
-          ) : null}
 
           <div className="workshop-grid">
             {workshops.map((workshop) => (
