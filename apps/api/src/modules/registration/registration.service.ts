@@ -19,6 +19,7 @@ export class RegistrationService {
   ) {}
 
   async create(input: CreateRegistrationInput, idempotencyKey: string) {
+    const now = new Date();
     const existing = await this.prisma.registration.findUnique({
       where: {
         mssv_workshopId: {
@@ -34,21 +35,34 @@ export class RegistrationService {
     });
 
     if (existing) {
+      const activeHold =
+        existing.status === 'pending' &&
+        existing.heldUntil &&
+        existing.heldUntil > now;
+      const alreadyConfirmed =
+        existing.status === 'confirmed' && existing.paymentStatus === 'paid';
+
       const payment = await this.prisma.payment.findFirst({
-        where: { registrationId: existing.id },
+        where: {
+          registrationId: existing.id,
+          status: activeHold ? 'pending' : undefined,
+        },
         select: { id: true },
+        orderBy: { createdAt: 'desc' },
       });
 
-      const paymentRequired =
-        Number(workshop.price) > 0 && existing.paymentStatus !== 'paid';
+      if (alreadyConfirmed || activeHold) {
+        const paymentRequired =
+          Number(workshop.price) > 0 && existing.paymentStatus !== 'paid';
 
-      return {
-        registration: existing,
-        paymentRequired,
-        payment: payment
-          ? this.paymentService.buildMockPaymentInfo(payment.id)
-          : null,
-      };
+        return {
+          registration: existing,
+          paymentRequired,
+          payment: payment
+            ? this.paymentService.buildMockPaymentInfo(payment.id)
+            : null,
+        };
+      }
     }
 
     if (Number(workshop.price) <= 0) {

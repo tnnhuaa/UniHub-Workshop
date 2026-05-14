@@ -23,14 +23,59 @@ export class NotificationService {
   ) {}
 
   async send(input: NotificationSendInput) {
-    return this.orchestrator.sendManual(input);
+    if (input.dedupeKey) {
+      const existing = await this.prisma.notificationDelivery.findUnique({
+        where: { dedupeKey: input.dedupeKey },
+      });
+
+      if (existing) {
+        return existing;
+      }
+    }
+
+    const provider = this.getProvider(input.channel);
+
+    const notification = await this.prisma.notification.create({
+      data: {
+        userId: input.userId,
+        type: 'custom',
+        title: input.templateCode,
+        body: input.templateCode,
+      },
+    });
+
+    const delivery = await this.prisma.notificationDelivery.create({
+      data: {
+        notificationId: notification.id,
+        channel: input.channel,
+        status: 'pending',
+        dedupeKey: input.dedupeKey,
+      },
+    });
+
+    const result = await this.sendWithProvider(provider, {
+      notificationId: notification.id,
+      userId: input.userId,
+      channel: input.channel,
+      templateCode: input.templateCode,
+    });
+
+    return this.prisma.notificationDelivery.update({
+      where: { id: delivery.id },
+      data: {
+        status: result.status,
+        sentAt: result.status === 'sent' ? new Date() : null,
+      },
+    });
   }
 
   findByUser(userId: string, query: NotificationListQuery) {
     const where: {
+      notification: { userId: string };
+      channel?: NotificationChannel;
       userId: string;
       status?: 'pending' | 'sent' | 'failed';
-    } = { userId };
+    } = { notification: { userId } };
 
     if (query.readStatus === 'unread') {
       where.status = 'pending';

@@ -57,6 +57,11 @@ export type WorkshopCardData = {
 };
 
 const PAGE_SIZE = 9;
+const AVAILABILITY_REFRESH_MS = 15_000;
+
+const getRemainingSeats = (workshop: WorkshopApiDto) =>
+  workshop.remainingSeats ??
+  Math.max(workshop.capacity - workshop.registeredCount, 0);
 
 const filterByPrice = (
   workshops: WorkshopApiDto[],
@@ -79,21 +84,11 @@ const filterByAvailability = (
   availability: WorkshopAvailabilityFilter,
 ) => {
   if (availability === 'all') {
-    return workshops.filter((workshop) => {
-      const remainingSeats = Math.max(
-        workshop.capacity - workshop.registeredCount,
-        0,
-      );
-
-      return workshop.status === 'published' && remainingSeats > 0;
-    });
+    return workshops.filter((workshop) => workshop.status === 'published');
   }
 
   return workshops.filter((workshop) => {
-    const remainingSeats = Math.max(
-      workshop.capacity - workshop.registeredCount,
-      0,
-    );
+    const remainingSeats = getRemainingSeats(workshop);
 
     if (availability === 'almost-full') {
       return remainingSeats > 0 && remainingSeats <= 2;
@@ -194,19 +189,25 @@ const useWorkshopList = (registeredWorkshopIds: string[] = []) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadWorkshops = async () => {
-    setIsLoading(true);
-    setError(null);
+  const loadWorkshops = async (options?: { background?: boolean }) => {
+    if (!options?.background) {
+      setIsLoading(true);
+      setError(null);
+    }
     const result = await fetchWorkshops({
       status: 'published' satisfies WorkshopStatus,
       page: 1,
       pageSize: 100,
     });
 
-    setIsLoading(false);
+    if (!options?.background) {
+      setIsLoading(false);
+    }
 
     if (!result.ok) {
-      setError(result.error);
+      if (!options?.background) {
+        setError(result.error);
+      }
       return;
     }
 
@@ -215,6 +216,13 @@ const useWorkshopList = (registeredWorkshopIds: string[] = []) => {
 
   useEffect(() => {
     void loadWorkshops();
+    const intervalId = window.setInterval(() => {
+      void loadWorkshops({ background: true });
+    }, AVAILABILITY_REFRESH_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
   }, []);
 
   const filteredWorkshops = useMemo(

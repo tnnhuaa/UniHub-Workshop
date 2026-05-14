@@ -19,7 +19,55 @@ export class WorkshopService {
     private readonly auditService: AuditService,
   ) {}
 
-  findAll(query: WorkshopListQuery) {
+  private async attachAvailability<
+    T extends {
+      id: string;
+      capacity: number;
+      registeredCount: number;
+      status: string;
+    },
+  >(workshops: T[]) {
+    if (workshops.length === 0) {
+      return [];
+    }
+
+    const now = new Date();
+    const workshopIds = workshops.map((workshop) => workshop.id);
+    const holdCounts = await this.prisma.registration.groupBy({
+      by: ['workshopId'],
+      where: {
+        workshopId: { in: workshopIds },
+        status: 'pending',
+        paymentStatus: 'pending',
+        heldUntil: { gt: now },
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    const holdCountByWorkshopId = new Map(
+      holdCounts.map((item) => [item.workshopId, item._count._all]),
+    );
+
+    return workshops.map((workshop) => {
+      const activeHoldCount = holdCountByWorkshopId.get(workshop.id) ?? 0;
+      const remainingSeats = Math.max(
+        workshop.capacity - workshop.registeredCount - activeHoldCount,
+        0,
+      );
+
+      return {
+        ...workshop,
+        activeHoldCount,
+        remainingSeats,
+        occupiedSeats: workshop.capacity - remainingSeats,
+        isSoldOut: workshop.status === 'published' && remainingSeats === 0,
+      };
+    });
+  }
+
+  async findAll(query: WorkshopListQuery) {
     const where: Prisma.WorkshopWhereInput = {};
 
     if (query.status) {
@@ -52,16 +100,23 @@ export class WorkshopService {
     const page = query.page;
     const pageSize = query.pageSize;
 
-    return this.prisma.workshop.findMany({
+    const workshops = await this.prisma.workshop.findMany({
       where,
       skip: (page - 1) * pageSize,
       take: pageSize,
       orderBy: { startTime: 'asc' },
     });
+
+    return this.attachAvailability(workshops);
   }
 
-  findOne(id: string) {
-    return this.prisma.workshop.findUniqueOrThrow({ where: { id } });
+  async findOne(id: string) {
+    const workshop = await this.prisma.workshop.findUniqueOrThrow({
+      where: { id },
+    });
+
+    const [withAvailability] = await this.attachAvailability([workshop]);
+    return withAvailability ?? workshop;
   }
 
   async create(input: CreateWorkshopInput, organizerId: string) {

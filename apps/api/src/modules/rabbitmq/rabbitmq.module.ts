@@ -13,7 +13,14 @@ import type { Env } from '../../config/env.schema.js';
           infer: true,
         });
         const service = new RabbitMqService(rabbitmqUrl);
-        await service.connect();
+
+        try {
+          await service.connect();
+        } catch {
+          // Fail-soft in local/dev so the API can still serve HTTP requests
+          // when RabbitMQ is not running.
+        }
+
         return service;
       },
       inject: [ConfigService],
