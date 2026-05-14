@@ -295,9 +295,6 @@ const WorkshopDetail = () => {
               <span className="map-label">Location</span>
               <div className="map-preview">
                 <img src={workshop.floorMapImage ?? imgMapLocation} alt="" />
-                <div className="map-pin">
-                  <MapPin className="icon" aria-hidden="true" />
-                </div>
               </div>
               <p>{workshop.locationLabel}</p>
             </section>
