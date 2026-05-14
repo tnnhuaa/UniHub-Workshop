@@ -32,7 +32,9 @@ const parseDurationToSeconds = (value: string): number => {
 export const createBetterAuthInstance = (prisma: PrismaService, env: Env) => {
   const secureCookies = env.NODE_ENV === 'production';
   const redirectUri = env.GOOGLE_OAUTH_REDIRECT_URI;
-  const authOrigin = new URL(env.BETTER_AUTH_URL).origin;
+  const authUrl =
+    env.BETTER_AUTH_URL || `http://localhost:${env.PORT}${BASE_PATH}`;
+  const authOrigin = new URL(authUrl).origin;
   const corsOrigins = String(env.CORS_ORIGIN)
     .split(',')
     .map((origin: string) => origin.trim())
@@ -47,10 +49,10 @@ export const createBetterAuthInstance = (prisma: PrismaService, env: Env) => {
       `http://0.0.0.0:${env.PORT}`,
     ]),
   );
-
+  console.log('BetterAuth Trusted Origins:', trustedOrigins);
   return betterAuth({
     basePath: BASE_PATH,
-    baseURL: env.BETTER_AUTH_URL,
+    baseURL: authUrl,
     trustedOrigins,
     secret: env.BETTER_AUTH_SECRET,
     database: prismaAdapter(prisma, { provider: 'postgresql' }),
