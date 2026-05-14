@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppConfigModule } from './config/config.module.js';
 import { RedisModule } from './libs/redis/index.js';
 import { PrismaModule } from './modules/prisma/prisma.module.js';
+import { RabbitMqModule } from './modules/rabbitmq/index.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { AuditModule } from './modules/audit/audit.module.js';
@@ -21,8 +23,10 @@ import { AppService } from './app.service.js';
   imports: [
     // Infrastructure
     AppConfigModule,
+    ScheduleModule.forRoot(),
     RedisModule,
     PrismaModule,
+    RabbitMqModule,
     HealthModule,
 
     // Auth & cross-cutting (global)

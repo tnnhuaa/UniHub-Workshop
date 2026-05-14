@@ -1,5 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { RabbitMqService, EVENTS_KEYS } from '../rabbitmq/index.js';
 import {
   LLM_CLIENT,
   OBJECT_STORAGE,
@@ -17,8 +18,11 @@ import type { DocumentUploadInput } from './document.schemas.js';
  */
 @Injectable()
 export class DocumentService {
+  private readonly logger = new Logger(DocumentService.name);
+
   constructor(
     private readonly prisma: PrismaService,
+    private readonly rabbitmq: RabbitMqService,
     @Inject(OBJECT_STORAGE)
     private readonly objectStorage: IObjectStorage,
     @Inject(LLM_CLIENT)
@@ -50,25 +54,58 @@ export class DocumentService {
     const createdJob = await this.prisma.aiSummaryJob.create({
       data: {
         documentId: createdDocument.id,
-        status: 'running',
+        status: 'pending',
       },
+    });
+
+    this.publishAiSummaryJob(createdDocument.id, workshopId, createdJob.id);
+
+    return { document: createdDocument, summaryJob: createdJob };
+  }
+
+  publishAiSummaryJob(documentId: string, workshopId: string, jobId: string) {
+    const correlationId = `ai-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(7)}`;
+
+    this.rabbitmq.publish(EVENTS_KEYS.AI_SUMMARY_REQUESTED, {
+      correlationId,
+      documentId,
+      workshopId,
+      jobId,
+      publishedAt: new Date().toISOString(),
+    });
+
+    this.logger.debug(
+      `Published AI summary job [${correlationId}] for document ${documentId}`,
+    );
+  }
+
+  async processAiSummaryJob(documentId: string, jobId: string) {
+    const document = await this.prisma.workshopDocument.findUniqueOrThrow({
+      where: { id: documentId },
+    });
+
+    await this.prisma.aiSummaryJob.update({
+      where: { id: jobId },
+      data: { status: 'running' },
     });
 
     try {
       const llmResult = await this.llmClient.summarizeDocument({
-        documentId: createdDocument.id,
-        workshopId,
-        fileName: createdDocument.fileName,
-        fileUrl: createdDocument.fileUrl,
+        documentId,
+        workshopId: document.workshopId,
+        fileName: document.fileName,
+        fileUrl: document.fileUrl,
       });
 
-      const [document, summaryJob] = await this.prisma.$transaction([
+      const [updatedDocument, summaryJob] = await this.prisma.$transaction([
         this.prisma.workshopDocument.update({
-          where: { id: createdDocument.id },
+          where: { id: documentId },
           data: { processingStatus: 'completed' },
         }),
         this.prisma.aiSummaryJob.update({
-          where: { id: createdJob.id },
+          where: { id: jobId },
           data: {
             status: 'completed',
             summaryText: llmResult.summaryText,
@@ -76,15 +113,15 @@ export class DocumentService {
         }),
       ]);
 
-      return { document, summaryJob };
-    } catch {
-      const [document, summaryJob] = await this.prisma.$transaction([
+      return { document: updatedDocument, summaryJob };
+    } catch (error) {
+      const [updatedDocument, summaryJob] = await this.prisma.$transaction([
         this.prisma.workshopDocument.update({
-          where: { id: createdDocument.id },
+          where: { id: documentId },
           data: { processingStatus: 'failed' },
         }),
         this.prisma.aiSummaryJob.update({
-          where: { id: createdJob.id },
+          where: { id: jobId },
           data: {
             status: 'failed',
             retryCount: { increment: 1 },
@@ -92,7 +129,12 @@ export class DocumentService {
         }),
       ]);
 
-      return { document, summaryJob };
+      this.logger.error(
+        `AI summary failed for document ${documentId} (job ${jobId})`,
+        error,
+      );
+
+      return { document: updatedDocument, summaryJob };
     }
   }
 

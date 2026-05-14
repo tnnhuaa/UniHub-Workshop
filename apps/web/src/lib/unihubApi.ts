@@ -1,5 +1,6 @@
 import {
   getJson,
+  postFormData,
   patchJson,
   postJson,
   withIdempotencyKey,
@@ -68,6 +69,26 @@ export type PaymentApiDto = {
   completedAt?: string | null;
 };
 
+export type CsvBatchStatus = 'pending' | 'running' | 'completed' | 'failed';
+
+export type CsvBatchDto = {
+  id: string;
+  sourceFile: string;
+  totalRecords: number;
+  successfulRecords: number;
+  failedRecords: number;
+  conflictRecords: number;
+  status: CsvBatchStatus;
+  startedAt: string;
+  completedAt?: string | null;
+  createdAt: string;
+};
+
+export type CsvBatchListQuery = {
+  status?: CsvBatchStatus;
+  page?: number;
+  pageSize?: number;
+};
 export type PaymentMockActionInputDto = {
   paymentId: string;
   providerRef?: string;
@@ -225,6 +246,22 @@ export const createRegistration = (
     headers: withIdempotencyKey(idempotencyKey),
   });
 
+export const uploadCsvBatch = (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return postFormData<CsvBatchDto>('/csv-sync/upload', { body: formData });
+};
+
+export const fetchCsvBatches = (query: CsvBatchListQuery) =>
+  getJson<CsvBatchDto[]>('/csv-sync/batches', { query });
+
+export const processCsvBatch = (id: string) =>
+  postJson<CsvBatchDto, Record<string, never>>(
+    `/csv-sync/batches/${id}/process`,
+    {
+      body: {},
+    },
+  );
 export const fetchAdminDashboard = (query?: AdminDashboardQuery) =>
   getJson<AdminDashboardResponseDto>('/admin/dashboard', { query });
 

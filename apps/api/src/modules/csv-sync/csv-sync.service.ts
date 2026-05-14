@@ -1,7 +1,15 @@
-import { Injectable } from '@nestjs/common';
-import { createReadStream } from 'node:fs';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import type { JobStatus } from '@prisma/client';
+import { createReadStream, createWriteStream } from 'node:fs';
+import { mkdir } from 'node:fs/promises';
 import { createInterface } from 'node:readline';
+import { pipeline } from 'node:stream/promises';
+import path from 'node:path';
+import type { MultipartFile } from '@fastify/multipart';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { RabbitMqService, EVENTS_KEYS } from '../rabbitmq/index.js';
+import type { Env } from '../../config/env.schema.js';
 
 /**
  * CsvSyncService — orchestrates CSV import batches.
@@ -12,7 +20,21 @@ import { PrismaService } from '../prisma/prisma.service.js';
  */
 @Injectable()
 export class CsvSyncService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(CsvSyncService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly rabbitmq: RabbitMqService,
+    private readonly configService: ConfigService<Env, true>,
+  ) {}
+
+  private getDropLocation() {
+    return this.configService.get('CSV_DROP_LOCATION', { infer: true });
+  }
+
+  private getTimezone() {
+    return this.configService.get('CSV_SYNC_TIMEZONE', { infer: true });
+  }
 
   async createBatch(sourceFile: string) {
     return this.prisma.csvLog.create({
@@ -34,6 +56,24 @@ export class CsvSyncService {
     });
   }
 
+  async listBatches(query: {
+    page: number;
+    pageSize: number;
+    status?: JobStatus;
+  }) {
+    const where: { status?: JobStatus } = {};
+    if (query.status) {
+      where.status = query.status;
+    }
+
+    return this.prisma.csvLog.findMany({
+      where,
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async processBatch(batchId: string) {
     const batch = await this.prisma.csvLog.findUniqueOrThrow({
       where: { id: batchId },
@@ -41,7 +81,7 @@ export class CsvSyncService {
 
     await this.prisma.csvLog.update({
       where: { id: batch.id },
-      data: { status: 'running' },
+      data: { status: 'running', startedAt: new Date() },
     });
 
     const counters = {
@@ -79,6 +119,53 @@ export class CsvSyncService {
       });
       throw error;
     }
+  }
+
+  publishBatch(batchId: string, sourceFile: string) {
+    const correlationId = `csv-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(7)}`;
+
+    this.rabbitmq.publish(EVENTS_KEYS.CSV_SYNC_REQUESTED, {
+      correlationId,
+      batchId,
+      fileUrl: sourceFile,
+      chunkSize: 1000,
+      timezone: this.getTimezone(),
+      publishedAt: new Date().toISOString(),
+    });
+
+    this.logger.debug(
+      `Published CSV sync job [${correlationId}] for batch ${batchId}`,
+    );
+  }
+
+  async createBatchAndPublish(sourceFile: string) {
+    const batch = await this.createBatch(sourceFile);
+    this.publishBatch(batch.id, sourceFile);
+    return batch;
+  }
+
+  async saveUpload(file: MultipartFile) {
+    if (!file.filename.endsWith('.csv')) {
+      throw new BadRequestException({
+        code: 'CSV_UPLOAD_INVALID_FILE',
+        message: 'Only .csv files are supported',
+      });
+    }
+
+    const dropLocation = this.getDropLocation();
+    await mkdir(dropLocation, { recursive: true });
+
+    const safeName = file.filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const uniqueName = `${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(7)}-${safeName}`;
+    const targetPath = path.join(dropLocation, uniqueName);
+
+    await pipeline(file.file, createWriteStream(targetPath));
+
+    return { targetPath, originalName: file.filename };
   }
 
   private async processFile(

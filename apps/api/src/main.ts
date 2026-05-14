@@ -4,6 +4,7 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
+import multipart from '@fastify/multipart';
 import { AppModule } from './app.module.js';
 import { HttpExceptionFilter } from './shared/errors/index.js';
 
@@ -23,6 +24,12 @@ async function bootstrap() {
     new FastifyAdapter(),
     { rawBody: true },
   );
+
+  await app.register(multipart as never, {
+    limits: {
+      fileSize: 20 * 1024 * 1024, // 20MB
+    },
+  });
 
   // Global API prefix
   app.setGlobalPrefix('api/v1');
