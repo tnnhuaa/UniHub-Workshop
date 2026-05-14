@@ -51,6 +51,7 @@ export type WorkshopCardData = {
     label: string;
     variant: 'primary' | 'ghost' | 'ghost-muted';
     disabled?: boolean;
+    to?: string;
   };
   strikeTitle?: boolean;
   metaFaded?: boolean;
@@ -174,7 +175,10 @@ const sortWorkshops = (
   return items;
 };
 
-const useWorkshopList = (registeredWorkshopIds: string[] = []) => {
+const useWorkshopList = (
+  registeredWorkshopIds: string[] = [],
+  pendingWorkshopIds: string[] = [],
+) => {
   const [rawWorkshops, setRawWorkshops] = useState<WorkshopApiDto[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState<WorkshopDateFilter>('upcoming');
@@ -274,9 +278,16 @@ const useWorkshopList = (registeredWorkshopIds: string[] = []) => {
           mapWorkshopToCard(workshop, index, {
             isNew: workshop.id === newestWorkshopId,
             isRegistered: registeredWorkshopIds.includes(workshop.id),
+            hasPendingPayment: pendingWorkshopIds.includes(workshop.id),
           }),
         ),
-    [currentPage, filteredWorkshops, newestWorkshopId, registeredWorkshopIds],
+    [
+      currentPage,
+      filteredWorkshops,
+      newestWorkshopId,
+      pendingWorkshopIds,
+      registeredWorkshopIds,
+    ],
   );
 
   const togglePriceFilter = (price: WorkshopPriceFilter) => {

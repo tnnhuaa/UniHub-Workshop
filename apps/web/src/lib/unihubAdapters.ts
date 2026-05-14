@@ -276,11 +276,13 @@ export const mapWorkshopToCard = (
   options?: {
     isNew?: boolean;
     isRegistered?: boolean;
+    hasPendingPayment?: boolean;
   },
 ): WorkshopCardData => {
   const metadata = getWorkshopMetadata(workshop.id);
   const remainingSeats = getRemainingSeats(workshop);
   const isRegistered = options?.isRegistered ?? false;
+  const hasPendingPayment = options?.hasPendingPayment ?? false;
   const classNames = [workshop.status === 'cancelled' ? 'cancelled' : '']
     .filter(Boolean)
     .join(' ');
@@ -337,7 +339,13 @@ export const mapWorkshopToCard = (
                   ? 'warning'
                   : 'success',
           },
-    action: isRegistered
+    action: hasPendingPayment
+      ? {
+          label: 'Complete Payment',
+          variant: 'primary',
+          to: `/workshops/${workshop.id}/register`,
+        }
+      : isRegistered
       ? {
           label: 'Registered',
           variant: 'ghost-muted',
@@ -358,6 +366,7 @@ export const mapWorkshopToCard = (
           : {
               label: 'Register',
               variant: 'primary',
+              to: `/workshops/${workshop.id}`,
             },
     strikeTitle: workshop.status === 'cancelled',
     metaFaded: workshop.status === 'cancelled',

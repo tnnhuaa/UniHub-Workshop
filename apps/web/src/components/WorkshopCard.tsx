@@ -125,6 +125,15 @@ const WorkshopCard = ({ workshop }: { workshop: WorkshopCardData }) => {
           type="button"
           className={getActionClassName(workshop.action.variant)}
           disabled={workshop.action.disabled}
+          onClick={(event) => {
+            event.stopPropagation();
+
+            if (workshop.action.disabled || !workshop.action.to) {
+              return;
+            }
+
+            navigate(workshop.action.to);
+          }}
         >
           {workshop.action.label}
         </button>

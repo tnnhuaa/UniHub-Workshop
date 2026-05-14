@@ -5,7 +5,7 @@ import WorkshopHeader from '../components/WorkshopHeader.tsx';
 import LoadingSpinner from '../components/LoadingSpinner.tsx';
 import useStudentSession from '../hooks/useStudentSession.ts';
 import { mapWorkshopToDetailViewModel } from '../lib/unihubAdapters.ts';
-import { fetchWorkshop } from '../lib/unihubApi.ts';
+import { fetchMyRegistrations, fetchWorkshop } from '../lib/unihubApi.ts';
 import type { WorkshopDetailViewModel } from '../lib/unihubAdapters.ts';
 
 const imgStudentProfile = '/figma-mcp/22492359-f12d-464a-b95a-fb292c891cc8.jpg';
@@ -23,6 +23,7 @@ const WorkshopDetail = () => {
   const [workshop, setWorkshop] = useState<WorkshopDetailViewModel | null>(
     null,
   );
+  const [hasPendingPayment, setHasPendingPayment] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const seatsFilled = workshop ? workshop.occupiedSeats : 0;
@@ -31,13 +32,24 @@ const WorkshopDetail = () => {
       ? Math.round((seatsFilled / workshop.capacity) * 100)
       : 0;
   const registrationDisabled =
-    workshop?.status === 'cancelled' || workshop?.isSoldOut;
+    workshop?.status === 'cancelled' ||
+    (workshop?.isSoldOut && !hasPendingPayment);
   const registrationLabel =
     workshop?.status === 'cancelled'
       ? 'Unavailable'
-      : workshop?.isSoldOut
+      : hasPendingPayment
+        ? 'Complete Payment'
+        : workshop?.isSoldOut
         ? 'Sold Out'
-        : 'Register Now';
+        : workshop?.price && workshop.price > 0
+          ? 'Reserve Seat'
+          : 'Register Now';
+  const showPaidHoldNote =
+    (workshop?.price ?? 0) > 0 &&
+    workshop?.status !== 'cancelled' &&
+    !workshop?.isSoldOut;
+  const showSoldOutHoldNote =
+    (workshop?.activeHoldCount ?? 0) > 0 && Boolean(workshop?.isSoldOut);
 
   useEffect(() => {
     const loadWorkshop = async (options?: { background?: boolean }) => {
@@ -70,6 +82,34 @@ const WorkshopDetail = () => {
       window.clearInterval(intervalId);
     };
   }, [workshopId]);
+
+  useEffect(() => {
+    const loadPendingRegistration = async () => {
+      if (!session.isAuthenticated) {
+        setHasPendingPayment(false);
+        return;
+      }
+
+      const result = await fetchMyRegistrations({ page: 1, pageSize: 100 });
+      if (!result.ok) {
+        return;
+      }
+
+      const now = Date.now();
+      const hasActiveHold = result.data.some(
+        (registration) =>
+          registration.workshopId === workshopId &&
+          registration.status === 'pending' &&
+          registration.paymentStatus === 'pending' &&
+          Boolean(registration.heldUntil) &&
+          new Date(registration.heldUntil as string).getTime() > now,
+      );
+
+      setHasPendingPayment(hasActiveHold);
+    };
+
+    void loadPendingRegistration();
+  }, [session.isAuthenticated, workshopId]);
 
   if (isLoading) {
     return (
@@ -232,10 +272,21 @@ const WorkshopDetail = () => {
                 <Check className="icon icon-md" aria-hidden="true" />
                 {registrationLabel}
               </button>
-              {workshop.activeHoldCount > 0 && workshop.isSoldOut ? (
+              {showPaidHoldNote ? (
                 <p className="helper-text detail-register-note">
-                  The remaining seat is temporarily held by another student.
-                  This page refreshes automatically when the hold expires.
+                  {hasPendingPayment
+                    ? 'Your seat is still on hold. Complete payment before the 10-minute reservation expires.'
+                    : 'Entering registration will reserve 1 seat for 10 minutes while you complete payment.'}
+                  {workshop.activeHoldCount > 0
+                    ? ` ${workshop.activeHoldCount} seat${workshop.activeHoldCount > 1 ? 's are' : ' is'} currently on hold across this workshop.`
+                    : ''}
+                </p>
+              ) : null}
+              {showSoldOutHoldNote ? (
+                <p className="helper-text detail-register-note">
+                  All remaining seats are temporarily on 10-minute hold. This
+                  page refreshes automatically when a hold expires or payment
+                  fails.
                 </p>
               ) : null}
             </section>

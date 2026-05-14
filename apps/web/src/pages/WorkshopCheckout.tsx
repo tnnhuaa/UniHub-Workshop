@@ -9,10 +9,7 @@ import {
   mockPaymentFailure,
   mockPaymentSuccess,
 } from '../lib/unihubApi.ts';
-import type {
-  PaymentActionResponseDto,
-  RegistrationCheckoutResponseDto,
-} from '../lib/unihubApi.ts';
+import type { RegistrationCheckoutResponseDto } from '../lib/unihubApi.ts';
 import SessionGate from '../components/SessionGate.tsx';
 import useStudentSession from '../hooks/useStudentSession.ts';
 import type {
@@ -51,6 +48,9 @@ const WorkshopCheckout = () => {
   const { id } = useParams();
   const workshopId = id ?? defaultWorkshopId;
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentResultModalState, setPaymentResultModalState] = useState<
+    'paid' | 'failed' | null
+  >(null);
   const [paymentState, setPaymentState] = useState<
     'idle' | 'processing' | 'paid' | 'failed'
   >('idle');
@@ -64,8 +64,6 @@ const WorkshopCheckout = () => {
   const [email, setEmail] = useState('');
   const [registrationResult, setRegistrationResult] =
     useState<RegistrationCheckoutResponseDto | null>(null);
-  const [paymentActionResult, setPaymentActionResult] =
-    useState<PaymentActionResponseDto | null>(null);
   const [submissionMessage, setSubmissionMessage] = useState<string | null>(
     null,
   );
@@ -125,8 +123,8 @@ const WorkshopCheckout = () => {
 
   useEffect(() => {
     setRegistrationResult(null);
-    setPaymentActionResult(null);
     setPaymentActionError(null);
+    setPaymentResultModalState(null);
     setSubmissionMessage(null);
     setError(null);
     setReservationErrorCode(null);
@@ -143,7 +141,6 @@ const WorkshopCheckout = () => {
     setError(null);
     setReservationErrorCode(null);
     setPaymentActionError(null);
-    setPaymentActionResult(null);
     setSubmissionMessage(null);
     setIsSubmitting(true);
     setPaymentState('idle');
@@ -235,10 +232,16 @@ const WorkshopCheckout = () => {
     }
 
     setIsPaymentModalOpen(false);
+    setPaymentResultModalState(null);
     setPaymentState('failed');
     setSubmissionMessage(
-      `Reservation ${registrationResult.registration.id} expired after 10 minutes. The hold has been released, so you can try reserving the seat again if it is still available.`,
+      `Reservation ${registrationResult.registration.id} expired after 10 minutes. We are reserving a new seat hold for you now if one is still available.`,
     );
+    setRegistrationResult(null);
+    setPaymentActionError(null);
+    setHoldTimeLeftMs(HOLD_DURATION_MS);
+    setAutoReservationConsumed(false);
+    setReservationAttempt(Date.now());
   }, [holdTimeLeftMs, isPaidWorkshop, registrationResult]);
 
   const handlePay = async () => {
@@ -259,7 +262,6 @@ const WorkshopCheckout = () => {
     setError(null);
     setReservationErrorCode(null);
     setPaymentActionError(null);
-    setPaymentActionResult(null);
     setSubmissionMessage(null);
     setIsSubmitting(true);
     setPaymentState('idle');
@@ -300,6 +302,7 @@ const WorkshopCheckout = () => {
     setPaymentActionError(null);
     setIsPaymentSubmitting(true);
     setPaymentState('processing');
+    setPaymentResultModalState(null);
 
     const result =
       action === 'success'
@@ -314,7 +317,6 @@ const WorkshopCheckout = () => {
       return;
     }
 
-    setPaymentActionResult(result.data);
     setIsPaymentModalOpen(false);
     setRegistrationResult((current) =>
       current
@@ -327,6 +329,7 @@ const WorkshopCheckout = () => {
 
     if (action === 'success') {
       setPaymentState('paid');
+      setPaymentResultModalState('paid');
       setSubmissionMessage(
         `Payment confirmed for registration ${result.data.registration.id}. Your seat is secured, the hold has ended, and the QR code will appear in My Schedule.`,
       );
@@ -334,6 +337,7 @@ const WorkshopCheckout = () => {
     }
 
     setPaymentState('failed');
+    setPaymentResultModalState('failed');
     setSubmissionMessage(
       `Payment failed for registration ${result.data.registration.id}. Your reservation was released and you can try another workshop.`,
     );
@@ -343,7 +347,6 @@ const WorkshopCheckout = () => {
     setError(null);
     setReservationErrorCode(null);
     setRegistrationResult(null);
-    setPaymentActionResult(null);
     setPaymentActionError(null);
     setSubmissionMessage(null);
     setPaymentState('idle');
@@ -419,7 +422,6 @@ const WorkshopCheckout = () => {
     );
   }
 
-  const paymentId = registrationResult?.payment?.paymentId ?? null;
   const holdExpired =
     isPaidWorkshop &&
     registrationResult?.registration.status === 'pending' &&
@@ -479,6 +481,16 @@ const WorkshopCheckout = () => {
     paymentState === 'paid' ||
     paymentState === 'failed' ||
     holdExpired;
+  const showRegistrationStatusCard =
+    showWorkshopFullState || (!isPaidWorkshop && Boolean(submissionMessage));
+  const paymentResultTitle =
+    paymentResultModalState === 'paid'
+      ? 'Payment confirmed'
+      : 'Payment failed';
+  const paymentResultDescription =
+    paymentResultModalState === 'paid'
+      ? 'Your seat is secured and the QR code is now available from My Schedule.'
+      : 'The payment did not complete. You can reserve again or browse other workshops.';
   const hasPendingPaymentSession =
     isPaidWorkshop &&
     registrationResult?.registration.status === 'pending' &&
@@ -541,7 +553,7 @@ const WorkshopCheckout = () => {
             </div>
           </section>
 
-          {submissionMessage || showWorkshopFullState ? (
+          {showRegistrationStatusCard ? (
             <section className="checkout-card">
               <div className="checkout-card-header">
                 <Lock className="icon icon-sm" aria-hidden="true" />
@@ -554,86 +566,6 @@ const WorkshopCheckout = () => {
                 >
                   {submissionMessage}
                 </p>
-              ) : null}
-              {registrationResult?.paymentRequired &&
-              registrationResult.payment ? (
-                <div className="checkout-pricing">
-                  <div className="checkout-price-row">
-                    <span>Payment ID</span>
-                    <span>
-                      {registrationResult.payment.paymentId ?? 'Pending'}
-                    </span>
-                  </div>
-                  {paymentActionResult?.payment ? (
-                    <div className="checkout-price-row">
-                      <span>Payment status</span>
-                      <span>{paymentActionResult.payment.status}</span>
-                    </div>
-                  ) : null}
-                  <div className="checkout-price-row">
-                    <span>Success endpoint</span>
-                    <span>
-                      {registrationResult.payment.mockActions
-                        ?.successEndpoint ?? 'N/A'}
-                    </span>
-                  </div>
-                  <div className="checkout-price-row">
-                    <span>Failure endpoint</span>
-                    <span>
-                      {registrationResult.payment.mockActions
-                        ?.failureEndpoint ?? 'N/A'}
-                    </span>
-                  </div>
-                </div>
-              ) : null}
-              {registrationResult?.paymentRequired && paymentId ? (
-                <div className="checkout-form-stack">
-                  <button
-                    type="button"
-                    className="checkout-pay"
-                    onClick={() => setIsPaymentModalOpen(true)}
-                    disabled={paymentActionsDisabled}
-                  >
-                    {isPaymentSubmitting && paymentState === 'processing'
-                      ? 'Processing...'
-                      : 'Simulate Payment'}
-                  </button>
-                  {paymentState === 'paid' ? (
-                    <button
-                      type="button"
-                      className="checkout-pay"
-                      onClick={() => navigate('/schedule')}
-                    >
-                      Open My Schedule
-                    </button>
-                  ) : null}
-                  {paymentState === 'failed' ? (
-                    <>
-                      <button
-                        type="button"
-                        className="checkout-pay"
-                        onClick={handleRetryReservation}
-                      >
-                        Retry Reservation
-                      </button>
-                      <button
-                        type="button"
-                        className="checkout-pay"
-                        onClick={() => navigate('/workshops')}
-                      >
-                        Browse Workshops
-                      </button>
-                    </>
-                  ) : null}
-                  {paymentActionError ? (
-                    <p
-                      className="helper-text"
-                      style={{ textAlign: 'left', marginTop: 0 }}
-                    >
-                      {paymentActionError}
-                    </p>
-                  ) : null}
-                </div>
               ) : null}
               {showWorkshopFullState ? (
                 <div className="checkout-form-stack">
@@ -778,6 +710,56 @@ const WorkshopCheckout = () => {
             >
               Cancel
             </button>
+          </div>
+        </div>
+      ) : null}
+      {paymentResultModalState ? (
+        <div className="checkout-modal-overlay" role="dialog" aria-modal>
+          <div className="checkout-modal">
+            <h3>{paymentResultTitle}</h3>
+            <p>{paymentResultDescription}</p>
+            {paymentActionError ? (
+              <p className="helper-text" style={{ textAlign: 'left', margin: 0 }}>
+                {paymentActionError}
+              </p>
+            ) : null}
+            <div className="checkout-modal-actions">
+              {paymentResultModalState === 'paid' ? (
+                <>
+                  <button
+                    type="button"
+                    className="checkout-pay success"
+                    onClick={() => navigate('/schedule')}
+                  >
+                    Open My Schedule
+                  </button>
+                  <button
+                    type="button"
+                    className="checkout-pay secondary"
+                    onClick={() => setPaymentResultModalState(null)}
+                  >
+                    Close
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="checkout-pay"
+                    onClick={handleRetryReservation}
+                  >
+                    Retry Reservation
+                  </button>
+                  <button
+                    type="button"
+                    className="checkout-pay secondary"
+                    onClick={() => navigate('/workshops')}
+                  >
+                    Browse Workshops
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       ) : null}

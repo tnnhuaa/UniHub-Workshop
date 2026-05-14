@@ -20,6 +20,7 @@ const WorkshopList = () => {
   const [registeredWorkshopIds, setRegisteredWorkshopIds] = useState<string[]>(
     [],
   );
+  const [pendingWorkshopIds, setPendingWorkshopIds] = useState<string[]>([]);
   const {
     workshops,
     totalResults,
@@ -40,12 +41,13 @@ const WorkshopList = () => {
     sortBy,
     setSortBy,
     resetFilters,
-  } = useWorkshopList(registeredWorkshopIds);
+  } = useWorkshopList(registeredWorkshopIds, pendingWorkshopIds);
 
   useEffect(() => {
     const loadRegisteredWorkshops = async () => {
       if (!session.isAuthenticated) {
         setRegisteredWorkshopIds([]);
+        setPendingWorkshopIds([]);
         return;
       }
 
@@ -55,19 +57,34 @@ const WorkshopList = () => {
         return;
       }
 
-      const ids = Array.from(
+      const confirmedIds = Array.from(
         new Set(
           result.data
             .filter(
               (registration) =>
-                registration.status !== 'cancelled' &&
-                registration.status !== 'expired',
+                registration.status === 'confirmed' &&
+                registration.paymentStatus === 'paid',
+            )
+            .map((registration) => registration.workshopId),
+        ),
+      );
+      const now = Date.now();
+      const pendingIds = Array.from(
+        new Set(
+          result.data
+            .filter(
+              (registration) =>
+                registration.status === 'pending' &&
+                registration.paymentStatus === 'pending' &&
+                Boolean(registration.heldUntil) &&
+                new Date(registration.heldUntil as string).getTime() > now,
             )
             .map((registration) => registration.workshopId),
         ),
       );
 
-      setRegisteredWorkshopIds(ids);
+      setRegisteredWorkshopIds(confirmedIds);
+      setPendingWorkshopIds(pendingIds);
     };
 
     void loadRegisteredWorkshops();
