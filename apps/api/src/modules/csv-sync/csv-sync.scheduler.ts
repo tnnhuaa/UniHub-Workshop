@@ -36,6 +36,16 @@ export class CsvSyncScheduler {
     });
 
     try {
+      const pendingBatches = await this.prisma.csvLog.findMany({
+        where: { status: 'pending' },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      for (const batch of pendingBatches) {
+        this.csvSyncService.publishBatch(batch.id, batch.sourceFile);
+        this.logger.log(`Scheduled CSV batch published: ${batch.id}`);
+      }
+
       const files = await readdir(dropLocation);
       const csvFiles = files.filter((name) =>
         name.toLowerCase().endsWith('.csv'),

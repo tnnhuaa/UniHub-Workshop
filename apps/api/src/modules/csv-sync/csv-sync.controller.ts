@@ -83,6 +83,6 @@ export class CsvSyncController {
     }
 
     const { targetPath } = await this.csvSyncService.saveUpload(file);
-    return this.csvSyncService.createBatchAndPublish(targetPath);
+    return this.csvSyncService.createBatch(targetPath);
   }
 }

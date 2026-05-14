@@ -1,13 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import AdminSidebar from '../components/AdminSidebar.tsx';
 import type { CsvBatchDto } from '../lib/unihubApi.ts';
-import { fetchCsvBatches, uploadCsvBatch } from '../lib/unihubApi.ts';
+import {
+  fetchCsvBatches,
+  processCsvBatch,
+  uploadCsvBatch,
+} from '../lib/unihubApi.ts';
 
 const AdminCsvSync = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isForceRunning, setIsForceRunning] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [batchList, setBatchList] = useState<CsvBatchDto[] | null>(null);
+  const [selectedQueuedBatchId, setSelectedQueuedBatchId] = useState<
+    string | null
+  >(null);
 
   const recentBatches = useMemo(() => {
     if (!batchList || !Array.isArray(batchList)) {
@@ -62,6 +70,37 @@ const AdminCsvSync = () => {
     } else {
       setStatusMessage(listResult.error);
     }
+  };
+
+  const handleQueuedStatusClick = (batchId: string) => {
+    setSelectedQueuedBatchId((current) => (current === batchId ? null : batchId));
+  };
+
+  const handleForceRun = async () => {
+    if (!selectedQueuedBatchId) {
+      return;
+    }
+
+    const shouldContinue = window.confirm(
+      'Force running can trigger high resource usage. Do you want to continue?',
+    );
+    if (!shouldContinue) {
+      return;
+    }
+
+    setIsForceRunning(true);
+    const result = await processCsvBatch(selectedQueuedBatchId);
+    if (result.ok) {
+      setStatusMessage(`Batch force-run requested: ${selectedQueuedBatchId}`);
+      const listResult = await fetchCsvBatches({ page: 1, pageSize: 5 });
+      if (listResult.ok) {
+        setBatchList(listResult.data);
+      }
+      setSelectedQueuedBatchId(null);
+    } else {
+      setStatusMessage(result.error);
+    }
+    setIsForceRunning(false);
   };
 
   return (
@@ -152,11 +191,21 @@ const AdminCsvSync = () => {
                         <tr key={batch.id}>
                           <td>{batch.id}</td>
                           <td>
-                            <span
-                              className={`admin-status-pill ${batch.status}`}
-                            >
-                              {batch.status}
-                            </span>
+                            {batch.status === 'pending' ? (
+                              <button
+                                type="button"
+                                className={`admin-status-pill ${batch.status}`}
+                                onClick={() => handleQueuedStatusClick(batch.id)}
+                              >
+                                {batch.status} ↓
+                              </button>
+                            ) : (
+                              <span
+                                className={`admin-status-pill ${batch.status}`}
+                              >
+                                {batch.status}
+                              </span>
+                            )}
                           </td>
                           <td>{batch.totalRecords}</td>
                           <td>{batch.successfulRecords}</td>
@@ -168,6 +217,22 @@ const AdminCsvSync = () => {
                   </tbody>
                 </table>
               </div>
+
+              {selectedQueuedBatchId ? (
+                <div className="admin-csv-queue-panel">
+                  <p>
+                    Batch <strong>{selectedQueuedBatchId}</strong> is queued.
+                  </p>
+                  <button
+                    type="button"
+                    className="admin-primary-button"
+                    onClick={handleForceRun}
+                    disabled={isForceRunning}
+                  >
+                    {isForceRunning ? 'Forcing...' : 'Force to run'}
+                  </button>
+                </div>
+              ) : null}
             </article>
           </section>
 
@@ -185,7 +250,7 @@ const AdminCsvSync = () => {
               <h2>Schedule</h2>
               <p>
                 Automated imports run at 01:00 and 04:00 UTC. Manual uploads are
-                queued immediately.
+                queued and run at schedule time.
               </p>
             </article>
           </aside>

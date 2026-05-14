@@ -254,6 +254,11 @@ export const uploadCsvBatch = (file: File) => {
 
 export const fetchCsvBatches = (query: CsvBatchListQuery) =>
   getJson<CsvBatchDto[]>('/csv-sync/batches', { query });
+
+export const processCsvBatch = (id: string) =>
+  postJson<CsvBatchDto, Record<string, never>>(`/csv-sync/batches/${id}/process`, {
+    body: {},
+  });
 export const fetchAdminDashboard = (query?: AdminDashboardQuery) =>
   getJson<AdminDashboardResponseDto>('/admin/dashboard', { query });
 
