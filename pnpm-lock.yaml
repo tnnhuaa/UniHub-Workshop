@@ -21,6 +21,12 @@ importers:
       '@types/jest':
         specifier: ^30.0.0
         version: 30.0.0
+      '@types/react':
+        specifier: 18.3.28
+        version: 18.3.28
+      '@types/react-dom':
+        specifier: 18.3.7
+        version: 18.3.7(@types/react@18.3.28)
       '@typescript-eslint/parser':
         specifier: ^8.59.2
         version: 8.59.2(eslint@10.3.0(jiti@2.7.0))(typescript@5.9.3)
@@ -293,6 +299,9 @@ importers:
       eslint-config-expo:
         specifier: ~10.0.0
         version: 10.0.0(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3)
+      eslint-import-resolver-node:
+        specifier: ^0.3.10
+        version: 0.3.10
       typescript:
         specifier: ~5.9.2
         version: 5.9.3
