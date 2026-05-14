@@ -35,7 +35,13 @@ export class AuthService {
       headers.set(key, String(value));
     });
 
-    return this.auth.api.getSession({ headers });
+    const session = await this.auth.api.getSession({ headers });
+
+    if (session?.user?.id) {
+      await this.syncStudentAccessForUser(session.user.id);
+    }
+
+    return session;
   }
 
   async getUserRolesValues(userId: string): Promise<UserRoleType[]> {
@@ -68,5 +74,60 @@ export class AuthService {
     }
 
     return student.mssv;
+  }
+
+  private async syncStudentAccessForUser(userId: string) {
+    const user = await this.prisma.betterAuthUser.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true },
+    });
+
+    if (!user?.email) {
+      return;
+    }
+
+    const student = await this.prisma.student.findFirst({
+      where: {
+        email: {
+          equals: user.email,
+          mode: 'insensitive',
+        },
+      },
+      select: {
+        mssv: true,
+        betterAuthUserId: true,
+      },
+    });
+
+    if (!student) {
+      return;
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      if (!student.betterAuthUserId) {
+        await tx.student.update({
+          where: { mssv: student.mssv },
+          data: { betterAuthUserId: user.id },
+        });
+      }
+
+      if (student.betterAuthUserId && student.betterAuthUserId !== user.id) {
+        return;
+      }
+
+      await tx.userRole.upsert({
+        where: {
+          userId_role: {
+            userId: user.id,
+            role: 'student',
+          },
+        },
+        update: {},
+        create: {
+          userId: user.id,
+          role: 'student',
+        },
+      });
+    });
   }
 }

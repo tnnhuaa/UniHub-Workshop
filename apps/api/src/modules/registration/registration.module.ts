@@ -5,6 +5,7 @@ import {
   RequestMethod,
 } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module.js';
+import { NotificationModule } from '../notification/notification.module.js';
 import { PaymentModule } from '../payment/payment.module.js';
 import {
   IdempotencyMiddleware,
@@ -16,7 +17,7 @@ import { SeatAllocator } from './seat-allocator.js';
 import { RegistrationCleanupService } from './registration.cleanup.js';
 
 @Module({
-  imports: [AuthModule, PaymentModule, IdempotencyModule],
+  imports: [AuthModule, PaymentModule, NotificationModule, IdempotencyModule],
   controllers: [RegistrationController],
   providers: [RegistrationService, SeatAllocator, RegistrationCleanupService],
   exports: [RegistrationService],

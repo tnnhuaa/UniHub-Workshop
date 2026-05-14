@@ -1,7 +1,7 @@
 import { Bell, LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-type WorkshopHeaderTab = 'workshops' | 'schedule';
+type WorkshopHeaderTab = 'workshops' | 'schedule' | 'notifications';
 
 type WorkshopHeaderProps = {
   profileImage?: string;
@@ -38,9 +38,14 @@ const WorkshopHeader = ({
       </div>
       {nav}
       <div className="workshop-topbar-actions">
-        <button type="button" className="icon-button" aria-label="Alerts">
+        <Link
+          type="button"
+          className={`icon-button${activeTab === 'notifications' ? ' active' : ''}`}
+          aria-label="Alerts"
+          to="/notifications"
+        >
           <Bell className="icon icon-md" aria-hidden="true" />
-        </button>
+        </Link>
         {profileLink && profileImage ? (
           <Link className="avatar-button" to={profileLink} aria-label="Profile">
             <img src={profileImage} alt="Student profile" />

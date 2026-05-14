@@ -72,6 +72,11 @@ enum NotificationStatus {
   failed
 }
 
+enum NotificationType {
+  custom
+  workshop_registration_confirmed
+}
+
 model BetterAuthUser {
   id            String                 @id @default(cuid())
   name          String?
@@ -88,7 +93,7 @@ model BetterAuthUser {
   workshops     Workshop[]             @relation("OrganizerWorkshops")
   checkins      Checkin[]              @relation("StaffCheckins")
   assignments   StaffWorkshopAssignment[]
-  notifications NotificationDelivery[]
+  notifications Notification[]
   auditLogs     AuditLog[]
 
   @@map("better_auth_users")
@@ -325,18 +330,38 @@ model AiSummaryJob {
 
 model NotificationDelivery {
   id           String             @id @default(uuid())
-  userId       String             @map("user_id")
+  notificationId String           @map("notification_id")
   channel      NotificationChannel
-  templateCode String             @map("template_code")
   status       NotificationStatus @default(pending)
+  providerRef  String?            @map("provider_ref")
+  errorMessage String?            @map("error_message")
   dedupeKey    String?            @unique @map("dedupe_key")
   sentAt       DateTime?          @map("sent_at")
   createdAt    DateTime           @default(now()) @map("created_at")
 
-  user BetterAuthUser @relation(fields: [userId], references: [id])
+  notification Notification @relation(fields: [notificationId], references: [id])
+
+  @@index([notificationId])
+  @@map("notification_deliveries")
+}
+
+model Notification {
+  id         String             @id @default(uuid())
+  userId     String             @map("user_id")
+  type       NotificationType
+  title      String
+  body       String
+  data       Json?
+  eventKey   String?            @unique @map("event_key")
+  readAt     DateTime?          @map("read_at")
+  createdAt  DateTime           @default(now()) @map("created_at")
+
+  user       BetterAuthUser         @relation(fields: [userId], references: [id])
+  deliveries NotificationDelivery[]
 
   @@index([userId])
-  @@map("notification_deliveries")
+  @@index([readAt])
+  @@map("notifications")
 }
 
 model AuditLog {

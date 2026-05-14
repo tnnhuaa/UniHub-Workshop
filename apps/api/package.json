@@ -30,8 +30,9 @@
     "@nestjs/platform-fastify": "^11.0.1",
     "@prisma/client": "^6.19.3",
     "better-auth": "^1.4.18",
-    "redis": "^4.7.1",
     "fastify": "^5.3.3",
+    "nodemailer": "^7.0.10",
+    "redis": "^4.7.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "zod": "^4.4.3"
@@ -44,6 +45,7 @@
     "@nestjs/testing": "^11.0.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.10.7",
+    "@types/nodemailer": "^8.0.0",
     "@types/supertest": "^6.0.2",
     "dotenv": "^16.6.1",
     "eslint": "^9.18.0",

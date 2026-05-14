@@ -41,6 +41,13 @@ import { PrismaService } from '../prisma/prisma.service.js';
             'GOOGLE_OAUTH_CLIENT_SECRET',
           ),
           GOOGLE_OAUTH_REDIRECT_URI: config.get('GOOGLE_OAUTH_REDIRECT_URI'),
+          SMTP_HOST: config.getOrThrow('SMTP_HOST'),
+          SMTP_PORT: config.getOrThrow('SMTP_PORT'),
+          SMTP_SECURE: config.getOrThrow('SMTP_SECURE'),
+          SMTP_USER: config.getOrThrow('SMTP_USER'),
+          SMTP_PASS: config.getOrThrow('SMTP_PASS'),
+          SMTP_FROM_NAME: config.getOrThrow('SMTP_FROM_NAME'),
+          SMTP_FROM_EMAIL: config.getOrThrow('SMTP_FROM_EMAIL'),
         };
 
         return createBetterAuthInstance(prisma, env);
