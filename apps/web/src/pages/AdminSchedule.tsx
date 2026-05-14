@@ -142,10 +142,8 @@ const AdminSchedule = () => {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
-  const [dateRangeWarning, setDateRangeWarning] = useState<string | null>(null);
 
   const latestDocument = documents[0] ?? null;
-  const hasCrossDayRange = Boolean(dateRangeWarning);
 
   const registrationProgress = useMemo(() => {
     if (!workshop || workshop.capacity === 0) {
@@ -184,7 +182,6 @@ const AdminSchedule = () => {
         setInitialForm(emptyWorkshopForm());
         setDocuments([]);
         setSummary(null);
-        setDateRangeWarning(null);
         setError(null);
         setIsLoading(false);
         return;
@@ -200,7 +197,6 @@ const AdminSchedule = () => {
       setError(null);
       setSummaryError(null);
       setUploadError(null);
-      setDateRangeWarning(null);
 
       const workshopResult = await fetchWorkshop(workshopId);
       if (!active) {
@@ -215,7 +211,6 @@ const AdminSchedule = () => {
 
       const workshopData = workshopResult.data;
       const startDate = toDateValue(workshopData.startTime);
-      const endDate = toDateValue(workshopData.endTime);
       const nextForm: WorkshopDraftForm = {
         title: workshopData.title,
         description: workshopData.description ?? '',
@@ -225,17 +220,11 @@ const AdminSchedule = () => {
         price: String(Number(workshopData.price)),
         startDate,
         startTime: toTimeValue(workshopData.startTime),
-        endDate,
+        endDate: startDate,
         endTime: toTimeValue(workshopData.endTime),
         status: workshopData.status,
         floorMapUrl: workshopData.floorMapUrl ?? '',
       };
-
-      if (startDate !== endDate) {
-        setDateRangeWarning(
-          'This workshop currently spans multiple days. The current form only supports same-day schedules, so date/time editing is disabled to avoid overwriting the saved range.',
-        );
-      }
 
       setWorkshop(workshopData);
       setForm(nextForm);
@@ -307,19 +296,14 @@ const AdminSchedule = () => {
   };
 
   const handleSave = async () => {
-    console.log('[AdminSchedule] handleSave called', { isCreateMode, workshopId });
+    console.log('[AdminSchedule] handleSave called', {
+      isCreateMode,
+      workshopId,
+    });
     setSaveError(null);
 
     if (!form.title.trim()) {
       const error = 'Workshop title is required.';
-      console.warn('[AdminSchedule] Validation error:', error);
-      setSaveError(error);
-      return;
-    }
-
-    if (hasCrossDayRange) {
-      const error =
-        'This workshop spans multiple days. Edit its schedule in a multi-day capable form before saving.';
       console.warn('[AdminSchedule] Validation error:', error);
       setSaveError(error);
       return;
@@ -332,8 +316,6 @@ const AdminSchedule = () => {
       return;
     }
 
-    const effectiveEndDate = form.endDate || form.startDate;
-
     const payload = {
       title: form.title.trim(),
       description: normalizeOptionalString(form.description),
@@ -342,7 +324,7 @@ const AdminSchedule = () => {
       capacity: Number(form.capacity),
       price: Number(form.price),
       startTime: combineDateTime(form.startDate, form.startTime),
-      endTime: combineDateTime(effectiveEndDate, form.endTime),
+      endTime: combineDateTime(form.startDate, form.endTime),
       floorMapUrl: normalizeOptionalString(form.floorMapUrl),
       status: form.status,
     };
@@ -400,7 +382,7 @@ const AdminSchedule = () => {
       price: String(Number(result.data.price)),
       startDate: toDateValue(result.data.startTime),
       startTime: toTimeValue(result.data.startTime),
-      endDate: toDateValue(result.data.endTime),
+      endDate: toDateValue(result.data.startTime),
       endTime: toTimeValue(result.data.endTime),
       status: result.data.status,
       floorMapUrl: result.data.floorMapUrl ?? '',
@@ -587,21 +569,6 @@ const AdminSchedule = () => {
                   </p>
                 </article>
               ) : null}
-              {dateRangeWarning ? (
-                <article
-                  className="admin-form-card"
-                  style={{
-                    backgroundColor: '#fff8e8',
-                    borderLeft: '4px solid #d39b17',
-                    padding: '16px',
-                  }}
-                >
-                  <strong style={{ color: '#8a5a00' }}>Schedule warning:</strong>
-                  <p className="helper-text" style={{ margin: '8px 0 0 0' }}>
-                    {dateRangeWarning}
-                  </p>
-                </article>
-              ) : null}
               <article className="admin-form-card">
                 <h2>Core Information</h2>
 
@@ -675,8 +642,9 @@ const AdminSchedule = () => {
                       <input
                         type="date"
                         value={form.startDate}
-                        onChange={(event) => handleDateChange(event.target.value)}
-                        disabled={hasCrossDayRange}
+                        onChange={(event) =>
+                          handleDateChange(event.target.value)
+                        }
                       />
                     </div>
                   </label>
@@ -690,7 +658,6 @@ const AdminSchedule = () => {
                         onChange={(event) =>
                           handleFieldChange('startTime', event.target.value)
                         }
-                        disabled={hasCrossDayRange}
                       />
                       <span>to</span>
                       <input
@@ -699,7 +666,6 @@ const AdminSchedule = () => {
                         onChange={(event) =>
                           handleFieldChange('endTime', event.target.value)
                         }
-                        disabled={hasCrossDayRange}
                       />
                     </div>
                   </div>
