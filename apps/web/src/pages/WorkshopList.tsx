@@ -12,8 +12,7 @@ import useWorkshopList, {
 } from '../hooks/useWorkshopList.ts';
 import { fetchMyRegistrations } from '../lib/unihubApi.ts';
 
-const imgStudentProfile =
-  'https://www.figma.com/api/mcp/asset/065a2bff-6d30-4eb7-9d26-b63b86059f0d';
+const imgStudentProfile = '/figma-mcp/065a2bff-6d30-4eb7-9d26-b63b86059f0d.jpg';
 
 const WorkshopList = () => {
   const session = useStudentSession();
