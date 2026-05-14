@@ -1,11 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  Calendar,
-  Lock,
-  Timer,
-  UserRound,
-  X,
-} from 'lucide-react';
+import { Calendar, Lock, Timer, UserRound, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   mapStudentToProfileViewModel,
@@ -370,7 +364,6 @@ const WorkshopCheckout = () => {
                   </label>
                 </div>
               </section>
-
             </div>
 
             <aside className="checkout-summary">

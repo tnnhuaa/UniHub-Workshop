@@ -106,7 +106,10 @@ const UserProfile = () => {
   if (isLoading) {
     return (
       <div className="profile-page">
-        <WorkshopHeader profileImage={imgStudentProfile} profileLink="/profile" />
+        <WorkshopHeader
+          profileImage={imgStudentProfile}
+          profileLink="/profile"
+        />
         <main className="profile-main">
           <LoadingSpinner label="Loading profile..." />
         </main>
