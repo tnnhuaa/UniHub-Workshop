@@ -27,8 +27,8 @@ const SignIn = () => {
     const result = await signInWithEmail(email.trim(), password, remember);
     setIsSubmitting(false);
 
-    if (!result.ok) {
-      setError(result.error);
+    if (result.error) {
+      setError(result.error.message || 'An error occurred while signing in.');
       return;
     }
 

@@ -24,8 +24,10 @@ const SignUp = () => {
     const result = await signUpWithEmail(email.trim(), password);
     setIsSubmitting(false);
 
-    if (!result.ok) {
-      setError(result.error);
+    if (result.error) {
+      setError(
+        result.error.message || 'An error occurred while creating the account.',
+      );
       return;
     }
 

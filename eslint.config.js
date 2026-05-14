@@ -1,26 +1,26 @@
 module.exports = [
   {
     ignores: [
-      "**/node_modules/**",
-      "**/dist/**",
-      "apps/api/dist/**",
-      "apps/api/scripts/**",
-      "**/coverage/**",
-      "**/docs/**",
+      '**/node_modules/**',
+      '**/dist/**',
+      'apps/api/dist/**',
+      'apps/api/scripts/**',
+      '**/coverage/**',
+      '**/docs/**',
     ],
   },
   {
-    files: ["**/*.{js,jsx,ts,tsx}"],
+    files: ['**/*.{js,jsx,ts,tsx}'],
     languageOptions: {
-      ecmaVersion: "latest",
-      sourceType: "module",
-      parser: require("@typescript-eslint/parser"),
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      parser: require('@typescript-eslint/parser'),
     },
     plugins: {
-      prettier: require("eslint-plugin-prettier"),
+      prettier: require('eslint-plugin-prettier'),
     },
     rules: {
-      "prettier/prettier": "error",
+      'prettier/prettier': 'error',
     },
   },
 ];

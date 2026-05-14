@@ -1,9 +1,11 @@
 # Completion Report: Web Auth Flow
 
 ## Summary
+
 Updated the web app authentication flow so public workshop pages remain accessible, `/schedule` requires login, `/workshops/:id/register` shows a friendly sign-in prompt, and the header shows a login button when no session exists.
 
 ## Completed Work
+
 - Added a shared student session hook that normalizes authenticated, unauthenticated, and error states.
 - Updated the workshop header to render a login button fallback when there is no authenticated profile link.
 - Added a reusable login gate component for schedule and checkout pages.
@@ -15,11 +17,13 @@ Updated the web app authentication flow so public workshop pages remain accessib
 - Refreshed `.copilot_temp/tasks.md` with the auth-flow task plan.
 
 ## Verification
+
 - `pnpm build`
 - `pnpm lint`
 - File-level diagnostics for all touched web files returned no errors.
 
 ## Checklist
+
 - [x] Public `/workshops` remains accessible without login.
 - [x] `/schedule` shows a login prompt when the user is not authenticated.
 - [x] `/workshops/:id/register` shows a friendly sign-in CTA instead of a raw authentication error.
@@ -29,6 +33,7 @@ Updated the web app authentication flow so public workshop pages remain accessib
 - [x] `pnpm lint` passes.
 
 ## Proposed Commit Message
+
 feat(frontend): enhance web authentication flow
 
 - Added session-gated access to schedule and checkout pages, displaying login prompts for unauthenticated users.

@@ -92,8 +92,8 @@ const UserProfile = () => {
     const result = await signOut();
     setIsSigningOut(false);
 
-    if (!result.ok) {
-      setError(result.error);
+    if (result.error) {
+      setError(result.error.message || 'An error occurred while signing out.');
       return;
     }
 
