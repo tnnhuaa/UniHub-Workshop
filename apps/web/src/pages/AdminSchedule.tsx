@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import AdminSidebar from '../components/AdminSidebar.tsx';
 import {
   createWorkshop,
@@ -800,7 +800,7 @@ const AdminSchedule = () => {
               <article className="admin-side-card admin-attendees-card">
                 <div className="admin-attendees-header">
                   <h2>Attendees</h2>
-                  <a href="#">View All</a>
+                  <Link to="#">View All</Link>
                 </div>
 
                 {isCreateMode ? (

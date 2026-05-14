@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { mapStudentToProfileViewModel } from '../lib/unihubAdapters.ts';
 import { fetchCurrentStudent } from '../lib/unihubApi.ts';
+import {
+  clearStoredStudentSession,
+  loadStoredStudentSession,
+  saveStoredStudentSession,
+} from '../lib/studentSessionStore.ts';
 import type { UserProfileViewModel } from '../lib/unihubAdapters.ts';
 
 type StudentSessionStatus =
@@ -10,8 +15,13 @@ type StudentSessionStatus =
   | 'error';
 
 const useStudentSession = () => {
-  const [status, setStatus] = useState<StudentSessionStatus>('loading');
-  const [student, setStudent] = useState<UserProfileViewModel | null>(null);
+  const cachedStudent = loadStoredStudentSession();
+  const [status, setStatus] = useState<StudentSessionStatus>(
+    cachedStudent ? 'authenticated' : 'loading',
+  );
+  const [student, setStudent] = useState<UserProfileViewModel | null>(
+    cachedStudent,
+  );
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -25,16 +35,26 @@ const useStudentSession = () => {
       }
 
       if (result.ok) {
-        setStudent(mapStudentToProfileViewModel(result.data));
+        const nextStudent = mapStudentToProfileViewModel(result.data);
+        saveStoredStudentSession(nextStudent);
+        setStudent(nextStudent);
         setError(null);
         setStatus('authenticated');
         return;
       }
 
       if (result.statusCode === 401 || result.statusCode === 403) {
+        clearStoredStudentSession();
         setStudent(null);
         setError(null);
         setStatus('unauthenticated');
+        return;
+      }
+
+      if (cachedStudent) {
+        setStudent(cachedStudent);
+        setError(null);
+        setStatus('authenticated');
         return;
       }
 
