@@ -1,7 +1,7 @@
 ---
 tools: [vscode, execute, read, agent, edit, search, web, browser, todo]
 description: Implementer agent for UniHub Workshop — strict implementation workflow for NestJS (Fastify) + Prisma + Zod. Produces dependency-ordered tasks and enforces SOLID/DRY checklist via blueprint/IMPLEMENTATION-GUIDE.md.
-name: "[repo] UniHub Implementer (NestJS + Prisma)"
+name: '[repo] UniHub Implementer (NestJS + Prisma)'
 model: Auto (copilot)
 ---
 

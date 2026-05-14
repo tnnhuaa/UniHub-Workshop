@@ -184,6 +184,78 @@ export class WorkshopService {
     return workshop;
   }
 
+  async adminUpdate(
+    id: string,
+    input: UpdateWorkshopInput,
+    actorUserId: string,
+  ) {
+    if (!actorUserId) {
+      throw new ForbiddenException({
+        code: 'ORGANIZER_REQUIRED',
+        message: 'Organizer identity is required',
+      });
+    }
+
+    const existing = await this.prisma.workshop.findUniqueOrThrow({
+      where: { id },
+    });
+
+    const nextStartTime = input.startTime ?? existing.startTime;
+    const nextEndTime = input.endTime ?? existing.endTime;
+
+    if (nextEndTime.getTime() <= nextStartTime.getTime()) {
+      throw new BadRequestException({
+        code: 'WORKSHOP_TIME_RANGE_INVALID',
+        message: 'endTime must be after startTime',
+      });
+    }
+
+    const nextCapacity = input.capacity ?? existing.capacity;
+    if (nextCapacity < existing.registeredCount) {
+      throw new BadRequestException({
+        code: 'WORKSHOP_CAPACITY_TOO_LOW',
+        message: 'capacity cannot be lower than registered count',
+      });
+    }
+
+    const data: Prisma.WorkshopUpdateInput = {};
+
+    if (input.title !== undefined) data.title = input.title;
+    if (input.description !== undefined) data.description = input.description;
+    if (input.speaker !== undefined) data.speaker = input.speaker;
+    if (input.room !== undefined) data.room = input.room;
+    if (input.capacity !== undefined) data.capacity = input.capacity;
+    if (input.price !== undefined) data.price = input.price;
+    if (input.startTime !== undefined) data.startTime = input.startTime;
+    if (input.endTime !== undefined) data.endTime = input.endTime;
+    if (input.floorMapUrl !== undefined) data.floorMapUrl = input.floorMapUrl;
+    if (input.status !== undefined) data.status = input.status;
+
+    if (Object.keys(data).length === 0) {
+      throw new BadRequestException({
+        code: 'WORKSHOP_UPDATE_EMPTY',
+        message: 'No changes provided for update',
+      });
+    }
+
+    const workshop = await this.prisma.workshop.update({
+      where: { id },
+      data,
+    });
+
+    await this.auditService.log({
+      actorUserId,
+      action: 'workshop.update',
+      resourceType: 'workshop',
+      resourceId: workshop.id,
+      metadata: {
+        changedFields: Object.keys(data),
+      },
+    });
+
+    return workshop;
+  }
+
   async remove(id: string, organizerId: string) {
     if (!organizerId) {
       throw new ForbiddenException({
@@ -203,6 +275,37 @@ export class WorkshopService {
 
     await this.auditService.log({
       actorUserId: organizerId,
+      action: 'workshop.cancel',
+      resourceType: 'workshop',
+      resourceId: workshop.id,
+      metadata: {
+        previousStatus: existing.status,
+        newStatus: workshop.status,
+      },
+    });
+
+    return workshop;
+  }
+
+  async adminRemove(id: string, actorUserId: string) {
+    if (!actorUserId) {
+      throw new ForbiddenException({
+        code: 'ORGANIZER_REQUIRED',
+        message: 'Organizer identity is required',
+      });
+    }
+
+    const existing = await this.prisma.workshop.findUniqueOrThrow({
+      where: { id },
+    });
+
+    const workshop = await this.prisma.workshop.update({
+      where: { id },
+      data: { status: 'cancelled' },
+    });
+
+    await this.auditService.log({
+      actorUserId,
       action: 'workshop.cancel',
       resourceType: 'workshop',
       resourceId: workshop.id,

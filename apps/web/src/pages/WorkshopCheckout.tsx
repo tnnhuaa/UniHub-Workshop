@@ -1,24 +1,20 @@
 import { useEffect, useState } from 'react';
-import {
-  Calendar,
-  CreditCard,
-  Lock,
-  ShieldCheck,
-  Timer,
-  UserRound,
-  X,
-} from 'lucide-react';
+import { Calendar, Lock, Timer, UserRound, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  mapStudentToProfileViewModel,
-  mapWorkshopToDetailViewModel,
-} from '../lib/unihubAdapters.ts';
+import { mapWorkshopToDetailViewModel } from '../lib/unihubAdapters.ts';
+import LoadingSpinner from '../components/LoadingSpinner.tsx';
 import {
   createRegistration,
-  fetchCurrentStudent,
   fetchWorkshop,
+  mockPaymentFailure,
+  mockPaymentSuccess,
 } from '../lib/unihubApi.ts';
-import type { RegistrationCheckoutResponseDto } from '../lib/unihubApi.ts';
+import type {
+  PaymentActionResponseDto,
+  RegistrationCheckoutResponseDto,
+} from '../lib/unihubApi.ts';
+import SessionGate from '../components/SessionGate.tsx';
+import useStudentSession from '../hooks/useStudentSession.ts';
 import type {
   WorkshopDetailViewModel,
   UserProfileViewModel,
@@ -38,6 +34,11 @@ const WorkshopCheckout = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const workshopId = id ?? defaultWorkshopId;
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentState, setPaymentState] = useState<
+    'idle' | 'processing' | 'paid' | 'failed'
+  >('idle');
+  const session = useStudentSession();
   const [workshop, setWorkshop] = useState<WorkshopDetailViewModel | null>(
     null,
   );
@@ -45,17 +46,19 @@ const WorkshopCheckout = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-  const [cardholderName, setCardholderName] = useState('');
-  const [cardNumber] = useState('');
-  const [expiryDate] = useState('');
-  const [cvc] = useState('');
   const [registrationResult, setRegistrationResult] =
     useState<RegistrationCheckoutResponseDto | null>(null);
+  const [paymentActionResult, setPaymentActionResult] =
+    useState<PaymentActionResponseDto | null>(null);
   const [submissionMessage, setSubmissionMessage] = useState<string | null>(
+    null,
+  );
+  const [paymentActionError, setPaymentActionError] = useState<string | null>(
     null,
   );
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPaymentSubmitting, setIsPaymentSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -63,11 +66,7 @@ const WorkshopCheckout = () => {
       setIsLoading(true);
       setError(null);
 
-      const [workshopResult, studentResult] = await Promise.all([
-        fetchWorkshop(workshopId),
-        fetchCurrentStudent(),
-      ]);
-
+      const workshopResult = await fetchWorkshop(workshopId);
       setIsLoading(false);
 
       if (!workshopResult.ok) {
@@ -75,25 +74,29 @@ const WorkshopCheckout = () => {
         return;
       }
 
-      if (!studentResult.ok) {
-        setError(studentResult.error);
-        return;
-      }
-
       setWorkshop(mapWorkshopToDetailViewModel(workshopResult.data));
-
-      const profile = mapStudentToProfileViewModel(studentResult.data);
-      const nameParts = splitFullName(profile.fullName);
-
-      setStudent(profile);
-      setFirstName(nameParts.firstName);
-      setLastName(nameParts.lastName);
-      setEmail(profile.email);
-      setCardholderName(profile.fullName);
     };
 
     void loadCheckoutData();
   }, [workshopId]);
+
+  useEffect(() => {
+    if (session.status !== 'authenticated' || !session.student) {
+      setStudent(null);
+      setFirstName('');
+      setLastName('');
+      setEmail('');
+      return;
+    }
+
+    const profile = session.student;
+    const nameParts = splitFullName(profile.fullName);
+
+    setStudent(profile);
+    setFirstName(nameParts.firstName);
+    setLastName(nameParts.lastName);
+    setEmail(profile.email);
+  }, [session.status, session.student]);
 
   const handlePay = async () => {
     if (!workshop || !student) {
@@ -101,8 +104,11 @@ const WorkshopCheckout = () => {
     }
 
     setError(null);
+    setPaymentActionError(null);
+    setPaymentActionResult(null);
     setSubmissionMessage(null);
     setIsSubmitting(true);
+    setPaymentState('idle');
 
     const result = await createRegistration(
       {
@@ -125,13 +131,64 @@ const WorkshopCheckout = () => {
         ? `Payment was created for registration ${result.data.registration.id}. The backend returned mock payment endpoints for the next step.`
         : `Registration confirmed for ${student.fullName}. The QR code is now available from your schedule.`,
     );
+    if (result.data.paymentRequired) {
+      setIsPaymentModalOpen(true);
+    }
   };
 
-  if (isLoading) {
+  const handleMockPaymentAction = async (action: 'success' | 'failure') => {
+    const paymentId = registrationResult?.payment?.paymentId;
+    if (!paymentId) {
+      return;
+    }
+
+    setPaymentActionError(null);
+    setIsPaymentSubmitting(true);
+    setPaymentState('processing');
+
+    const result =
+      action === 'success'
+        ? await mockPaymentSuccess({ paymentId })
+        : await mockPaymentFailure({ paymentId });
+
+    setIsPaymentSubmitting(false);
+
+    if (!result.ok) {
+      setPaymentActionError(result.error);
+      setPaymentState('idle');
+      return;
+    }
+
+    setPaymentActionResult(result.data);
+    setIsPaymentModalOpen(false);
+    setRegistrationResult((current) =>
+      current
+        ? {
+            ...current,
+            registration: result.data.registration,
+          }
+        : current,
+    );
+
+    if (action === 'success') {
+      setPaymentState('paid');
+      setSubmissionMessage(
+        `Payment confirmed for registration ${result.data.registration.id}. Your seat is secured and the QR code will appear in My Schedule.`,
+      );
+      return;
+    }
+
+    setPaymentState('failed');
+    setSubmissionMessage(
+      `Payment failed for registration ${result.data.registration.id}. Your reservation was released and you can try another workshop.`,
+    );
+  };
+
+  if (isLoading || session.isLoading) {
     return (
       <div className="checkout-page">
         <main className="checkout-main">
-          <p className="helper-text">Loading checkout...</p>
+          <LoadingSpinner label="Loading checkout..." />
         </main>
       </div>
     );
@@ -147,8 +204,58 @@ const WorkshopCheckout = () => {
     );
   }
 
+  if (session.status === 'error') {
+    return (
+      <div className="checkout-page">
+        <main className="checkout-main">
+          <p className="helper-text">
+            {session.error ?? 'Unable to load your account.'}
+          </p>
+        </main>
+      </div>
+    );
+  }
+
+  if (session.status === 'unauthenticated') {
+    return (
+      <div className="checkout-page">
+        <header className="checkout-topbar">
+          <div className="checkout-topbar-left">
+            <button
+              type="button"
+              className="checkout-close"
+              aria-label="Back to workshop details"
+              onClick={() => navigate(`/workshops/${workshopId}`)}
+            >
+              <X className="icon icon-sm" aria-hidden="true" />
+            </button>
+            <h1>Complete Registration</h1>
+          </div>
+          <div className="checkout-topbar-right">
+            <Lock className="icon icon-xs" aria-hidden="true" />
+            <span>Sign in required</span>
+          </div>
+        </header>
+
+        <main className="checkout-main">
+          <div className="checkout-container">
+            <SessionGate
+              title={`Sign in to register for ${workshop.title}`}
+              description="Log in with your UniHub account to complete this registration and access payment, QR code, and attendance details."
+              primaryActionLabel="Log in"
+              primaryActionTo="/sign-in"
+            />
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   const registrationFee = workshop.price;
   const isPaidWorkshop = registrationFee > 0;
+  const paymentId = registrationResult?.payment?.paymentId ?? null;
+  const paymentActionsDisabled =
+    isPaymentSubmitting || paymentState === 'paid' || paymentState === 'failed';
 
   return (
     <div className="checkout-page">
@@ -217,6 +324,12 @@ const WorkshopCheckout = () => {
                       {registrationResult.payment.paymentId ?? 'Pending'}
                     </span>
                   </div>
+                  {paymentActionResult?.payment ? (
+                    <div className="checkout-price-row">
+                      <span>Payment status</span>
+                      <span>{paymentActionResult.payment.status}</span>
+                    </div>
+                  ) : null}
                   <div className="checkout-price-row">
                     <span>Success endpoint</span>
                     <span>
@@ -231,6 +344,46 @@ const WorkshopCheckout = () => {
                         ?.failureEndpoint ?? 'N/A'}
                     </span>
                   </div>
+                </div>
+              ) : null}
+              {registrationResult?.paymentRequired && paymentId ? (
+                <div className="checkout-form-stack">
+                  <button
+                    type="button"
+                    className="checkout-pay"
+                    onClick={() => setIsPaymentModalOpen(true)}
+                    disabled={paymentActionsDisabled}
+                  >
+                    {isPaymentSubmitting && paymentState === 'processing'
+                      ? 'Processing...'
+                      : 'Simulate Payment'}
+                  </button>
+                  {paymentState === 'paid' ? (
+                    <button
+                      type="button"
+                      className="checkout-pay"
+                      onClick={() => navigate('/schedule')}
+                    >
+                      Open My Schedule
+                    </button>
+                  ) : null}
+                  {paymentState === 'failed' ? (
+                    <button
+                      type="button"
+                      className="checkout-pay"
+                      onClick={() => navigate('/workshops')}
+                    >
+                      Browse Workshops
+                    </button>
+                  ) : null}
+                  {paymentActionError ? (
+                    <p
+                      className="helper-text"
+                      style={{ textAlign: 'left', marginTop: 0 }}
+                    >
+                      {paymentActionError}
+                    </p>
+                  ) : null}
                 </div>
               ) : null}
             </section>
@@ -256,71 +409,6 @@ const WorkshopCheckout = () => {
                     <span>Email Address</span>
                     <input type="email" value={email} readOnly />
                   </label>
-                </div>
-              </section>
-
-              <section className="checkout-card payment-card">
-                <div className="checkout-card-accent" aria-hidden="true" />
-                <div className="checkout-card-header">
-                  <CreditCard className="icon icon-sm" aria-hidden="true" />
-                  <h2>
-                    {isPaidWorkshop ? 'Payment Method' : 'Payment Not Required'}
-                  </h2>
-                </div>
-                <div className="checkout-form-stack">
-                  <label className="checkout-field">
-                    <span>Name on Card</span>
-                    <input
-                      type="text"
-                      placeholder="e.g. Jane Doe"
-                      value={cardholderName}
-                      readOnly
-                    />
-                  </label>
-                  <label className="checkout-field">
-                    <span>Card Number</span>
-                    <div className="checkout-input icon-left">
-                      <CreditCard className="icon icon-sm" aria-hidden="true" />
-                      <input
-                        type="text"
-                        placeholder="0000 0000 0000 0000"
-                        value={cardNumber}
-                        readOnly
-                      />
-                    </div>
-                  </label>
-                  <div className="checkout-form-grid">
-                    <label className="checkout-field">
-                      <span>Expiry Date</span>
-                      <input
-                        type="text"
-                        placeholder="MM/YY"
-                        value={expiryDate}
-                        readOnly
-                      />
-                    </label>
-                    <label className="checkout-field">
-                      <span>CVC</span>
-                      <div className="checkout-input icon-right">
-                        <input
-                          type="text"
-                          placeholder="123"
-                          value={cvc}
-                          readOnly
-                        />
-                        <ShieldCheck
-                          className="icon icon-sm"
-                          aria-hidden="true"
-                        />
-                      </div>
-                    </label>
-                  </div>
-                  {!isPaidWorkshop ? (
-                    <p className="checkout-note" style={{ textAlign: 'left' }}>
-                      This workshop is free, so the backend confirms the
-                      registration immediately.
-                    </p>
-                  ) : null}
                 </div>
               </section>
             </div>
@@ -395,6 +483,40 @@ const WorkshopCheckout = () => {
           </div>
         </div>
       </main>
+      {isPaymentModalOpen ? (
+        <div className="checkout-modal-overlay" role="dialog" aria-modal>
+          <div className="checkout-modal">
+            <h3>Confirm mock payment</h3>
+            <p>Choose the outcome to finalize this registration.</p>
+            <div className="checkout-modal-actions">
+              <button
+                type="button"
+                className="checkout-pay"
+                onClick={() => void handleMockPaymentAction('success')}
+                disabled={paymentActionsDisabled}
+              >
+                Success
+              </button>
+              <button
+                type="button"
+                className="checkout-pay"
+                onClick={() => void handleMockPaymentAction('failure')}
+                disabled={paymentActionsDisabled}
+              >
+                Failure
+              </button>
+            </div>
+            <button
+              type="button"
+              className="checkout-modal-close"
+              onClick={() => setIsPaymentModalOpen(false)}
+              disabled={paymentActionsDisabled}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };

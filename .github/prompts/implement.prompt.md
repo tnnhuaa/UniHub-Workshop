@@ -1,19 +1,19 @@
 ---
 tools:
   [
-    "read",
-    "search",
-    "edit",
-    "execute",
-    "web",
-    "github-semantic-search-server/*",
-    "context7/*",
-    "serena/*",
-    "oraios/serena/*",
-    "todo",
-    "agent/runSubagent",
-    "gitkraken/git_status",
-    "gitkraken/git_log_or_diff",
+    'read',
+    'search',
+    'edit',
+    'execute',
+    'web',
+    'github-semantic-search-server/*',
+    'context7/*',
+    'serena/*',
+    'oraios/serena/*',
+    'todo',
+    'agent/runSubagent',
+    'gitkraken/git_status',
+    'gitkraken/git_log_or_diff',
   ]
 description: Wrapper prompt for UniHub Workshop — generate dependency-ordered tasks.md using the project implementer workflow (NestJS + Fastify + Prisma + Zod, NextJS admin web, RabbitMQ workers). Allowed to call subagents and skills.
 ---

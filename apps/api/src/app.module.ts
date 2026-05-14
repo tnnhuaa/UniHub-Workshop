@@ -15,6 +15,7 @@ import { StudentModule } from './modules/student/student.module.js';
 import { NotificationModule } from './modules/notification/notification.module.js';
 import { CsvSyncModule } from './modules/csv-sync/csv-sync.module.js';
 import { DocumentModule } from './modules/document/document.module.js';
+import { AdminModule } from './modules/admin/admin.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 
@@ -41,6 +42,7 @@ import { AppService } from './app.service.js';
     NotificationModule,
     CsvSyncModule,
     DocumentModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

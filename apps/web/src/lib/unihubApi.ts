@@ -1,6 +1,7 @@
 import {
   getJson,
   postFormData,
+  patchJson,
   postJson,
   withIdempotencyKey,
 } from './apiClient.ts';
@@ -88,6 +89,15 @@ export type CsvBatchListQuery = {
   page?: number;
   pageSize?: number;
 };
+export type PaymentMockActionInputDto = {
+  paymentId: string;
+  providerRef?: string;
+};
+
+export type PaymentActionResponseDto = {
+  payment: PaymentApiDto;
+  registration: RegistrationApiDto;
+};
 
 export type RegistrationCheckoutResponseDto = {
   registration: RegistrationApiDto;
@@ -119,6 +129,93 @@ export type RegistrationListQuery = {
   page?: number;
   pageSize?: number;
 };
+
+export type JobStatus = 'pending' | 'running' | 'completed' | 'failed';
+
+export type WorkshopDocumentApiDto = {
+  id: string;
+  workshopId: string;
+  fileUrl: string;
+  fileName: string;
+  processingStatus: 'pending' | 'processing' | 'completed' | 'failed';
+  uploadedAt: string;
+};
+
+export type DocumentSummaryApiDto = {
+  documentId: string;
+  status: JobStatus;
+  summaryText: string | null;
+  retryCount: number;
+  updatedAt: string | null;
+};
+
+export type AdminCsvSyncBatchDto = {
+  id: string;
+  sourceFile: string;
+  status: JobStatus;
+  totalRecords: number;
+  successfulRecords: number;
+  failedRecords: number;
+  conflictRecords: number;
+  startedAt: string;
+  completedAt: string | null;
+  lastError: {
+    rowNumber: number;
+    message: string;
+  } | null;
+};
+
+export type AdminAiSummaryCountsDto = {
+  pending: number;
+  running: number;
+  completed: number;
+  failed: number;
+};
+
+export type AdminDashboardResponseDto = {
+  kpis: {
+    totalWorkshops: number;
+    totalRegistrations: number;
+    grossRevenue: number;
+  };
+  workshops: Array<{
+    id: string;
+    title: string;
+    startTime: string;
+    endTime: string;
+    capacity: number;
+    registeredCount: number;
+    status: WorkshopStatus;
+  }>;
+  systemHealth: {
+    csvSync: {
+      batches: AdminCsvSyncBatchDto[];
+    };
+    aiSummary: {
+      counts: AdminAiSummaryCountsDto;
+      lastCompletedAt: string | null;
+    };
+  };
+};
+
+export type AdminDashboardQuery = {
+  q?: string;
+};
+
+export type WorkshopCreateInput = {
+  title: string;
+  description?: string;
+  speaker?: string;
+  room?: string;
+  capacity: number;
+  price?: number;
+  startTime: string;
+  endTime: string;
+  floorMapUrl?: string;
+  status?: WorkshopStatus;
+};
+
+export type WorkshopUpdateInput = Partial<WorkshopCreateInput>;
 
 export const fetchWorkshops = (query: WorkshopListQuery) =>
   getJson<WorkshopApiDto[]>('/workshops', { query });
@@ -157,3 +254,62 @@ export const uploadCsvBatch = (file: File) => {
 
 export const fetchCsvBatches = (query: CsvBatchListQuery) =>
   getJson<CsvBatchDto[]>('/csv-sync/batches', { query });
+export const fetchAdminDashboard = (query?: AdminDashboardQuery) =>
+  getJson<AdminDashboardResponseDto>('/admin/dashboard', { query });
+
+export const fetchWorkshopDocuments = (workshopId: string) =>
+  getJson<WorkshopDocumentApiDto[]>(`/admin/workshops/${workshopId}/documents`);
+
+export const uploadWorkshopDocument = (
+  workshopId: string,
+  body: {
+    fileName: string;
+    contentBase64: string;
+    contentType?: string;
+  },
+) =>
+  postJson<
+    {
+      document: WorkshopDocumentApiDto;
+      summaryJob: {
+        id: string;
+        documentId: string;
+        status: JobStatus;
+        summaryText?: string | null;
+        retryCount: number;
+      };
+    },
+    typeof body
+  >(`/admin/workshops/${workshopId}/documents`, {
+    body,
+  });
+
+export const createWorkshop = (body: WorkshopCreateInput) =>
+  postJson<WorkshopApiDto, WorkshopCreateInput>('/admin/workshops', {
+    body,
+  });
+
+export const updateWorkshop = (workshopId: string, body: WorkshopUpdateInput) =>
+  patchJson<WorkshopApiDto, WorkshopUpdateInput>(
+    `/admin/workshops/${workshopId}`,
+    {
+      body,
+    },
+  );
+
+export const fetchDocumentSummary = (workshopId: string, documentId: string) =>
+  getJson<DocumentSummaryApiDto>(
+    `/admin/workshops/${workshopId}/documents/${documentId}/summary`,
+  );
+
+export const mockPaymentSuccess = (body: PaymentMockActionInputDto) =>
+  postJson<PaymentActionResponseDto, PaymentMockActionInputDto>(
+    '/payments/mock/success',
+    { body },
+  );
+
+export const mockPaymentFailure = (body: PaymentMockActionInputDto) =>
+  postJson<PaymentActionResponseDto, PaymentMockActionInputDto>(
+    '/payments/mock/failure',
+    { body },
+  );

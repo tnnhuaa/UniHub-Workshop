@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import AdminDashboard from './pages/AdminDashboard.tsx';
 import AdminSchedule from './pages/AdminSchedule.tsx';
 import AdminCsvSync from './pages/AdminCsvSync.tsx';
+import AdminScheduleEntry from './pages/AdminScheduleEntry.tsx';
 import SignIn from './pages/SignIn.tsx';
 import SignUp from './pages/SignUp.tsx';
 import WorkshopCheckout from './pages/WorkshopCheckout.tsx';
@@ -15,8 +16,9 @@ const App = () => {
     <Routes>
       <Route path="/" element={<Navigate to="/workshops" replace />} />
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
-      <Route path="/admin/schedule" element={<AdminSchedule />} />
       <Route path="/admin/csv-sync" element={<AdminCsvSync />} />
+      <Route path="/admin/schedule" element={<AdminScheduleEntry />} />
+      <Route path="/admin/workshops/:id" element={<AdminSchedule />} />
       <Route path="/workshops" element={<WorkshopList />} />
       <Route path="/schedule" element={<WorkshopSchedule />} />
       <Route path="/profile" element={<UserProfile />} />

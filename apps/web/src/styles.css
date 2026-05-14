@@ -300,6 +300,19 @@ label {
   font-weight: 600;
 }
 
+.page-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  font-size: 0.9rem;
+  color: var(--ink-500);
+  min-height: calc(100vh - 96px);
+  width: 100%;
+}
+
 .auth-footer {
   margin-top: 18px;
   text-align: center;
@@ -307,9 +320,110 @@ label {
   color: var(--ink-500);
 }
 
+/* Session Gate Styles */
+.session-gate-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(280px, 1.1fr) minmax(360px, 0.9fr);
+}
+
+.session-gate-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 40px;
+  grid-column: span 2;
+}
+
+.session-gate-header {
+  width: min(440px, 100%);
+  background: var(--surface-50);
+  border: 1px solid var(--line-300);
+  border-radius: 20px;
+  padding: 32px 30px;
+  box-shadow: 0 20px 60px rgba(19, 52, 35, 0.08);
+  text-align: center;
+}
+
+.session-gate-kicker {
+  display: inline-block;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--accent-600);
+  margin-bottom: 12px;
+}
+
+.session-gate-header h2 {
+  font-size: 1.75rem;
+  margin-bottom: 6px;
+  color: var(--ink-900);
+  margin-top: 0;
+}
+
+.session-gate-header p {
+  color: var(--ink-500);
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+}
+
+.session-gate-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.session-gate-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 200px;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f7fbf5;
+  background: linear-gradient(135deg, var(--accent-500), var(--accent-700));
+  box-shadow: 0 12px 24px rgba(20, 78, 49, 0.2);
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  text-decoration: none;
+}
+
+.session-gate-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 32px rgba(20, 78, 49, 0.25);
+}
+
+.session-gate-link {
+  font-size: 0.85rem;
+  color: var(--accent-600);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.session-gate-link:hover {
+  color: var(--accent-700);
+}
+
 @media (max-width: 960px) {
   .auth-shell {
     grid-template-columns: 1fr;
+  }
+
+  .session-gate-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .session-gate-panel {
+    grid-column: span 1;
   }
 
   .auth-hero {
@@ -1625,6 +1739,54 @@ label {
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
 }
 
+.checkout-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 25, 18, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 20;
+  padding: 24px;
+}
+
+.checkout-modal {
+  width: min(420px, 100%);
+  background: var(--checkout-bg);
+  border: 1px solid var(--checkout-border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.checkout-modal h3 {
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+
+.checkout-modal p {
+  font-size: 14px;
+  color: var(--checkout-muted);
+}
+
+.checkout-modal-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.checkout-modal-close {
+  border: 1px solid var(--checkout-border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  background: var(--checkout-soft);
+  color: var(--checkout-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .checkout-note {
   font-size: 12px;
   color: var(--checkout-muted);
@@ -1633,6 +1795,18 @@ label {
 }
 
 .schedule-page {
+  --ws-bg: #f6fbf3;
+  --ws-text: #181d19;
+  --ws-muted: #3f4941;
+  --ws-border: #becabe;
+  --ws-soft: #eaefe8;
+  --ws-brand: #00663a;
+  --ws-brand-strong: #19814d;
+  --ws-blue: #d0e6f4;
+  --ws-warning-bg: rgba(179, 82, 91, 0.3);
+  --ws-warning-text: #943a44;
+  --ws-danger-bg: #ffdad6;
+  --ws-danger-text: #93000a;
   --schedule-bg: #f6fbf3;
   --schedule-text: #181d19;
   --schedule-muted: #3f4941;
@@ -2049,6 +2223,18 @@ label {
 }
 
 .profile-page {
+  --ws-bg: #f6fbf3;
+  --ws-text: #181d19;
+  --ws-muted: #3f4941;
+  --ws-border: #becabe;
+  --ws-soft: #eaefe8;
+  --ws-brand: #00663a;
+  --ws-brand-strong: #19814d;
+  --ws-blue: #d0e6f4;
+  --ws-warning-bg: rgba(179, 82, 91, 0.3);
+  --ws-warning-text: #943a44;
+  --ws-danger-bg: #ffdad6;
+  --ws-danger-text: #93000a;
   --profile-bg: #f0f5ee;
   --profile-text: #181d19;
   --profile-muted: #3f4941;
