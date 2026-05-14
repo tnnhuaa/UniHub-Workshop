@@ -1,4 +1,4 @@
-import { getJson, postJson } from './apiClient.ts';
+import { getJson } from './apiClient.ts';
 import { createAuthClient } from 'better-auth/client';
 
 export type AuthResult = Awaited<ReturnType<typeof authClient.signIn.email>>;

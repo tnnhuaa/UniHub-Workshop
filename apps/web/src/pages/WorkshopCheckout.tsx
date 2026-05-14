@@ -1,14 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Calendar, Lock, Timer, UserRound, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  mapStudentToProfileViewModel,
-  mapWorkshopToDetailViewModel,
-} from '../lib/unihubAdapters.ts';
+import { mapWorkshopToDetailViewModel } from '../lib/unihubAdapters.ts';
 import LoadingSpinner from '../components/LoadingSpinner.tsx';
 import {
   createRegistration,
-  fetchCurrentStudent,
   fetchWorkshop,
   mockPaymentFailure,
   mockPaymentSuccess,
@@ -79,14 +75,6 @@ const WorkshopCheckout = () => {
       }
 
       setWorkshop(mapWorkshopToDetailViewModel(workshopResult.data));
-
-      const profile = mapStudentToProfileViewModel(studentResult.data);
-      const nameParts = splitFullName(profile.fullName);
-
-      setStudent(profile);
-      setFirstName(nameParts.firstName);
-      setLastName(nameParts.lastName);
-      setEmail(profile.email);
     };
 
     void loadCheckoutData();
@@ -98,7 +86,6 @@ const WorkshopCheckout = () => {
       setFirstName('');
       setLastName('');
       setEmail('');
-      setCardholderName('');
       return;
     }
 
@@ -109,7 +96,6 @@ const WorkshopCheckout = () => {
     setFirstName(nameParts.firstName);
     setLastName(nameParts.lastName);
     setEmail(profile.email);
-    setCardholderName(profile.fullName);
   }, [session.status, session.student]);
 
   const handlePay = async () => {

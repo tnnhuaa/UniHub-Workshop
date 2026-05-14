@@ -271,6 +271,8 @@ export const updateWorkshop = (workshopId: string, body: WorkshopUpdateInput) =>
 export const fetchDocumentSummary = (workshopId: string, documentId: string) =>
   getJson<DocumentSummaryApiDto>(
     `/admin/workshops/${workshopId}/documents/${documentId}/summary`,
+  );
+
 export const mockPaymentSuccess = (body: PaymentMockActionInputDto) =>
   postJson<PaymentActionResponseDto, PaymentMockActionInputDto>(
     '/payments/mock/success',

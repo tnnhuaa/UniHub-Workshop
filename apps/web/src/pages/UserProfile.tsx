@@ -105,7 +105,7 @@ const UserProfile = () => {
     return (
       <div className="profile-page">
         <WorkshopHeader
-          profileImage={imgStudentProfile}
+          profileImage={imgProfilePicture}
           profileLink="/profile"
         />
         <main className="profile-main">

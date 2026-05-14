@@ -70,7 +70,7 @@ const AdminSidebar = () => {
 
   const handleLogout = async () => {
     const result = await signOut();
-    if (!result.ok) {
+    if (result.error) {
       return;
     }
 
