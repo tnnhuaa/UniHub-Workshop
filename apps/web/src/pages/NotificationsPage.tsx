@@ -84,6 +84,22 @@ const NotificationsPage = () => {
     [notifications, selectedNotificationId],
   );
 
+  useEffect(() => {
+    if (!selectedNotification?.deliveries.length) {
+      return;
+    }
+
+    console.info('Notification deliveries', {
+      notificationId: selectedNotification.id,
+      title: selectedNotification.title,
+      deliveries: selectedNotification.deliveries.map((delivery) => ({
+        id: delivery.id,
+        channel: delivery.channel,
+        status: delivery.status,
+      })),
+    });
+  }, [selectedNotification]);
+
   const handleSelectNotification = async (notification: NotificationApiDto) => {
     setSelectedNotificationId(notification.id);
 
@@ -250,23 +266,10 @@ const NotificationsPage = () => {
                       </div>
                     </div>
 
-                    <div className="notification-delivery-list">
-                      <h3>Delivery status</h3>
-                      {selectedNotification.deliveries.map((delivery) => (
-                        <div
-                          key={delivery.id}
-                          className="notification-delivery-item"
-                        >
-                          <strong>{delivery.channel}</strong>
-                          <span>{delivery.status}</span>
-                        </div>
-                      ))}
-                    </div>
-
                     <div className="notification-actions">
                       <button
                         type="button"
-                        className="checkout-pay"
+                        className="checkout-pay success"
                         onClick={() => navigate('/schedule')}
                       >
                         Open My Schedule

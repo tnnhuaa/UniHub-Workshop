@@ -10,6 +10,8 @@ interface NotificationJobPayload {
   channel: NotificationChannel;
   templateCode: string;
   dedupeKey?: string;
+  title?: string;
+  body?: string;
   publishedAt: string;
 }
 
@@ -108,8 +110,8 @@ export class NotificationConsumer extends BaseJobConsumer {
           payload.templateCode === 'workshop_registration_confirmed'
             ? 'workshop_registration_confirmed'
             : 'custom',
-        title: 'Notification',
-        body: payload.templateCode,
+        title: payload.title ?? 'Notification',
+        body: payload.body ?? payload.templateCode,
       });
 
       const hasSentDelivery = (

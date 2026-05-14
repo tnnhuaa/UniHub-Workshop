@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { NotificationChannel } from '@prisma/client';
+import { createTransport } from 'nodemailer';
+import type { SentMessageInfo, Transporter } from 'nodemailer';
 import type {
   NotificationProvider,
   NotificationProviderPayload,
@@ -19,28 +21,52 @@ export class InAppNotificationProvider implements NotificationProvider {
 export class EmailNotificationProvider implements NotificationProvider {
   channel: NotificationChannel = 'email';
 
-  send(
+  async send(
     payload: NotificationProviderPayload,
   ): Promise<NotificationProviderResult> {
     if (!payload.recipient.email) {
-      return Promise.resolve({
+      return {
         status: 'failed',
         errorMessage: 'Recipient email is missing',
-      });
+      };
     }
 
-    const hasSender =
-      Boolean(process.env.SMTP_FROM_NAME?.trim()) &&
-      Boolean(process.env.SMTP_FROM_EMAIL?.trim());
-    if (!hasSender) {
-      return Promise.resolve({
+    const smtpConfig = this.getSmtpConfig();
+    if (!smtpConfig) {
+      return {
         status: 'failed',
-        errorMessage: 'SMTP sender configuration is missing',
-      });
+        errorMessage: 'SMTP configuration is missing',
+      };
     }
 
-    this.buildHtml(payload);
-    return Promise.resolve({ status: 'sent' });
+    const transporter: Transporter = createTransport({
+      host: smtpConfig.host,
+      port: smtpConfig.port,
+      secure: smtpConfig.secure,
+      auth: {
+        user: smtpConfig.user,
+        pass: smtpConfig.pass,
+      },
+    });
+
+    const sendMail = transporter.sendMail.bind(transporter) as (
+      mail: Parameters<Transporter['sendMail']>[0],
+    ) => Promise<SentMessageInfo>;
+    const infoUnknown: unknown = await sendMail({
+      from: {
+        name: smtpConfig.fromName,
+        address: smtpConfig.fromEmail,
+      },
+      to: payload.recipient.email,
+      subject: payload.notification.title,
+      text: payload.notification.body,
+      html: this.buildHtml(payload),
+    });
+
+    return {
+      status: 'sent',
+      providerRef: this.readMessageId(infoUnknown),
+    };
   }
 
   private buildHtml(payload: NotificationProviderPayload) {
@@ -86,5 +112,53 @@ export class EmailNotificationProvider implements NotificationProvider {
 
   private readNullableString(value: unknown) {
     return typeof value === 'string' && value.trim().length > 0 ? value : null;
+  }
+
+  private readMessageId(value: unknown) {
+    if (
+      value &&
+      typeof value === 'object' &&
+      'messageId' in value &&
+      typeof value.messageId === 'string'
+    ) {
+      return value.messageId;
+    }
+
+    return undefined;
+  }
+
+  private getSmtpConfig() {
+    const host = process.env.SMTP_HOST?.trim();
+    const portRaw = process.env.SMTP_PORT?.trim();
+    const secureRaw = process.env.SMTP_SECURE?.trim();
+    const user = process.env.SMTP_USER?.trim();
+    const pass = process.env.SMTP_PASS?.trim();
+    const fromName = process.env.SMTP_FROM_NAME?.trim();
+    const fromEmail = process.env.SMTP_FROM_EMAIL?.trim();
+    const port = portRaw ? Number(portRaw) : null;
+    const secure =
+      secureRaw === 'true' ? true : secureRaw === 'false' ? false : undefined;
+
+    if (
+      !host ||
+      !port ||
+      secure === undefined ||
+      !user ||
+      !pass ||
+      !fromName ||
+      !fromEmail
+    ) {
+      return null;
+    }
+
+    return {
+      host,
+      port,
+      secure,
+      user,
+      pass,
+      fromName,
+      fromEmail,
+    };
   }
 }

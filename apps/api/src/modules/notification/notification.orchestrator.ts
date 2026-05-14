@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import type { NotificationChannel } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NOTIFICATION_PROVIDERS } from './notification.constants.js';
@@ -114,6 +115,38 @@ export class NotificationOrchestrator {
     channels: NotificationChannel[];
     dedupePrefix?: string;
   }) {
+    const existingNotification = input.dedupePrefix
+      ? await this.prisma.notification.findUnique({
+          where: { eventKey: input.dedupePrefix },
+          include: {
+            deliveries: {
+              orderBy: { createdAt: 'asc' },
+            },
+          },
+        })
+      : null;
+
+    if (existingNotification) {
+      return {
+        deliveries: existingNotification.deliveries.map((delivery) => ({
+          id: delivery.id,
+          channel: delivery.channel,
+          status: delivery.status,
+        })),
+      };
+    }
+
+    const notification = await this.prisma.notification.create({
+      data: {
+        userId: input.userId,
+        type: input.renderable.type,
+        title: input.renderable.title,
+        body: input.renderable.body,
+        data: input.renderable.data as Prisma.InputJsonValue | undefined,
+        eventKey: input.dedupePrefix,
+      },
+    });
+
     const deliveries: Array<{
       id: string;
       channel: NotificationChannel;
@@ -126,16 +159,11 @@ export class NotificationOrchestrator {
         : `notification:${input.userId}:${channel}:${Date.now()}`;
 
       deliveries.push(
-        await this.sendToChannel(
-          input.userId,
-          channel,
-          dedupeKey,
-          input.renderable,
-          {
-            email: input.recipientEmail,
-            name: input.recipientName,
-          },
-        ),
+        await this.sendToChannel(notification, channel, dedupeKey, {
+          userId: input.userId,
+          email: input.recipientEmail,
+          name: input.recipientName,
+        }),
       );
     }
 
@@ -143,16 +171,17 @@ export class NotificationOrchestrator {
   }
 
   private async sendToChannel(
-    userId: string,
-    channel: NotificationChannel,
-    dedupeKey: string,
-    renderable: {
+    notification: {
+      id: string;
       type: NotificationType;
       title: string;
       body: string;
-      data?: Record<string, unknown>;
+      data: Prisma.JsonValue | null;
+      createdAt: Date;
     },
-    recipient: { email: string | null; name: string | null },
+    channel: NotificationChannel,
+    dedupeKey: string,
+    recipient: { userId: string; email: string | null; name: string | null },
   ): Promise<{ id: string; channel: NotificationChannel; status: string }> {
     const existing = await this.prisma.notificationDelivery.findUnique({
       where: { dedupeKey },
@@ -167,9 +196,8 @@ export class NotificationOrchestrator {
 
     const delivery = await this.prisma.notificationDelivery.create({
       data: {
-        userId,
+        notificationId: notification.id,
         channel,
-        templateCode: renderable.type,
         status: 'pending',
         dedupeKey,
       },
@@ -192,15 +220,15 @@ export class NotificationOrchestrator {
         createdAt: delivery.createdAt,
       },
       notification: {
-        id: delivery.id,
-        type: renderable.type,
-        title: renderable.title,
-        body: renderable.body,
-        data: renderable.data ?? null,
-        createdAt: delivery.createdAt,
+        id: notification.id,
+        type: notification.type,
+        title: notification.title,
+        body: notification.body,
+        data: this.toRecord(notification.data),
+        createdAt: notification.createdAt,
       },
       recipient: {
-        userId,
+        userId: recipient.userId,
         email: recipient.email,
         name: recipient.name,
       },
@@ -212,6 +240,8 @@ export class NotificationOrchestrator {
         where: { id: delivery.id },
         data: {
           status: result.status,
+          providerRef: result.providerRef ?? null,
+          errorMessage: result.errorMessage ?? null,
           sentAt: result.status === 'sent' ? new Date() : null,
         },
       });
@@ -223,9 +253,19 @@ export class NotificationOrchestrator {
     } catch {
       const failed = await this.prisma.notificationDelivery.update({
         where: { id: delivery.id },
-        data: { status: 'failed' },
+        data: { status: 'failed', errorMessage: 'Provider send failed' },
       });
       return { id: failed.id, channel: failed.channel, status: failed.status };
     }
+  }
+
+  private toRecord(
+    value: Prisma.JsonValue | null,
+  ): Record<string, unknown> | null {
+    if (!value || Array.isArray(value) || typeof value !== 'object') {
+      return null;
+    }
+
+    return value;
   }
 }

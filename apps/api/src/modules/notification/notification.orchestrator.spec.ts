@@ -11,6 +11,10 @@ describe('NotificationOrchestrator', () => {
     betterAuthUser: {
       findUniqueOrThrow: jest.fn(),
     },
+    notification: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+    },
     notificationDelivery: {
       findUnique: jest.fn(),
       create: jest.fn(),
@@ -40,16 +44,29 @@ describe('NotificationOrchestrator', () => {
         endTime: new Date('2026-05-14T11:00:00.000Z'),
       },
     });
+    prisma.notification.findUnique.mockResolvedValue(null);
+    prisma.notification.create.mockResolvedValue({
+      id: 'notification-1',
+      type: 'workshop_registration_confirmed',
+      title: 'Workshop registration confirmed',
+      body: 'Your registration is confirmed',
+      data: {
+        workshopTitle: 'Design Systems 101',
+      },
+      createdAt: new Date('2026-05-14T08:00:00.000Z'),
+    });
     prisma.notificationDelivery.findUnique.mockResolvedValue(null);
     prisma.notificationDelivery.create
       .mockResolvedValueOnce({
         id: 'inapp-id',
+        notificationId: 'notification-1',
         channel: 'in_app',
         status: 'pending',
         createdAt: new Date('2026-05-14T08:00:00.000Z'),
       })
       .mockResolvedValueOnce({
         id: 'email-id',
+        notificationId: 'notification-1',
         channel: 'email',
         status: 'pending',
         createdAt: new Date('2026-05-14T08:00:01.000Z'),
@@ -86,21 +103,28 @@ describe('NotificationOrchestrator', () => {
       registrationId,
     });
 
+    expect(prisma.notification.create).toHaveBeenCalledTimes(1);
     expect(prisma.notificationDelivery.create).toHaveBeenCalledTimes(2);
     expect(result?.deliveries).toHaveLength(2);
   });
 
-  it('reuses existing delivery by dedupe key', async () => {
+  it('reuses existing notification by dedupe key', async () => {
     const prisma = buildPrisma();
     prisma.betterAuthUser.findUniqueOrThrow.mockResolvedValue({
       id: 'user-1',
       email: 'u@x.com',
       name: 'User',
     });
-    prisma.notificationDelivery.findUnique.mockResolvedValue({
-      id: 'existing-id',
-      channel: 'in_app',
-      status: 'sent',
+    prisma.notification.findUnique.mockResolvedValue({
+      id: 'notification-1',
+      deliveries: [
+        {
+          id: 'existing-id',
+          channel: 'in_app',
+          status: 'sent',
+          createdAt: new Date('2026-05-14T08:00:00.000Z'),
+        },
+      ],
     });
 
     const orchestrator = new NotificationOrchestrator(
@@ -117,6 +141,7 @@ describe('NotificationOrchestrator', () => {
       dedupeKey: 'dedupe-1',
     });
 
+    expect(prisma.notification.create).not.toHaveBeenCalled();
     expect(prisma.notificationDelivery.create).not.toHaveBeenCalled();
     expect(result.deliveries[0]?.id).toBe('existing-id');
   });

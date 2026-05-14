@@ -4427,6 +4427,11 @@ button.admin-status-pill {
   color: #0f172a;
 }
 
+.checkout-pay.success {
+  background: #19814d;
+  color: #ffffff;
+}
+
 .notifications-empty {
   padding: 24px;
 }

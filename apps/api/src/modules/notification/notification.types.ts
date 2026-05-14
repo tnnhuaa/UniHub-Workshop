@@ -34,6 +34,7 @@ export type NotificationProviderPayload = {
 
 export type NotificationProviderResult = {
   status: 'sent' | 'failed';
+  providerRef?: string;
   errorMessage?: string;
 };
 
