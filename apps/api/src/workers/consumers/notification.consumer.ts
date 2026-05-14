@@ -13,6 +13,10 @@ interface NotificationJobPayload {
   publishedAt: string;
 }
 
+type NotificationSendResult = {
+  deliveries: Array<{ status: string }>;
+};
+
 /**
  * Notification Consumer — processes notification jobs from RabbitMQ
  * Sends notifications via appropriate provider (Email, In-App, etc.)
@@ -108,8 +112,28 @@ export class NotificationConsumer extends BaseJobConsumer {
         body: payload.templateCode,
       });
 
+      const hasSentDelivery = (
+        value: unknown,
+      ): value is NotificationSendResult => {
+        if (!value || typeof value !== 'object') {
+          return false;
+        }
+
+        const root = value as { deliveries?: unknown };
+        return (
+          Array.isArray(root.deliveries) &&
+          root.deliveries.some((item) => {
+            if (!item || typeof item !== 'object') {
+              return false;
+            }
+            const delivery = item as { status?: unknown };
+            return delivery.status === 'sent';
+          })
+        );
+      };
+
       return {
-        success: result.deliveries.some((item) => item.status === 'sent'),
+        success: hasSentDelivery(result),
       };
     } catch (error) {
       this.logger.error(

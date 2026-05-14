@@ -1,4 +1,5 @@
 import { ForbiddenException, Inject, Injectable, Logger } from '@nestjs/common';
+import type { NotificationChannel } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RabbitMqService, EVENTS_KEYS } from '../rabbitmq/index.js';
 import { NOTIFICATION_PROVIDERS } from './notification.constants.js';
@@ -23,59 +24,22 @@ export class NotificationService {
   ) {}
 
   async send(input: NotificationSendInput) {
-    if (input.dedupeKey) {
-      const existing = await this.prisma.notificationDelivery.findUnique({
-        where: { dedupeKey: input.dedupeKey },
-      });
-
-      if (existing) {
-        return existing;
-      }
-    }
-
-    const provider = this.getProvider(input.channel);
-
-    const notification = await this.prisma.notification.create({
-      data: {
-        userId: input.userId,
-        type: 'custom',
-        title: input.templateCode,
-        body: input.templateCode,
-      },
-    });
-
-    const delivery = await this.prisma.notificationDelivery.create({
-      data: {
-        notificationId: notification.id,
-        channel: input.channel,
-        status: 'pending',
-        dedupeKey: input.dedupeKey,
-      },
-    });
-
-    const result = await this.sendWithProvider(provider, {
-      notificationId: notification.id,
+    return this.orchestrator.sendManual({
       userId: input.userId,
       channel: input.channel,
-      templateCode: input.templateCode,
-    });
-
-    return this.prisma.notificationDelivery.update({
-      where: { id: delivery.id },
-      data: {
-        status: result.status,
-        sentAt: result.status === 'sent' ? new Date() : null,
-      },
+      title: input.title,
+      body: input.body,
+      data: input.data,
+      type: input.type,
     });
   }
 
   findByUser(userId: string, query: NotificationListQuery) {
     const where: {
-      notification: { userId: string };
       channel?: NotificationChannel;
       userId: string;
       status?: 'pending' | 'sent' | 'failed';
-    } = { notification: { userId } };
+    } = { userId };
 
     if (query.readStatus === 'unread') {
       where.status = 'pending';

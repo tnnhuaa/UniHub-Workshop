@@ -1,5 +1,6 @@
 import { getJson } from './apiClient.ts';
 import { createAuthClient } from 'better-auth/client';
+import { clearStoredStudentSession } from './studentSessionStore.ts';
 
 export type AuthResult = Awaited<ReturnType<typeof authClient.signIn.email>>;
 
@@ -34,8 +35,13 @@ export const signUpWithEmail = (email: string, password: string) => {
   });
 };
 
-export const signOut = () => {
-  return authClient.signOut();
+export const signOut = async () => {
+  const result = await authClient.signOut();
+  if (!result.error) {
+    clearStoredStudentSession();
+  }
+
+  return result;
 };
 
 export const fetchAuthSession = () => {

@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout.tsx';
 import { signInWithEmail, signOut } from '../lib/authClient.ts';
+import { saveStoredStudentSession } from '../lib/studentSessionStore.ts';
+import { mapStudentToProfileViewModel } from '../lib/unihubAdapters.ts';
 import { fetchCurrentStudent } from '../lib/unihubApi.ts';
 
 const SignIn = () => {
@@ -49,7 +51,11 @@ const SignIn = () => {
         setError('Unable to verify your session. Please try signing in again.');
         return;
       }
+
+      setError(studentResult.error);
+      return;
     }
+    saveStoredStudentSession(mapStudentToProfileViewModel(studentResult.data));
 
     setSuccess(true);
     void navigate('/workshops');
@@ -61,7 +67,7 @@ const SignIn = () => {
       subtitle="Please log in to access your dashboard."
       footer={
         <span>
-          Do not have an account? <a href="/sign-up">Create account</a>
+          Do not have an account? <Link to="/sign-up">Create account</Link>
         </span>
       }
     >
@@ -107,7 +113,7 @@ const SignIn = () => {
         <div className="form-group">
           <div className="form-row" style={{ marginBottom: 8 }}>
             <label htmlFor="signin-password">Password</label>
-            <a href="#">Forgot password?</a>
+            <Link to="#">Forgot password?</Link>
           </div>
           <div className="input-wrap">
             <span className="input-icon" aria-hidden="true">

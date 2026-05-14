@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { fetchAuthSession, signOut } from '../lib/authClient.ts';
 
 const imgAdminAvatar = '/figma-mcp/42495168-978f-40e2-a3d5-907b4c5a9554.jpg';
@@ -113,12 +113,12 @@ const AdminSidebar = () => {
       </nav>
 
       <div className="admin-sidebar-footer">
-        <a href="#">
+        <Link to="#">
           <img src={imgNavSettings} alt="" aria-hidden="true" />
           <span>Settings</span>
-        </a>
-        <a
-          href="/sign-in"
+        </Link>
+        <Link
+          to="/sign-in"
           onClick={(event) => {
             event.preventDefault();
             void handleLogout();
@@ -126,7 +126,7 @@ const AdminSidebar = () => {
         >
           <img src={imgNavLogout} alt="" aria-hidden="true" />
           <span>Logout</span>
-        </a>
+        </Link>
       </div>
     </aside>
   );

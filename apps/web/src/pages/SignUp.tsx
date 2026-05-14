@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout.tsx';
 import { signUpWithEmail } from '../lib/authClient.ts';
 
@@ -40,7 +41,7 @@ const SignUp = () => {
       subtitle="Use your email and password to get started."
       footer={
         <span>
-          Already have an account? <a href="/sign-in">Log in</a>
+          Already have an account? <Link to="/sign-in">Log in</Link>
         </span>
       }
     >
