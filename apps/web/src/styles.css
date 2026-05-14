@@ -1158,6 +1158,13 @@ label {
   min-height: 40px;
 }
 
+.action-button:disabled,
+.ghost-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
 .ghost-button {
   border: 1px solid var(--ws-border);
   background: var(--ws-soft);
@@ -1483,10 +1490,22 @@ label {
   cursor: pointer;
 }
 
+.detail-register.is-disabled,
+.detail-register:disabled {
+  background: #dfe4dd;
+  color: var(--ws-muted);
+  cursor: not-allowed;
+}
+
 .detail-register img,
 .detail-register .icon {
   width: 20px;
   height: 20px;
+}
+
+.detail-register-note {
+  margin-top: 12px;
+  text-align: left;
 }
 
 .map-card {

@@ -21,6 +21,7 @@ import type {
 } from '../lib/unihubAdapters.ts';
 
 const defaultWorkshopId = '1f5b7b88-2f2a-4ff0-9fb8-0f8b51a58f01';
+const HOLD_DURATION_MS = 10 * 60 * 1000;
 
 const splitFullName = (fullName: string) => {
   const parts = fullName.trim().split(/\s+/);
@@ -28,6 +29,21 @@ const splitFullName = (fullName: string) => {
     firstName: parts[0] ?? '',
     lastName: parts.slice(1).join(' '),
   };
+};
+
+const formatHoldCountdown = (remainingMs: number | null) => {
+  if (remainingMs === null) {
+    return '10:00';
+  }
+
+  const clamped = Math.max(remainingMs, 0);
+  const totalSeconds = Math.floor(clamped / 1000);
+  const minutes = Math.floor(totalSeconds / 60)
+    .toString()
+    .padStart(2, '0');
+  const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+
+  return `${minutes}:${seconds}`;
 };
 
 const WorkshopCheckout = () => {
@@ -56,10 +72,18 @@ const WorkshopCheckout = () => {
   const [paymentActionError, setPaymentActionError] = useState<string | null>(
     null,
   );
+  const [reservationErrorCode, setReservationErrorCode] = useState<
+    string | null
+  >(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPaymentSubmitting, setIsPaymentSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reservationAttempt, setReservationAttempt] = useState(0);
+  const [holdTimeLeftMs, setHoldTimeLeftMs] = useState<number | null>(null);
+  const [autoReservationConsumed, setAutoReservationConsumed] = useState(false);
+  const registrationFee = workshop?.price ?? 0;
+  const isPaidWorkshop = registrationFee > 0;
 
   useEffect(() => {
     const loadCheckoutData = async () => {
@@ -86,6 +110,7 @@ const WorkshopCheckout = () => {
       setFirstName('');
       setLastName('');
       setEmail('');
+      setAutoReservationConsumed(false);
       return;
     }
 
@@ -98,12 +123,141 @@ const WorkshopCheckout = () => {
     setEmail(profile.email);
   }, [session.status, session.student]);
 
-  const handlePay = async () => {
+  useEffect(() => {
+    setRegistrationResult(null);
+    setPaymentActionResult(null);
+    setPaymentActionError(null);
+    setSubmissionMessage(null);
+    setError(null);
+    setReservationErrorCode(null);
+    setPaymentState('idle');
+    setHoldTimeLeftMs(null);
+    setAutoReservationConsumed(false);
+  }, [workshopId]);
+
+  const reservePaidSeat = async (attempt: number) => {
     if (!workshop || !student) {
       return;
     }
 
     setError(null);
+    setReservationErrorCode(null);
+    setPaymentActionError(null);
+    setPaymentActionResult(null);
+    setSubmissionMessage(null);
+    setIsSubmitting(true);
+    setPaymentState('idle');
+
+    const result = await createRegistration(
+      {
+        mssv: student.mssv,
+        workshopId: workshop.id,
+      },
+      `seat-hold-${workshop.id}-${student.mssv}-${attempt}`,
+    );
+
+    setIsSubmitting(false);
+
+    if (!result.ok) {
+      setError(result.error);
+      setReservationErrorCode(result.code ?? null);
+      if (
+        result.code === 'WORKSHOP_FULL' ||
+        result.code === 'WORKSHOP_NOT_AVAILABLE'
+      ) {
+        navigate(`/workshops/${workshop.id}`, { replace: true });
+      }
+      return;
+    }
+
+    setRegistrationResult(result.data);
+    setSubmissionMessage(
+      `Your seat is reserved for 10 minutes under registration ${result.data.registration.id}. Complete payment before the countdown ends to secure the spot.`,
+    );
+  };
+
+  useEffect(() => {
+    if (
+      session.status !== 'authenticated' ||
+      !student ||
+      !workshop ||
+      workshop.price <= 0 ||
+      registrationResult ||
+      isSubmitting ||
+      autoReservationConsumed
+    ) {
+      return;
+    }
+
+    setAutoReservationConsumed(true);
+    void reservePaidSeat(reservationAttempt);
+  }, [
+    autoReservationConsumed,
+    isSubmitting,
+    reservationAttempt,
+    registrationResult,
+    session.status,
+    student,
+    workshop,
+  ]);
+
+  useEffect(() => {
+    if (!registrationResult?.registration.heldUntil) {
+      setHoldTimeLeftMs(null);
+      return;
+    }
+
+    const updateRemaining = () => {
+      const remaining =
+        new Date(
+          registrationResult.registration.heldUntil as string,
+        ).getTime() - Date.now();
+      setHoldTimeLeftMs(Math.max(remaining, 0));
+    };
+
+    updateRemaining();
+    const intervalId = window.setInterval(updateRemaining, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [registrationResult?.registration.heldUntil]);
+
+  useEffect(() => {
+    if (
+      !isPaidWorkshop ||
+      !registrationResult ||
+      registrationResult.registration.status !== 'pending' ||
+      holdTimeLeftMs === null ||
+      holdTimeLeftMs > 0
+    ) {
+      return;
+    }
+
+    setIsPaymentModalOpen(false);
+    setPaymentState('failed');
+    setSubmissionMessage(
+      `Reservation ${registrationResult.registration.id} expired after 10 minutes. The hold has been released, so you can try reserving the seat again if it is still available.`,
+    );
+  }, [holdTimeLeftMs, isPaidWorkshop, registrationResult]);
+
+  const handlePay = async () => {
+    if (!workshop || !student) {
+      return;
+    }
+
+    if (isPaidWorkshop) {
+      if (registrationResult?.payment?.paymentId) {
+        setIsPaymentModalOpen(true);
+        return;
+      }
+
+      void reservePaidSeat(Date.now());
+      return;
+    }
+
+    setError(null);
+    setReservationErrorCode(null);
     setPaymentActionError(null);
     setPaymentActionResult(null);
     setSubmissionMessage(null);
@@ -122,14 +276,15 @@ const WorkshopCheckout = () => {
 
     if (!result.ok) {
       setError(result.error);
+      setReservationErrorCode(result.code ?? null);
       return;
     }
 
     setRegistrationResult(result.data);
     setSubmissionMessage(
       result.data.paymentRequired
-        ? `Your workshop registration is pending payment. Complete payment to receive the final confirmation in the app and by email.`
-        : `Your workshop registration is confirmed. A confirmation is now available in the app and has been queued for email delivery.`,
+        ? `Payment was created for registration ${result.data.registration.id}. The backend returned mock payment endpoints for the next step.`
+        : `Registration confirmed for ${student.fullName}. Your seat is secured, the in-app notification is stored, and the QR code is now available from My Schedule.`,
     );
     if (result.data.paymentRequired) {
       setIsPaymentModalOpen(true);
@@ -173,7 +328,7 @@ const WorkshopCheckout = () => {
     if (action === 'success') {
       setPaymentState('paid');
       setSubmissionMessage(
-        'Your workshop registration is confirmed. The app inbox has been updated and the email confirmation has been queued.',
+        `Payment confirmed for registration ${result.data.registration.id}. Your seat is secured, the hold has ended, and the QR code will appear in My Schedule.`,
       );
       return;
     }
@@ -182,6 +337,19 @@ const WorkshopCheckout = () => {
     setSubmissionMessage(
       `Payment failed for registration ${result.data.registration.id}. Your reservation was released and you can try another workshop.`,
     );
+  };
+
+  const handleRetryReservation = () => {
+    setError(null);
+    setReservationErrorCode(null);
+    setRegistrationResult(null);
+    setPaymentActionResult(null);
+    setPaymentActionError(null);
+    setSubmissionMessage(null);
+    setPaymentState('idle');
+    setHoldTimeLeftMs(HOLD_DURATION_MS);
+    setAutoReservationConsumed(false);
+    setReservationAttempt(Date.now());
   };
 
   if (isLoading || session.isLoading) {
@@ -251,11 +419,66 @@ const WorkshopCheckout = () => {
     );
   }
 
-  const registrationFee = workshop.price;
-  const isPaidWorkshop = registrationFee > 0;
   const paymentId = registrationResult?.payment?.paymentId ?? null;
+  const holdExpired =
+    isPaidWorkshop &&
+    registrationResult?.registration.status === 'pending' &&
+    holdTimeLeftMs !== null &&
+    holdTimeLeftMs <= 0;
+  const hasActiveHold =
+    isPaidWorkshop &&
+    registrationResult?.registration.status === 'pending' &&
+    !holdExpired;
+  const showWorkshopFullState =
+    isPaidWorkshop &&
+    !registrationResult &&
+    reservationErrorCode === 'WORKSHOP_FULL';
+  const showUnavailableState =
+    isPaidWorkshop &&
+    !registrationResult &&
+    reservationErrorCode === 'WORKSHOP_NOT_AVAILABLE';
+  const reservationBannerTitle = !isPaidWorkshop
+    ? 'Ready to Register'
+    : hasActiveHold
+      ? 'Reservation Held'
+      : showWorkshopFullState
+        ? 'Workshop Full'
+        : showUnavailableState
+          ? 'Registration Closed'
+          : isSubmitting
+            ? 'Checking Availability'
+            : holdExpired
+              ? 'Reservation Expired'
+              : 'Reserve Your Seat';
+  const reservationBannerDescription = !isPaidWorkshop
+    ? 'This workshop is free. Submit once to confirm your registration.'
+    : hasActiveHold
+      ? 'Your spot is locked for 10 minutes while you complete the payment flow.'
+      : showWorkshopFullState
+        ? 'Another student is already holding the last available seat. Try again if the hold expires or payment fails.'
+        : showUnavailableState
+          ? 'This workshop is no longer accepting registrations.'
+          : isSubmitting
+            ? 'We are asking the backend to lock an available seat before payment starts.'
+            : holdExpired
+              ? 'This temporary hold has expired. Reserve again to continue with payment.'
+              : 'Reserve a seat first, then complete payment within 10 minutes.';
+  const reservationTimerLabel = !isPaidWorkshop
+    ? 'FREE'
+    : hasActiveHold
+      ? formatHoldCountdown(holdTimeLeftMs)
+      : showWorkshopFullState
+        ? 'FULL'
+        : showUnavailableState
+          ? 'CLOSED'
+          : isSubmitting
+            ? '...'
+            : '10:00';
   const paymentActionsDisabled =
-    isPaymentSubmitting || paymentState === 'paid' || paymentState === 'failed';
+    isPaymentSubmitting ||
+    paymentState === 'paid' ||
+    paymentState === 'failed' ||
+    holdExpired;
 
   return (
     <div className="checkout-page">
@@ -288,33 +511,29 @@ const WorkshopCheckout = () => {
                 <Timer className="icon icon-sm" aria-hidden="true" />
               </div>
               <div>
-                <h2>
-                  {isPaidWorkshop ? 'Reservation Held' : 'Ready to Register'}
-                </h2>
-                <p>
-                  {isPaidWorkshop
-                    ? 'Your spot is temporarily locked while the backend prepares the payment record.'
-                    : 'This workshop is free. Submit once to confirm your registration.'}
-                </p>
+                <h2>{reservationBannerTitle}</h2>
+                <p>{reservationBannerDescription}</p>
               </div>
             </div>
             <div className="reservation-timer">
-              <span>{isPaidWorkshop ? '09:45' : 'FREE'}</span>
+              <span>{reservationTimerLabel}</span>
             </div>
           </section>
 
-          {submissionMessage ? (
+          {submissionMessage || showWorkshopFullState ? (
             <section className="checkout-card">
               <div className="checkout-card-header">
                 <Lock className="icon icon-sm" aria-hidden="true" />
                 <h2>Registration Status</h2>
               </div>
-              <p
-                className="helper-text"
-                style={{ textAlign: 'left', marginTop: 0 }}
-              >
-                {submissionMessage}
-              </p>
+              {submissionMessage ? (
+                <p
+                  className="helper-text"
+                  style={{ textAlign: 'left', marginTop: 0 }}
+                >
+                  {submissionMessage}
+                </p>
+              ) : null}
               {registrationResult?.paymentRequired &&
               registrationResult.payment ? (
                 <div className="checkout-pricing">
@@ -368,13 +587,22 @@ const WorkshopCheckout = () => {
                     </button>
                   ) : null}
                   {paymentState === 'failed' ? (
-                    <button
-                      type="button"
-                      className="checkout-pay"
-                      onClick={() => navigate('/workshops')}
-                    >
-                      Browse Workshops
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        className="checkout-pay"
+                        onClick={handleRetryReservation}
+                      >
+                        Retry Reservation
+                      </button>
+                      <button
+                        type="button"
+                        className="checkout-pay"
+                        onClick={() => navigate('/workshops')}
+                      >
+                        Browse Workshops
+                      </button>
+                    </>
                   ) : null}
                   {paymentActionError ? (
                     <p
@@ -384,6 +612,25 @@ const WorkshopCheckout = () => {
                       {paymentActionError}
                     </p>
                   ) : null}
+                </div>
+              ) : null}
+              {showWorkshopFullState ? (
+                <div className="checkout-form-stack">
+                  <button
+                    type="button"
+                    className="checkout-pay"
+                    onClick={handleRetryReservation}
+                    disabled={isSubmitting}
+                  >
+                    Check Again
+                  </button>
+                  <button
+                    type="button"
+                    className="checkout-pay"
+                    onClick={() => navigate('/workshops')}
+                  >
+                    Browse Workshops
+                  </button>
                 </div>
               ) : null}
             </section>
@@ -464,13 +711,27 @@ const WorkshopCheckout = () => {
                   type="button"
                   className="checkout-pay"
                   onClick={() => void handlePay()}
-                  disabled={isSubmitting || Boolean(submissionMessage)}
+                  disabled={
+                    isSubmitting ||
+                    showWorkshopFullState ||
+                    showUnavailableState ||
+                    (isPaidWorkshop
+                      ? Boolean(registrationResult?.payment?.paymentId) &&
+                        !holdExpired
+                      : Boolean(submissionMessage))
+                  }
                 >
                   <Lock className="icon icon-sm" aria-hidden="true" />
                   {isSubmitting
                     ? 'Processing...'
                     : isPaidWorkshop
-                      ? 'Pay & Register'
+                      ? showWorkshopFullState
+                        ? 'Workshop Full'
+                        : registrationResult?.payment?.paymentId && !holdExpired
+                          ? 'Reservation Active'
+                          : showUnavailableState
+                            ? 'Registration Closed'
+                            : 'Reserve Seat'
                       : 'Register Now'}
                 </button>
                 <p className="checkout-note">

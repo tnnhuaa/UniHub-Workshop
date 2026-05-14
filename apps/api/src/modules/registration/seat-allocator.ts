@@ -31,11 +31,29 @@ export class SeatAllocator {
           });
         }
 
+        const existing = await tx.registration.findUnique({
+          where: {
+            mssv_workshopId: {
+              mssv,
+              workshopId,
+            },
+          },
+        });
+
+        if (
+          existing?.status === 'pending' &&
+          existing.heldUntil &&
+          existing.heldUntil > now
+        ) {
+          return existing;
+        }
+
         const activeHolds = await tx.registration.count({
           where: {
             workshopId,
             status: 'pending',
             heldUntil: { gt: now },
+            ...(existing ? { id: { not: existing.id } } : {}),
           },
         });
 
@@ -43,6 +61,20 @@ export class SeatAllocator {
           throw new ConflictException({
             code: 'WORKSHOP_FULL',
             message: 'No seats available for this workshop',
+          });
+        }
+
+        if (existing) {
+          return tx.registration.update({
+            where: { id: existing.id },
+            data: {
+              status: 'pending',
+              paymentStatus: 'pending',
+              heldUntil,
+              paymentCompletedAt: null,
+              cancellationReason: null,
+              qrCode: null,
+            },
           });
         }
 
