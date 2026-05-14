@@ -2293,6 +2293,8 @@ label {
   flex-direction: column;
   gap: 20px;
   border-top: 1px solid rgba(190, 202, 190, 0.3);
+  overflow-y: auto;
+  max-height: calc(100vh - 226px);
 }
 
 .schedule-qr {
@@ -2321,6 +2323,19 @@ label {
 .schedule-qr-box img {
   width: 128px;
   height: 128px;
+}
+
+.schedule-qr-loader {
+  width: 128px;
+  height: 128px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--schedule-muted);
+  font-size: 10px;
+  letter-spacing: 0.02em;
 }
 
 .schedule-qr-text {
@@ -2396,6 +2411,28 @@ label {
 }
 
 .schedule-instructor strong {
+  font-size: 14px;
+  color: var(--schedule-text);
+}
+
+.schedule-status-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid rgba(190, 202, 190, 0.5);
+  border-radius: 8px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.schedule-status-card span {
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--schedule-muted);
+  font-weight: 600;
+}
+
+.schedule-status-card strong {
   font-size: 14px;
   color: var(--schedule-text);
 }

@@ -10,6 +10,7 @@ import {
   QrCode,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import ClipLoader from 'react-spinners/ClipLoader';
 import WorkshopHeader from '../components/WorkshopHeader.tsx';
 import SessionGate from '../components/SessionGate.tsx';
 import useStudentSession from '../hooks/useStudentSession.ts';
@@ -39,6 +40,9 @@ const WorkshopSchedule = () => {
   >(null);
   const [selectedQrCode, setSelectedQrCode] = useState(getQrImageSource(null));
   const [selectedQrText, setSelectedQrText] = useState<string | null>(null);
+  const [qrLoadState, setQrLoadState] = useState<
+    'idle' | 'loading' | 'loaded' | 'failed'
+  >('idle');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -131,25 +135,30 @@ const WorkshopSchedule = () => {
       if (!selectedRegistration) {
         setSelectedQrCode(getQrImageSource(null));
         setSelectedQrText(null);
+        setQrLoadState('idle');
         return;
       }
 
       if (selectedRegistration.status !== 'confirmed') {
         setSelectedQrCode(getQrImageSource(null));
         setSelectedQrText(selectedRegistration.qrCode ?? null);
+        setQrLoadState('loaded');
         return;
       }
 
+      setQrLoadState('loading');
       const qrResult = await fetchRegistrationQr(selectedRegistration.id);
       if (!qrResult.ok) {
         setError(qrResult.error);
         setSelectedQrCode(getQrImageSource(selectedRegistration.qrCode));
         setSelectedQrText(selectedRegistration.qrCode ?? null);
+        setQrLoadState('failed');
         return;
       }
 
       setSelectedQrCode(getQrImageSource(qrResult.data.qrCode));
       setSelectedQrText(qrResult.data.qrCode);
+      setQrLoadState('loaded');
     };
 
     void loadQrCode();
@@ -186,11 +195,6 @@ const WorkshopSchedule = () => {
 
     return 'Expired';
   };
-
-  const selectedQrCaption =
-    selectedRegistration?.status === 'confirmed'
-      ? 'Scan at entrance'
-      : 'QR code becomes available after confirmation';
 
   const selectedQrTextLabel = selectedQrText ?? 'N/A';
 
@@ -328,6 +332,8 @@ const WorkshopSchedule = () => {
       );
     }
   };
+
+  const isDownloadDisabled = !selectedRegistration || qrLoadState === 'loading';
 
   if (isLoading) {
     return (
@@ -518,15 +524,24 @@ const WorkshopSchedule = () => {
               </div>
 
               <div className="schedule-panel-body">
-                <div className="schedule-qr">
-                  <div className="schedule-qr-box">
-                    <img src={selectedQrCode} alt="QR code for check-in" />
+                {selectedRegistration?.status === 'confirmed' ? (
+                  <div className="schedule-qr">
+                    <div className="schedule-qr-box">
+                      {qrLoadState === 'loading' ? (
+                        <div className="schedule-qr-loader" aria-live="polite">
+                          <ClipLoader size={36} color="var(--schedule-brand)" />
+                          <span>Loading QR...</span>
+                        </div>
+                      ) : (
+                        <img src={selectedQrCode} alt="QR code for check-in" />
+                      )}
+                    </div>
+                    <span>Scan at entrance</span>
+                    <code className="schedule-qr-text">
+                      QR text: {selectedQrTextLabel}
+                    </code>
                   </div>
-                  <span>{selectedQrCaption}</span>
-                  <code className="schedule-qr-text">
-                    QR text: {selectedQrTextLabel}
-                  </code>
-                </div>
+                ) : null}
 
                 <div className="schedule-detail-grid">
                   <div className="schedule-detail-card">
@@ -550,6 +565,15 @@ const WorkshopSchedule = () => {
                       {selectedRegistration?.location ?? 'N/A'}
                     </div>
                   </div>
+                </div>
+
+                <div className="schedule-status-card">
+                  <span>STATUS</span>
+                  <strong>
+                    {selectedRegistration
+                      ? getStatusLabel(selectedRegistration)
+                      : 'N/A'}
+                  </strong>
                 </div>
 
                 <div className="schedule-instructor">
@@ -579,15 +603,17 @@ const WorkshopSchedule = () => {
                       Pay This Event
                     </button>
                   ) : null}
-                  <button
-                    type="button"
-                    className="schedule-primary-action"
-                    onClick={() => void handleDownloadTicket()}
-                    disabled={!selectedRegistration}
-                  >
-                    <Download className="icon icon-sm" aria-hidden="true" />
-                    Download Ticket
-                  </button>
+                  {selectedRegistration?.status === 'confirmed' ? (
+                    <button
+                      type="button"
+                      className="schedule-primary-action"
+                      onClick={() => void handleDownloadTicket()}
+                      disabled={isDownloadDisabled}
+                    >
+                      <Download className="icon icon-sm" aria-hidden="true" />
+                      Download Ticket
+                    </button>
+                  ) : null}
                 </div>
               </div>
             </aside>

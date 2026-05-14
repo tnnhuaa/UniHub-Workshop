@@ -80,24 +80,15 @@ type WorkshopMetadata = {
 };
 
 const imageUrls = {
-  speaker:
-    'https://www.figma.com/api/mcp/asset/2ee92fe2-f247-4654-8897-051b1d405acb',
-  reactSpeaker:
-    'https://www.figma.com/api/mcp/asset/d068b264-bedc-481e-99ad-9b6f92676680',
-  mapLocation:
-    'https://www.figma.com/api/mcp/asset/2bdc588e-4301-40b3-8b99-53cbc5b02add',
-  checkoutHeader:
-    'https://www.figma.com/api/mcp/asset/1b8cc43f-4e00-42b2-9a62-ff2bb6e5389a',
-  designWorkshop:
-    'https://www.figma.com/api/mcp/asset/0847573c-09b5-4b5f-99f0-8cc62fb92523',
-  strategyWorkshop:
-    'https://www.figma.com/api/mcp/asset/9b0e9b49-856f-47e4-9ac5-2de62892ba6e',
-  profileAvatar:
-    'https://www.figma.com/api/mcp/asset/8b5490f6-451d-4c0e-b17e-9b43a0619761',
-  instructor:
-    'https://www.figma.com/api/mcp/asset/2b82168d-29d3-4c5e-9069-76b377aabbc7',
-  qrCode:
-    'https://www.figma.com/api/mcp/asset/5c679e98-021a-4ac3-a67b-e57df7f69bfb',
+  speaker: '/figma-mcp/2ee92fe2-f247-4654-8897-051b1d405acb.png',
+  reactSpeaker: '/figma-mcp/d068b264-bedc-481e-99ad-9b6f92676680.png',
+  mapLocation: '/figma-mcp/2bdc588e-4301-40b3-8b99-53cbc5b02add.png',
+  checkoutHeader: '/figma-mcp/1b8cc43f-4e00-42b2-9a62-ff2bb6e5389a.png',
+  designWorkshop: '/figma-mcp/0847573c-09b5-4b5f-99f0-8cc62fb92523.png',
+  strategyWorkshop: '/figma-mcp/9b0e9b49-856f-47e4-9ac5-2de62892ba6e.png',
+  profileAvatar: '/figma-mcp/8b5490f6-451d-4c0e-b17e-9b43a0619761.png',
+  instructor: '/figma-mcp/2b82168d-29d3-4c5e-9069-76b377aabbc7.png',
+  qrCode: '/figma-mcp/5c679e98-021a-4ac3-a67b-e57df7f69bfb.png',
 };
 
 const workshopMetadataById: Record<string, WorkshopMetadata> = {
