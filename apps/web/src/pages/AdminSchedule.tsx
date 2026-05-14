@@ -131,7 +131,8 @@ const AdminSchedule = () => {
 
   const [workshop, setWorkshop] = useState<WorkshopApiDto | null>(null);
   const [form, setForm] = useState<WorkshopDraftForm>(emptyWorkshopForm());
-  const [initialForm, setInitialForm] = useState<WorkshopDraftForm>(emptyWorkshopForm());
+  const [initialForm, setInitialForm] =
+    useState<WorkshopDraftForm>(emptyWorkshopForm());
   const [documents, setDocuments] = useState<WorkshopDocumentApiDto[]>([]);
   const [summary, setSummary] = useState<DocumentSummaryApiDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -322,7 +323,8 @@ const AdminSchedule = () => {
     }
 
     if (
-      new Date(payload.endTime).getTime() <= new Date(payload.startTime).getTime()
+      new Date(payload.endTime).getTime() <=
+      new Date(payload.startTime).getTime()
     ) {
       setSaveError('End time must be after start time.');
       return;
@@ -483,15 +485,25 @@ const AdminSchedule = () => {
         <div className="admin-schedule-shell">
           <header className="admin-schedule-header">
             <div className="admin-schedule-heading">
-              <button type="button" className="admin-back-link" onClick={handleDiscard}>
+              <button
+                type="button"
+                className="admin-back-link"
+                onClick={handleDiscard}
+              >
                 <img src={imgBack} alt="" aria-hidden="true" />
-                <span>{isCreateMode ? 'Back to Dashboard' : 'Back to List'}</span>
+                <span>
+                  {isCreateMode ? 'Back to Dashboard' : 'Back to List'}
+                </span>
               </button>
               <h1>{isCreateMode ? 'Create Workshop' : 'Edit Workshop'}</h1>
             </div>
 
             <div className="admin-schedule-header-actions">
-              <button type="button" className="admin-muted-button" onClick={handleDiscard}>
+              <button
+                type="button"
+                className="admin-muted-button"
+                onClick={handleDiscard}
+              >
                 Discard Changes
               </button>
               <button
@@ -517,7 +529,9 @@ const AdminSchedule = () => {
                     <input
                       type="text"
                       value={form.title}
-                      onChange={(event) => handleFieldChange('title', event.target.value)}
+                      onChange={(event) =>
+                        handleFieldChange('title', event.target.value)
+                      }
                       placeholder="Enter workshop title"
                     />
                   </label>
@@ -527,7 +541,9 @@ const AdminSchedule = () => {
                     <textarea
                       rows={5}
                       value={form.description}
-                      onChange={(event) => handleFieldChange('description', event.target.value)}
+                      onChange={(event) =>
+                        handleFieldChange('description', event.target.value)
+                      }
                       placeholder="Describe the workshop"
                     />
                   </label>
@@ -540,7 +556,9 @@ const AdminSchedule = () => {
                         <input
                           type="text"
                           value={form.speaker}
-                          onChange={(event) => handleFieldChange('speaker', event.target.value)}
+                          onChange={(event) =>
+                            handleFieldChange('speaker', event.target.value)
+                          }
                           placeholder="Speaker name"
                         />
                       </div>
@@ -553,7 +571,9 @@ const AdminSchedule = () => {
                         <input
                           type="text"
                           value={form.room}
-                          onChange={(event) => handleFieldChange('room', event.target.value)}
+                          onChange={(event) =>
+                            handleFieldChange('room', event.target.value)
+                          }
                           placeholder="Room or venue"
                         />
                       </div>
@@ -573,7 +593,9 @@ const AdminSchedule = () => {
                       <input
                         type="date"
                         value={form.startDate}
-                        onChange={(event) => handleFieldChange('startDate', event.target.value)}
+                        onChange={(event) =>
+                          handleFieldChange('startDate', event.target.value)
+                        }
                       />
                     </div>
                   </label>
@@ -584,13 +606,17 @@ const AdminSchedule = () => {
                       <input
                         type="time"
                         value={form.startTime}
-                        onChange={(event) => handleFieldChange('startTime', event.target.value)}
+                        onChange={(event) =>
+                          handleFieldChange('startTime', event.target.value)
+                        }
                       />
                       <span>to</span>
                       <input
                         type="time"
                         value={form.endTime}
-                        onChange={(event) => handleFieldChange('endTime', event.target.value)}
+                        onChange={(event) =>
+                          handleFieldChange('endTime', event.target.value)
+                        }
                       />
                     </div>
                   </div>
@@ -603,7 +629,9 @@ const AdminSchedule = () => {
                         type="number"
                         min={1}
                         value={form.capacity}
-                        onChange={(event) => handleFieldChange('capacity', event.target.value)}
+                        onChange={(event) =>
+                          handleFieldChange('capacity', event.target.value)
+                        }
                       />
                     </div>
                   </label>
@@ -617,7 +645,9 @@ const AdminSchedule = () => {
                         min={0}
                         step="0.01"
                         value={form.price}
-                        onChange={(event) => handleFieldChange('price', event.target.value)}
+                        onChange={(event) =>
+                          handleFieldChange('price', event.target.value)
+                        }
                       />
                     </div>
                     <small>Leave as 0.00 for free workshops.</small>
@@ -628,7 +658,10 @@ const AdminSchedule = () => {
                     <select
                       value={form.status}
                       onChange={(event) =>
-                        handleFieldChange('status', event.target.value as WorkshopApiDto['status'])
+                        handleFieldChange(
+                          'status',
+                          event.target.value as WorkshopApiDto['status'],
+                        )
                       }
                     >
                       <option value="draft">Draft</option>
@@ -643,7 +676,9 @@ const AdminSchedule = () => {
                     <input
                       type="url"
                       value={form.floorMapUrl}
-                      onChange={(event) => handleFieldChange('floorMapUrl', event.target.value)}
+                      onChange={(event) =>
+                        handleFieldChange('floorMapUrl', event.target.value)
+                      }
                       placeholder="https://..."
                     />
                   </label>
@@ -660,7 +695,9 @@ const AdminSchedule = () => {
                   <h2>AI Summary</h2>
                   <span className="admin-transcript-status">
                     <img src={imgTranscriptStatus} alt="" aria-hidden="true" />
-                    {summary ? getSummaryStatusLabel(summary.status) : 'Pending'}
+                    {summary
+                      ? getSummaryStatusLabel(summary.status)
+                      : 'Pending'}
                   </span>
                 </div>
 
@@ -674,7 +711,9 @@ const AdminSchedule = () => {
                         : 'Upload a PDF to start AI summarization.'}
                 </p>
 
-                {summaryError ? <p className="helper-text">{summaryError}</p> : null}
+                {summaryError ? (
+                  <p className="helper-text">{summaryError}</p>
+                ) : null}
 
                 <button
                   type="button"
@@ -712,7 +751,9 @@ const AdminSchedule = () => {
                     </div>
                   </>
                 ) : (
-                  <p className="helper-text">Save the workshop to view registration status.</p>
+                  <p className="helper-text">
+                    Save the workshop to view registration status.
+                  </p>
                 )}
               </article>
 
@@ -723,7 +764,9 @@ const AdminSchedule = () => {
                 </div>
 
                 {isCreateMode ? (
-                  <p className="helper-text">Attendees will appear after the workshop is created.</p>
+                  <p className="helper-text">
+                    Attendees will appear after the workshop is created.
+                  </p>
                 ) : (
                   <div className="admin-attendees-list">
                     <div className="admin-attendee-row">
@@ -736,7 +779,11 @@ const AdminSchedule = () => {
                   </div>
                 )}
 
-                <button type="button" className="admin-export-button" disabled={isCreateMode}>
+                <button
+                  type="button"
+                  className="admin-export-button"
+                  disabled={isCreateMode}
+                >
                   <img src={imgExport} alt="" aria-hidden="true" />
                   <span>Export Roster</span>
                 </button>
@@ -759,12 +806,16 @@ const AdminSchedule = () => {
                     />
                     <div className="admin-upload-icon">PDF</div>
                     <strong>
-                      {isUploading ? 'Uploading document...' : 'Click to upload or drag and drop'}
+                      {isUploading
+                        ? 'Uploading document...'
+                        : 'Click to upload or drag and drop'}
                     </strong>
                     <span>PDF up to 10MB</span>
                   </label>
 
-                  {uploadError ? <p className="helper-text">{uploadError}</p> : null}
+                  {uploadError ? (
+                    <p className="helper-text">{uploadError}</p>
+                  ) : null}
 
                   {documents.length === 0 ? (
                     <p className="helper-text">No documents uploaded yet.</p>

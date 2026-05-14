@@ -1,4 +1,9 @@
-import { getJson, patchJson, postJson, withIdempotencyKey } from './apiClient.ts';
+import {
+  getJson,
+  patchJson,
+  postJson,
+  withIdempotencyKey,
+} from './apiClient.ts';
 
 export type WorkshopStatus = 'draft' | 'published' | 'cancelled' | 'completed';
 export type RegistrationStatus =
@@ -246,9 +251,12 @@ export const createWorkshop = (body: WorkshopCreateInput) =>
   });
 
 export const updateWorkshop = (workshopId: string, body: WorkshopUpdateInput) =>
-  patchJson<WorkshopApiDto, WorkshopUpdateInput>(`/admin/workshops/${workshopId}`, {
-    body,
-  });
+  patchJson<WorkshopApiDto, WorkshopUpdateInput>(
+    `/admin/workshops/${workshopId}`,
+    {
+      body,
+    },
+  );
 
 export const fetchDocumentSummary = (workshopId: string, documentId: string) =>
   getJson<DocumentSummaryApiDto>(

@@ -184,7 +184,11 @@ export class WorkshopService {
     return workshop;
   }
 
-  async adminUpdate(id: string, input: UpdateWorkshopInput, actorUserId: string) {
+  async adminUpdate(
+    id: string,
+    input: UpdateWorkshopInput,
+    actorUserId: string,
+  ) {
     if (!actorUserId) {
       throw new ForbiddenException({
         code: 'ORGANIZER_REQUIRED',

@@ -217,14 +217,18 @@ const AdminDashboard = () => {
 
                   <div className="admin-kpi-bottom">
                     <strong>{card.value}</strong>
-                    <span className={`admin-kpi-trend ${card.trendTone}`}>--</span>
+                    <span className={`admin-kpi-trend ${card.trendTone}`}>
+                      --
+                    </span>
                   </div>
                 </article>
               ))}
             </div>
 
             {error ? <p className="helper-text">{error}</p> : null}
-            {isLoading ? <p className="helper-text">Loading dashboard...</p> : null}
+            {isLoading ? (
+              <p className="helper-text">Loading dashboard...</p>
+            ) : null}
 
             <section className="admin-table-card">
               <div className="admin-table-toolbar">
@@ -271,7 +275,9 @@ const AdminDashboard = () => {
                     ) : (
                       workshops.map((workshop) => {
                         const statusMeta = getWorkshopStatus(workshop);
-                        const [dateLine, yearLine] = formatDateLines(workshop.startTime);
+                        const [dateLine, yearLine] = formatDateLines(
+                          workshop.startTime,
+                        );
 
                         return (
                           <tr key={workshop.id}>
@@ -284,7 +290,9 @@ const AdminDashboard = () => {
                               {workshop.registeredCount} / {workshop.capacity}
                             </td>
                             <td>
-                              <span className={`admin-status-pill ${statusMeta.tone}`}>
+                              <span
+                                className={`admin-status-pill ${statusMeta.tone}`}
+                              >
                                 {statusMeta.label}
                               </span>
                             </td>
@@ -292,18 +300,34 @@ const AdminDashboard = () => {
                               <div className="admin-row-actions">
                                 <button
                                   type="button"
-                                  onClick={() => navigate(`/admin/workshops/${workshop.id}`)}
+                                  onClick={() =>
+                                    navigate(`/admin/workshops/${workshop.id}`)
+                                  }
                                 >
-                                  <img src={imgActionOpen} alt="" aria-hidden="true" />
+                                  <img
+                                    src={imgActionOpen}
+                                    alt=""
+                                    aria-hidden="true"
+                                  />
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => navigate(`/admin/workshops/${workshop.id}`)}
+                                  onClick={() =>
+                                    navigate(`/admin/workshops/${workshop.id}`)
+                                  }
                                 >
-                                  <img src={imgActionEdit} alt="" aria-hidden="true" />
+                                  <img
+                                    src={imgActionEdit}
+                                    alt=""
+                                    aria-hidden="true"
+                                  />
                                 </button>
                                 <button type="button">
-                                  <img src={imgActionDelete} alt="" aria-hidden="true" />
+                                  <img
+                                    src={imgActionDelete}
+                                    alt=""
+                                    aria-hidden="true"
+                                  />
                                 </button>
                               </div>
                             </td>
@@ -335,7 +359,10 @@ const AdminDashboard = () => {
                   const lastError = batch.lastError;
 
                   return (
-                    <article key={batch.id} className={`admin-job-card ${badge.tone}`}>
+                    <article
+                      key={batch.id}
+                      className={`admin-job-card ${badge.tone}`}
+                    >
                       <img
                         src={isFailed ? imgJobFailed : imgJobPending}
                         alt=""
@@ -358,7 +385,9 @@ const AdminDashboard = () => {
                           </p>
                         )}
                       </div>
-                      <span className={`admin-job-badge ${badge.tone}`}>{badge.label}</span>
+                      <span className={`admin-job-badge ${badge.tone}`}>
+                        {badge.label}
+                      </span>
                     </article>
                   );
                 })
@@ -399,7 +428,12 @@ const AdminDashboard = () => {
                   </div>
                 </div>
 
-                <img className="admin-ai-done" src={imgAiDone} alt="" aria-hidden="true" />
+                <img
+                  className="admin-ai-done"
+                  src={imgAiDone}
+                  alt=""
+                  aria-hidden="true"
+                />
               </div>
             </section>
 
