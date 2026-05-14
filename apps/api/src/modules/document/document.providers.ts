@@ -69,6 +69,9 @@ export class LocalObjectStorageProvider implements IObjectStorage {
 
 @Injectable()
 export class GeminiLlmClientProvider implements ILLMClient {
+  private static readonly MODEL_NAME = 'gemini-2.5-flash';
+  private static readonly MAX_OUTPUT_TOKENS = 1024;
+
   constructor(private readonly configService: ConfigService<Env, true>) {}
 
   async summarizeDocument(
@@ -82,7 +85,7 @@ export class GeminiLlmClientProvider implements ILLMClient {
     const documentBase64 = await this.loadDocumentBase64(input.fileUrl);
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${GeminiLlmClientProvider.MODEL_NAME}:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: {
@@ -107,7 +110,8 @@ export class GeminiLlmClientProvider implements ILLMClient {
           ],
           generationConfig: {
             temperature: 0.2,
-            maxOutputTokens: 512,
+            maxOutputTokens:
+              GeminiLlmClientProvider.MAX_OUTPUT_TOKENS,
           },
         }),
       },
@@ -121,12 +125,17 @@ export class GeminiLlmClientProvider implements ILLMClient {
     const payload = (await response.json()) as {
       candidates?: Array<{
         content?: { parts?: Array<{ text?: string }> };
+        finishReason?: string;
       }>;
     };
 
+    const primaryCandidate = payload.candidates?.[0];
     const summaryText =
-      payload.candidates?.[0]?.content?.parts?.[0]?.text ??
-      'Summary not available.';
+      primaryCandidate?.content?.parts
+        ?.map((part) => part.text?.trim() ?? '')
+        .filter((text) => text.length > 0)
+        .join('\n')
+        .trim() || 'Summary not available.';
 
     return { summaryText };
   }

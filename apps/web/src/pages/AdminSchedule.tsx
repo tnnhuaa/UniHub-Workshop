@@ -27,6 +27,7 @@ const imgTranscript = '/figma-mcp/a5f54d4e-a0a6-436c-8a7d-746c84f09d21.svg';
 const imgTranscriptStatus =
   '/figma-mcp/f6847724-7a0a-44ff-9e88-efb2b6b813b7.svg';
 const imgExport = '/figma-mcp/a8559913-825d-42b5-89ee-132355562ff3.svg';
+const MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024;
 
 type WorkshopDraftForm = {
   title: string;
@@ -425,6 +426,11 @@ const AdminSchedule = () => {
 
     if (!file.name.toLowerCase().endsWith('.pdf')) {
       setUploadError('Only PDF files are supported.');
+      return;
+    }
+
+    if (file.size > MAX_DOCUMENT_SIZE_BYTES) {
+      setUploadError('PDF must be 10MB or smaller.');
       return;
     }
 

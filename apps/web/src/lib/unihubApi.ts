@@ -31,6 +31,10 @@ export type WorkshopApiDto = {
   endTime: string;
   status: WorkshopStatus;
   floorMapUrl?: string | null;
+  aiSummary?: {
+    summaryText: string;
+    updatedAt: string;
+  } | null;
   createdAt?: string;
   updatedAt?: string;
 };
