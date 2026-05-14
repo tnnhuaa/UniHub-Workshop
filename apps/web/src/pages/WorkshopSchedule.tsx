@@ -25,8 +25,7 @@ import {
 } from '../lib/unihubApi.ts';
 import type { ScheduleRegistrationViewModel } from '../lib/unihubAdapters.ts';
 
-const imgStudentProfile =
-  'https://www.figma.com/api/mcp/asset/646bd94c-8822-432f-be1f-38d08a09df59';
+const imgStudentProfile = '/figma-mcp/646bd94c-8822-432f-be1f-38d08a09df59.jpg';
 
 const WorkshopSchedule = () => {
   const session = useStudentSession();
