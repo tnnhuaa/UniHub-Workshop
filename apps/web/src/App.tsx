@@ -10,6 +10,7 @@ import WorkshopList from './pages/WorkshopList.tsx';
 import WorkshopDetail from './pages/WorkshopDetail.tsx';
 import WorkshopSchedule from './pages/WorkshopSchedule.tsx';
 import UserProfile from './pages/UserProfile.tsx';
+import NotificationsPage from './pages/NotificationsPage.tsx';
 
 const App = () => {
   return (
@@ -21,6 +22,7 @@ const App = () => {
       <Route path="/admin/workshops/:id" element={<AdminSchedule />} />
       <Route path="/workshops" element={<WorkshopList />} />
       <Route path="/schedule" element={<WorkshopSchedule />} />
+      <Route path="/notifications" element={<NotificationsPage />} />
       <Route path="/profile" element={<UserProfile />} />
       <Route path="/workshops/:id/register" element={<WorkshopCheckout />} />
       <Route path="/workshops/:id" element={<WorkshopDetail />} />

@@ -8,12 +8,9 @@ import { mapWorkshopToDetailViewModel } from '../lib/unihubAdapters.ts';
 import { fetchWorkshop } from '../lib/unihubApi.ts';
 import type { WorkshopDetailViewModel } from '../lib/unihubAdapters.ts';
 
-const imgStudentProfile =
-  'https://www.figma.com/api/mcp/asset/22492359-f12d-464a-b95a-fb292c891cc8';
-const imgSpeakerProfile =
-  'https://www.figma.com/api/mcp/asset/d068b264-bedc-481e-99ad-9b6f92676680';
-const imgMapLocation =
-  'https://www.figma.com/api/mcp/asset/2bdc588e-4301-40b3-8b99-53cbc5b02add';
+const imgStudentProfile = '/figma-mcp/22492359-f12d-464a-b95a-fb292c891cc8.jpg';
+const imgSpeakerProfile = '/figma-mcp/d068b264-bedc-481e-99ad-9b6f92676680.jpg';
+const imgMapLocation = '/figma-mcp/2bdc588e-4301-40b3-8b99-53cbc5b02add.png';
 
 const defaultWorkshopId = '1f5b7b88-2f2a-4ff0-9fb8-0f8b51a58f01';
 const DETAIL_REFRESH_MS = 15_000;

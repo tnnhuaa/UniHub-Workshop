@@ -2,6 +2,7 @@ import { ConflictException, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PaymentService } from '../payment/payment.service.js';
+import { NotificationOrchestrator } from '../notification/notification.orchestrator.js';
 import { SeatAllocator } from './seat-allocator.js';
 import type {
   CreateRegistrationInput,
@@ -14,6 +15,7 @@ export class RegistrationService {
     private readonly prisma: PrismaService,
     private readonly seatAllocator: SeatAllocator,
     private readonly paymentService: PaymentService,
+    private readonly notificationOrchestrator: NotificationOrchestrator,
   ) {}
 
   async create(input: CreateRegistrationInput, idempotencyKey: string) {
@@ -74,6 +76,13 @@ export class RegistrationService {
         where: { id: registration.id },
         data: { qrCode },
       });
+
+      await this.notificationOrchestrator.dispatchWorkshopRegistrationConfirmed(
+        {
+          type: 'workshop_registration_confirmed',
+          registrationId: confirmed.id,
+        },
+      );
 
       return { registration: confirmed, paymentRequired: false };
     }
