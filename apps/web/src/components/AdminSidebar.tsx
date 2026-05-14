@@ -10,6 +10,8 @@ const imgNavSettings =
   'https://www.figma.com/api/mcp/asset/ae27d1cc-cf71-49ea-bbe0-46927cba9e10';
 const imgNavLogout =
   'https://www.figma.com/api/mcp/asset/dc86654a-6ad1-4cd3-9c5d-953234a9bebb';
+const imgNavCsv =
+  'https://www.figma.com/api/mcp/asset/0d80eeb8-22a3-46f3-b9eb-24d3be3c75ff';
 
 const AdminSidebar = () => {
   return (
@@ -36,6 +38,13 @@ const AdminSidebar = () => {
         >
           <img src={imgNavWorkshops} alt="" aria-hidden="true" />
           <span>Schedule</span>
+        </NavLink>
+        <NavLink
+          to="/admin/csv-sync"
+          className={({ isActive }) => (isActive ? 'active' : undefined)}
+        >
+          <img src={imgNavCsv} alt="" aria-hidden="true" />
+          <span>CSV Import</span>
         </NavLink>
       </nav>
 

@@ -24,7 +24,10 @@
     "api:dev": "pnpm -C apps/api start:dev",
     "api:test": "pnpm -C apps/api test",
     "api:prisma:generate": "pnpm -C apps/api prisma:generate",
-    "api:prisma:migrate": "pnpm -C apps/api prisma:migrate"
+    "api:prisma:migrate": "pnpm -C apps/api prisma:migrate",
+    "worker:start": "pnpm -C apps/api worker:start",
+    "worker:build": "pnpm -C apps/api worker:build",
+    "worker:start:prod": "pnpm -C apps/api worker:start:prod"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",

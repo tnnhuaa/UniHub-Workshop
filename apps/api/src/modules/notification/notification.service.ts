@@ -1,6 +1,12 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import type { NotificationChannel } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { RabbitMqService, EVENTS_KEYS } from '../rabbitmq/index.js';
 import { NOTIFICATION_PROVIDERS } from './notification.constants.js';
 import type {
   NotificationProvider,
@@ -21,10 +27,13 @@ import type {
  */
 @Injectable()
 export class NotificationService {
+  private readonly logger = new Logger(NotificationService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     @Inject(NOTIFICATION_PROVIDERS)
     private readonly providers: NotificationProvider[],
+    private readonly rabbitmq: RabbitMqService,
   ) {}
 
   async send(input: NotificationSendInput) {
@@ -112,6 +121,41 @@ export class NotificationService {
       return await provider.send(payload);
     } catch {
       return { status: 'failed' };
+    }
+  }
+
+  /**
+   * Publish notification job to RabbitMQ for async processing
+   * Used by background workers to send notifications
+   */
+  publishNotificationJob(input: NotificationSendInput): void {
+    const correlationId = `notif-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+    try {
+      this.rabbitmq.publish(
+        EVENTS_KEYS.NOTIFICATION_CREATED,
+        {
+          correlationId,
+          userId: input.userId,
+          channel: input.channel,
+          templateCode: input.templateCode,
+          dedupeKey: input.dedupeKey,
+          publishedAt: new Date().toISOString(),
+        },
+        {
+          priority: 5, // Normal priority (0-10 scale)
+        },
+      );
+
+      this.logger.debug(
+        `Published notification job [${correlationId}] for user ${input.userId}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to publish notification job for user ${input.userId}:`,
+        error,
+      );
+      throw error;
     }
   }
 }

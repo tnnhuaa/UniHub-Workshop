@@ -28,6 +28,12 @@ type RequestOptions<TBody> = {
   headers?: Record<string, string>;
 };
 
+type FormDataRequestOptions = {
+  query?: Record<string, string | number | boolean | undefined>;
+  body: FormData;
+  headers?: Record<string, string>;
+};
+
 const getApiBaseUrl = () => {
   const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
 
@@ -166,6 +172,72 @@ export const requestJson = async <TData, TBody = undefined>(
   }
 };
 
+export const requestFormData = async <TData>(
+  method: ApiRequestSnapshot['method'],
+  path: string,
+  options: FormDataRequestOptions,
+): Promise<ApiResult<TData>> => {
+  const url = buildUrl(path, options.query);
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    ...(options.headers ?? {}),
+  };
+
+  const request: ApiRequestSnapshot = {
+    method,
+    url: url.toString(),
+    headers,
+    query:
+      options.query && Object.keys(options.query).length > 0
+        ? Object.fromEntries(
+            Object.entries(options.query)
+              .filter(([, value]) => value !== undefined)
+              .map(([key, value]) => [key, String(value)]),
+          )
+        : undefined,
+    body: '[form-data]',
+  };
+
+  try {
+    const response = await fetch(url, {
+      method,
+      credentials: 'include',
+      headers,
+      body: options.body,
+    });
+
+    const payload = await readJson(response);
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        statusCode: response.status,
+        code:
+          typeof payload === 'object' && payload && 'code' in payload
+            ? String((payload as { code?: unknown }).code ?? '')
+            : undefined,
+        error: normalizeMessage(
+          payload,
+          response.statusText || 'Request failed',
+        ),
+        request,
+      };
+    }
+
+    return {
+      ok: true,
+      data: payload as TData,
+      request,
+    };
+  } catch {
+    return {
+      ok: false,
+      error: 'Unable to reach the API.',
+      request,
+    };
+  }
+};
+
 export const getJson = <TData>(path: string, options?: RequestOptions<never>) =>
   requestJson<TData>('GET', path, options);
 
@@ -173,6 +245,11 @@ export const postJson = <TData, TBody = undefined>(
   path: string,
   options?: RequestOptions<TBody>,
 ) => requestJson<TData, TBody>('POST', path, options);
+
+export const postFormData = <TData>(
+  path: string,
+  options: FormDataRequestOptions,
+) => requestFormData<TData>('POST', path, options);
 
 export const patchJson = <TData, TBody = undefined>(
   path: string,

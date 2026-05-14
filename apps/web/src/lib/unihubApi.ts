@@ -1,4 +1,9 @@
-import { getJson, postJson, withIdempotencyKey } from './apiClient.ts';
+import {
+  getJson,
+  postFormData,
+  postJson,
+  withIdempotencyKey,
+} from './apiClient.ts';
 
 export type WorkshopStatus = 'draft' | 'published' | 'cancelled' | 'completed';
 export type RegistrationStatus =
@@ -63,6 +68,27 @@ export type PaymentApiDto = {
   completedAt?: string | null;
 };
 
+export type CsvBatchStatus = 'pending' | 'running' | 'completed' | 'failed';
+
+export type CsvBatchDto = {
+  id: string;
+  sourceFile: string;
+  totalRecords: number;
+  successfulRecords: number;
+  failedRecords: number;
+  conflictRecords: number;
+  status: CsvBatchStatus;
+  startedAt: string;
+  completedAt?: string | null;
+  createdAt: string;
+};
+
+export type CsvBatchListQuery = {
+  status?: CsvBatchStatus;
+  page?: number;
+  pageSize?: number;
+};
+
 export type RegistrationCheckoutResponseDto = {
   registration: RegistrationApiDto;
   paymentRequired: boolean;
@@ -122,3 +148,12 @@ export const createRegistration = (
     body,
     headers: withIdempotencyKey(idempotencyKey),
   });
+
+export const uploadCsvBatch = (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return postFormData<CsvBatchDto>('/csv-sync/upload', { body: formData });
+};
+
+export const fetchCsvBatches = (query: CsvBatchListQuery) =>
+  getJson<CsvBatchDto[]>('/csv-sync/batches', { query });
