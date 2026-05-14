@@ -73,7 +73,9 @@ const AdminCsvSync = () => {
   };
 
   const handleQueuedStatusClick = (batchId: string) => {
-    setSelectedQueuedBatchId((current) => (current === batchId ? null : batchId));
+    setSelectedQueuedBatchId((current) =>
+      current === batchId ? null : batchId,
+    );
   };
 
   const handleForceRun = async () => {
@@ -195,7 +197,9 @@ const AdminCsvSync = () => {
                               <button
                                 type="button"
                                 className={`admin-status-pill ${batch.status}`}
-                                onClick={() => handleQueuedStatusClick(batch.id)}
+                                onClick={() =>
+                                  handleQueuedStatusClick(batch.id)
+                                }
                               >
                                 {batch.status} ↓
                               </button>
