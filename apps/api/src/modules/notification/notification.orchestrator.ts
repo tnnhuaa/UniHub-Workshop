@@ -159,16 +159,11 @@ export class NotificationOrchestrator {
         : `notification:${input.userId}:${channel}:${Date.now()}`;
 
       deliveries.push(
-        await this.sendToChannel(
-          notification,
-          channel,
-          dedupeKey,
-          {
-            userId: input.userId,
-            email: input.recipientEmail,
-            name: input.recipientName,
-          },
-        ),
+        await this.sendToChannel(notification, channel, dedupeKey, {
+          userId: input.userId,
+          email: input.recipientEmail,
+          name: input.recipientName,
+        }),
       );
     }
 
@@ -264,11 +259,13 @@ export class NotificationOrchestrator {
     }
   }
 
-  private toRecord(value: Prisma.JsonValue | null): Record<string, unknown> | null {
+  private toRecord(
+    value: Prisma.JsonValue | null,
+  ): Record<string, unknown> | null {
     if (!value || Array.isArray(value) || typeof value !== 'object') {
       return null;
     }
 
-    return value as Record<string, unknown>;
+    return value;
   }
 }
