@@ -17,6 +17,7 @@ import {
   getQrImageSource,
   mapRegistrationToScheduleViewModel,
 } from '../lib/unihubAdapters.ts';
+import LoadingSpinner from '../components/LoadingSpinner.tsx';
 import {
   fetchMyRegistrations,
   fetchRegistrationQr,
@@ -182,6 +183,21 @@ const WorkshopSchedule = () => {
     selectedRegistration?.status === 'confirmed'
       ? 'Scan at entrance'
       : 'QR code becomes available after confirmation';
+
+  if (isLoading) {
+    return (
+      <div className="schedule-page">
+        <WorkshopHeader
+          activeTab="schedule"
+          profileImage={imgStudentProfile}
+          profileLink="/profile"
+        />
+        <main className="schedule-main">
+          <LoadingSpinner label="Loading registrations..." />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="schedule-page">

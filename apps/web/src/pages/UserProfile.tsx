@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import WorkshopHeader from '../components/WorkshopHeader.tsx';
+import LoadingSpinner from '../components/LoadingSpinner.tsx';
 import { signOut } from '../lib/authClient.ts';
 import { mapStudentToProfileViewModel } from '../lib/unihubAdapters.ts';
 import { fetchCurrentStudent } from '../lib/unihubApi.ts';
@@ -100,6 +101,20 @@ const UserProfile = () => {
     void navigate('/sign-in');
   };
 
+  if (isLoading) {
+    return (
+      <div className="profile-page">
+        <WorkshopHeader
+          profileImage={imgStudentProfile}
+          profileLink="/profile"
+        />
+        <main className="profile-main">
+          <LoadingSpinner label="Loading profile..." />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="profile-page">
       <WorkshopHeader
@@ -110,7 +125,6 @@ const UserProfile = () => {
       <main className="profile-main">
         <h1>Personal Profile</h1>
         {error ? <p className="helper-text">{error}</p> : null}
-        {isLoading ? <p className="helper-text">Loading profile...</p> : null}
 
         <section className="profile-card">
           <div className="profile-card-header">

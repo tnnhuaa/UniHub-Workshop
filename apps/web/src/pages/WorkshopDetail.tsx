@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Calendar, Check, Clock, MapPin, Sparkles } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import WorkshopHeader from '../components/WorkshopHeader.tsx';
+import LoadingSpinner from '../components/LoadingSpinner.tsx';
 import useStudentSession from '../hooks/useStudentSession.ts';
 import { mapWorkshopToDetailViewModel } from '../lib/unihubAdapters.ts';
 import { fetchWorkshop } from '../lib/unihubApi.ts';
@@ -55,7 +56,7 @@ const WorkshopDetail = () => {
           profileLink={session.isAuthenticated ? '/profile' : undefined}
         />
         <main className="workshop-detail-main">
-          <p className="helper-text">Loading workshop details...</p>
+          <LoadingSpinner label="Loading workshop details..." />
         </main>
       </div>
     );
