@@ -2224,6 +2224,10 @@ label {
   cursor: pointer;
 }
 
+.schedule-pay-now:hover {
+  background: #c2deef;
+}
+
 .schedule-meta {
   display: flex;
   gap: 16px;
@@ -2259,7 +2263,7 @@ label {
 .schedule-panel-header {
   position: relative;
   padding: 24px;
-  min-height: 128px;
+  min-height: 98px;
   background: linear-gradient(166deg, #00663a 0%, #19814d 100%);
   color: #ffffff;
   display: flex;
@@ -2295,7 +2299,7 @@ label {
   background: #f0f5ee;
   border: 1px dashed #becabe;
   border-radius: 12px;
-  padding: 20px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2317,6 +2321,19 @@ label {
 .schedule-qr-box img {
   width: 128px;
   height: 128px;
+}
+
+.schedule-qr-text {
+  margin-top: 4px;
+  max-width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--schedule-border);
+  background: #ffffff;
+  color: var(--schedule-text);
+  text-transform: none;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
 .schedule-detail-grid {
@@ -2381,6 +2398,32 @@ label {
 .schedule-instructor strong {
   font-size: 14px;
   color: var(--schedule-text);
+}
+
+.schedule-ticket-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.schedule-primary-action {
+  border: none;
+  border-radius: 10px;
+  background: var(--schedule-brand);
+  color: #f5fff8;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 14px;
+  cursor: pointer;
+}
+
+.schedule-primary-action:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .profile-page {

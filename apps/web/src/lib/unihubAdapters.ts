@@ -439,5 +439,5 @@ export const getQrImageSource = (qrCode: string | null) => {
     return qrCode;
   }
 
-  return `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrCode)}`;
+  return `https://public-api.qr-code-generator.com/v1/create/extended?image_format=PNG&image_width=300&qr_code_text=${encodeURIComponent(qrCode)}&foreground_color=%23000000&background_color=%23FFFFFF&frame_name=no-frame`;
 };

@@ -4,12 +4,12 @@ import {
   BadgeCheck,
   Calendar,
   Clock,
+  Download,
   DollarSign,
   MapPin,
-  MoreHorizontal,
   QrCode,
-  XCircle,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import WorkshopHeader from '../components/WorkshopHeader.tsx';
 import SessionGate from '../components/SessionGate.tsx';
 import useStudentSession from '../hooks/useStudentSession.ts';
@@ -29,6 +29,7 @@ const imgStudentProfile =
   'https://www.figma.com/api/mcp/asset/646bd94c-8822-432f-be1f-38d08a09df59';
 
 const WorkshopSchedule = () => {
+  const navigate = useNavigate();
   const session = useStudentSession();
   const [registrations, setRegistrations] = useState<
     ScheduleRegistrationViewModel[]
@@ -37,6 +38,7 @@ const WorkshopSchedule = () => {
     string | null
   >(null);
   const [selectedQrCode, setSelectedQrCode] = useState(getQrImageSource(null));
+  const [selectedQrText, setSelectedQrText] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,6 +51,7 @@ const WorkshopSchedule = () => {
       setRegistrations([]);
       setSelectedRegistrationId(null);
       setSelectedQrCode(getQrImageSource(null));
+      setSelectedQrText(null);
       setIsLoading(false);
       return;
     }
@@ -71,6 +74,7 @@ const WorkshopSchedule = () => {
       setRegistrations([]);
       setSelectedRegistrationId(null);
       setSelectedQrCode(getQrImageSource(null));
+      setSelectedQrText(null);
       setIsLoading(false);
       return;
     }
@@ -126,11 +130,13 @@ const WorkshopSchedule = () => {
     const loadQrCode = async () => {
       if (!selectedRegistration) {
         setSelectedQrCode(getQrImageSource(null));
+        setSelectedQrText(null);
         return;
       }
 
       if (selectedRegistration.status !== 'confirmed') {
         setSelectedQrCode(getQrImageSource(null));
+        setSelectedQrText(selectedRegistration.qrCode ?? null);
         return;
       }
 
@@ -138,10 +144,12 @@ const WorkshopSchedule = () => {
       if (!qrResult.ok) {
         setError(qrResult.error);
         setSelectedQrCode(getQrImageSource(selectedRegistration.qrCode));
+        setSelectedQrText(selectedRegistration.qrCode ?? null);
         return;
       }
 
       setSelectedQrCode(getQrImageSource(qrResult.data.qrCode));
+      setSelectedQrText(qrResult.data.qrCode);
     };
 
     void loadQrCode();
@@ -183,6 +191,143 @@ const WorkshopSchedule = () => {
     selectedRegistration?.status === 'confirmed'
       ? 'Scan at entrance'
       : 'QR code becomes available after confirmation';
+
+  const selectedQrTextLabel = selectedQrText ?? 'N/A';
+
+  const wrapCanvasText = (
+    context: CanvasRenderingContext2D,
+    text: string,
+    x: number,
+    y: number,
+    maxWidth: number,
+    lineHeight: number,
+  ) => {
+    const words = text.split(/\s+/);
+    let line = '';
+    let currentY = y;
+    words.forEach((word) => {
+      const nextLine = line ? `${line} ${word}` : word;
+      if (context.measureText(nextLine).width > maxWidth && line) {
+        context.fillText(line, x, currentY);
+        line = word;
+        currentY += lineHeight;
+        return;
+      }
+      line = nextLine;
+    });
+    if (line) {
+      context.fillText(line, x, currentY);
+      currentY += lineHeight;
+    }
+    return currentY;
+  };
+
+  const handleDownloadTicket = async () => {
+    if (!selectedRegistration) {
+      return;
+    }
+
+    const qrText =
+      selectedQrText ??
+      selectedRegistration.qrCode ??
+      selectedRegistration.registrationCode;
+    const qrSource =
+      selectedRegistration.status === 'confirmed'
+        ? selectedQrCode
+        : getQrImageSource(qrText);
+    const canvas = document.createElement('canvas');
+    canvas.width = 1080;
+    canvas.height = 700;
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      setError('Unable to generate ticket image.');
+      return;
+    }
+
+    context.fillStyle = '#f6fbf3';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = '#00663a';
+    context.fillRect(0, 0, canvas.width, 180);
+    context.fillStyle = '#ffffff';
+    context.font = '700 54px Sora, sans-serif';
+    context.fillText('UniHub Workshop Ticket', 72, 112);
+
+    context.fillStyle = '#181d19';
+    context.font = '700 46px Sora, sans-serif';
+    const endY = wrapCanvasText(
+      context,
+      selectedRegistration.workshopTitle,
+      72,
+      280,
+      680,
+      56,
+    );
+
+    context.font = '500 32px Sora, sans-serif';
+    context.fillStyle = '#3f4941';
+    context.fillText(
+      `Registration: ${selectedRegistration.registrationCode}`,
+      72,
+      endY + 24,
+    );
+    context.fillText(
+      `Status: ${getStatusLabel(selectedRegistration)}`,
+      72,
+      endY + 78,
+    );
+    context.fillText(`Date: ${selectedRegistration.dateLabel}`, 72, endY + 132);
+    context.fillText(`Time: ${selectedRegistration.timeLabel}`, 72, endY + 186);
+    context.fillText(
+      `Location: ${selectedRegistration.location}`,
+      72,
+      endY + 240,
+    );
+    context.fillText(
+      `Speaker: ${selectedRegistration.speaker}`,
+      72,
+      endY + 294,
+    );
+
+    const qrImage = new Image();
+    qrImage.crossOrigin = 'anonymous';
+
+    await new Promise<void>((resolve) => {
+      qrImage.onload = () => resolve();
+      qrImage.onerror = () => resolve();
+      qrImage.src = qrSource;
+    });
+
+    const qrX = 760;
+    const qrY = 300;
+    const qrSize = 260;
+    context.fillStyle = '#ffffff';
+    context.fillRect(qrX - 20, qrY - 20, qrSize + 32, qrSize + 32);
+    if (qrImage.complete && qrImage.naturalWidth > 0) {
+      context.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
+    }
+
+    context.fillStyle = '#181d19';
+    context.font = '700 26px Sora, sans-serif';
+    context.fillText('QR Code Text', 72, 860);
+    context.font = '600 24px "Courier New", monospace';
+    wrapCanvasText(context, qrText, 72, 904, 936, 36);
+
+    context.strokeStyle = '#becabe';
+    context.lineWidth = 3;
+    context.strokeRect(56, 56, canvas.width - 112, canvas.height - 112);
+
+    try {
+      const downloadLink = document.createElement('a');
+      downloadLink.href = canvas.toDataURL('image/png');
+      downloadLink.download = `ticket-${selectedRegistration.registrationCode.toLowerCase()}.png`;
+      downloadLink.click();
+    } catch {
+      setError(
+        'Ticket export was blocked by image security constraints. Please try again.',
+      );
+    }
+  };
 
   if (isLoading) {
     return (
@@ -306,9 +451,12 @@ const WorkshopSchedule = () => {
                           <button
                             type="button"
                             className="schedule-pay-now"
-                            disabled
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              navigate(`/checkout/${registration.workshopId}`);
+                            }}
                           >
-                            Awaiting Payment
+                            Pay Now
                           </button>
                         ) : (
                           <button
@@ -360,14 +508,6 @@ const WorkshopSchedule = () => {
 
             <aside className="schedule-panel" aria-label="Registration details">
               <div className="schedule-panel-header">
-                <div className="schedule-panel-actions">
-                  <button type="button" className="schedule-icon-button">
-                    <MoreHorizontal
-                      className="icon icon-sm"
-                      aria-hidden="true"
-                    />
-                  </button>
-                </div>
                 <span className="schedule-panel-code">
                   {selectedRegistration?.registrationCode ?? 'REG-000-X'}
                 </span>
@@ -383,6 +523,9 @@ const WorkshopSchedule = () => {
                     <img src={selectedQrCode} alt="QR code for check-in" />
                   </div>
                   <span>{selectedQrCaption}</span>
+                  <code className="schedule-qr-text">
+                    QR text: {selectedQrTextLabel}
+                  </code>
                 </div>
 
                 <div className="schedule-detail-grid">
@@ -424,15 +567,28 @@ const WorkshopSchedule = () => {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  className="schedule-cancel"
-                  disabled
-                  title="Cancellation is not available in the current backend contract"
-                >
-                  <XCircle className="icon icon-sm" aria-hidden="true" />
-                  Cancel Registration
-                </button>
+                <div className="schedule-ticket-actions">
+                  {selectedRegistration?.status === 'pending' ? (
+                    <button
+                      type="button"
+                      className="schedule-pay-now"
+                      onClick={() =>
+                        navigate(`/checkout/${selectedRegistration.workshopId}`)
+                      }
+                    >
+                      Pay This Event
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="schedule-primary-action"
+                    onClick={() => void handleDownloadTicket()}
+                    disabled={!selectedRegistration}
+                  >
+                    <Download className="icon icon-sm" aria-hidden="true" />
+                    Download Ticket
+                  </button>
+                </div>
               </div>
             </aside>
           </div>
