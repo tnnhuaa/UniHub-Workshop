@@ -1,0 +1,9 @@
+student_id,email,name,phone_number,department,class,status
+22130001,an.nguyen@fitus.edu.vn,Nguyen Tuan An,0901234567,Information Technology,SE2026,active
+22130002,binh.tran@fitus.edu.vn,Tran Gia Binh,0912345678,Business Administration,BA2026,active
+22130003,invalid-email,Le Minh Chau,0923456789,Design,DS2026,active
+,dung.pham@fitus.edu.vn,Pham Quoc Dung,0934567890,Computer Science,CS2026,active
+22130004,ha.vo@fitus.edu.vn,Vo Thu Ha,12abc,Marketing,MK2026,active
+22130005,khanh.do@fitus.edu.vn,Do Ngoc Khanh,0945678901,Logistics,LG2026,inactive
+22130002,binh.updated@fitus.edu.vn,Tran Gia Binh Updated,0988888888,Fintech,FT2026,active
+22130006,linh.bui@fitus.edu.vn,Bui Gia Linh,0956789012,Data Science,DS2027,active
