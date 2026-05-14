@@ -479,6 +479,27 @@ const WorkshopCheckout = () => {
     paymentState === 'paid' ||
     paymentState === 'failed' ||
     holdExpired;
+  const hasPendingPaymentSession =
+    isPaidWorkshop &&
+    registrationResult?.registration.status === 'pending' &&
+    Boolean(registrationResult?.payment?.paymentId) &&
+    !holdExpired;
+  const primaryCtaDisabled =
+    isSubmitting ||
+    showWorkshopFullState ||
+    showUnavailableState ||
+    (!isPaidWorkshop && Boolean(submissionMessage));
+  const primaryCtaLabel = isSubmitting
+    ? 'Processing...'
+    : isPaidWorkshop
+      ? showWorkshopFullState
+        ? 'Workshop Full'
+        : showUnavailableState
+          ? 'Registration Closed'
+          : hasPendingPaymentSession
+            ? 'Complete Payment'
+            : 'Reserve Seat'
+      : 'Register Now';
 
   return (
     <div className="checkout-page">
@@ -711,28 +732,10 @@ const WorkshopCheckout = () => {
                   type="button"
                   className="checkout-pay"
                   onClick={() => void handlePay()}
-                  disabled={
-                    isSubmitting ||
-                    showWorkshopFullState ||
-                    showUnavailableState ||
-                    (isPaidWorkshop
-                      ? Boolean(registrationResult?.payment?.paymentId) &&
-                        !holdExpired
-                      : Boolean(submissionMessage))
-                  }
+                  disabled={primaryCtaDisabled}
                 >
                   <Lock className="icon icon-sm" aria-hidden="true" />
-                  {isSubmitting
-                    ? 'Processing...'
-                    : isPaidWorkshop
-                      ? showWorkshopFullState
-                        ? 'Workshop Full'
-                        : registrationResult?.payment?.paymentId && !holdExpired
-                          ? 'Reservation Active'
-                          : showUnavailableState
-                            ? 'Registration Closed'
-                            : 'Reserve Seat'
-                      : 'Register Now'}
+                  {primaryCtaLabel}
                 </button>
                 <p className="checkout-note">
                   {isPaidWorkshop

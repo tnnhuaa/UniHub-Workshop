@@ -1,9 +1,7 @@
-import { ForbiddenException, Inject, Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RabbitMqService, EVENTS_KEYS } from '../rabbitmq/index.js';
-import { NOTIFICATION_PROVIDERS } from './notification.constants.js';
 import { NotificationOrchestrator } from './notification.orchestrator.js';
-import type { NotificationProvider } from './notification.types.js';
 import type {
   NotificationIdParam,
   NotificationListQuery,
@@ -17,79 +15,37 @@ export class NotificationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly orchestrator: NotificationOrchestrator,
-    @Inject(NOTIFICATION_PROVIDERS)
-    private readonly providers: NotificationProvider[],
     private readonly rabbitmq: RabbitMqService,
   ) {}
 
   async send(input: NotificationSendInput) {
-    if (input.dedupeKey) {
-      const existing = await this.prisma.notificationDelivery.findUnique({
-        where: { dedupeKey: input.dedupeKey },
-      });
-
-      if (existing) {
-        return existing;
-      }
-    }
-
-    const provider = this.getProvider(input.channel);
-
-    const notification = await this.prisma.notification.create({
-      data: {
-        userId: input.userId,
-        type: 'custom',
-        title: input.templateCode,
-        body: input.templateCode,
-      },
-    });
-
-    const delivery = await this.prisma.notificationDelivery.create({
-      data: {
-        notificationId: notification.id,
-        channel: input.channel,
-        status: 'pending',
-        dedupeKey: input.dedupeKey,
-      },
-    });
-
-    const result = await this.sendWithProvider(provider, {
-      notificationId: notification.id,
-      userId: input.userId,
-      channel: input.channel,
-      templateCode: input.templateCode,
-    });
-
-    return this.prisma.notificationDelivery.update({
-      where: { id: delivery.id },
-      data: {
-        status: result.status,
-        sentAt: result.status === 'sent' ? new Date() : null,
-      },
-    });
+    return this.orchestrator.sendManual(input);
   }
 
   findByUser(userId: string, query: NotificationListQuery) {
     const where: {
-      notification: { userId: string };
-      channel?: NotificationChannel;
       userId: string;
-      status?: 'pending' | 'sent' | 'failed';
-    } = { notification: { userId } };
+      readAt?: null | { not: null };
+    } = { userId };
 
     if (query.readStatus === 'unread') {
-      where.status = 'pending';
+      where.readAt = null;
     }
 
     if (query.readStatus === 'read') {
-      where.status = 'sent';
+      where.readAt = { not: null };
     }
 
     const page = query.page;
     const pageSize = query.pageSize;
 
-    return this.prisma.notificationDelivery.findMany({
+    return this.prisma.notification.findMany({
       where,
+      include: {
+        deliveries: {
+          orderBy: { createdAt: 'asc' },
+        },
+      },
       skip: (page - 1) * pageSize,
       take: pageSize,
       orderBy: { createdAt: 'desc' },
@@ -97,7 +53,7 @@ export class NotificationService {
   }
 
   async markAsRead(userId: string, params: NotificationIdParam) {
-    const existing = await this.prisma.notificationDelivery.findUniqueOrThrow({
+    const existing = await this.prisma.notification.findUniqueOrThrow({
       where: { id: params.id },
       select: { userId: true },
     });
@@ -109,11 +65,15 @@ export class NotificationService {
       });
     }
 
-    return this.prisma.notificationDelivery.update({
+    return this.prisma.notification.update({
       where: { id: params.id },
+      include: {
+        deliveries: {
+          orderBy: { createdAt: 'asc' },
+        },
+      },
       data: {
-        status: 'sent',
-        sentAt: new Date(),
+        readAt: new Date(),
       },
     });
   }
@@ -133,7 +93,8 @@ export class NotificationService {
           userId: input.userId,
           channel: input.channel,
           templateCode: input.type ?? 'custom',
-          dedupeKey: undefined,
+          title: input.title,
+          body: input.body,
           publishedAt: new Date().toISOString(),
         },
         {
