@@ -2,6 +2,7 @@ import { Check, LayoutGrid, List, Search } from 'lucide-react';
 import WorkshopHeader from '../components/WorkshopHeader.tsx';
 import WorkshopCard from '../components/WorkshopCard.tsx';
 import LoadingSpinner from '../components/LoadingSpinner.tsx';
+import useStudentSession from '../hooks/useStudentSession.ts';
 import useWorkshopList, {
   type WorkshopAvailabilityFilter,
   type WorkshopDateFilter,
@@ -12,6 +13,7 @@ const imgStudentProfile =
   'https://www.figma.com/api/mcp/asset/065a2bff-6d30-4eb7-9d26-b63b86059f0d';
 
 const WorkshopList = () => {
+  const session = useStudentSession();
   const {
     workshops,
     isLoading,
@@ -65,8 +67,8 @@ const WorkshopList = () => {
     <div className="workshop-list-page">
       <WorkshopHeader
         activeTab="workshops"
-        profileImage={imgStudentProfile}
-        profileLink="/profile"
+        profileImage={session.student?.avatar ?? imgStudentProfile}
+        profileLink={session.isAuthenticated ? '/profile' : undefined}
       />
 
       <main className="workshop-layout">

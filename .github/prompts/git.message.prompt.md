@@ -1,14 +1,14 @@
 ---
 tools:
   [
-    "read",
-    "search",
-    "execute",
-    "gitkraken/git_status",
-    "gitkraken/git_log_or_diff",
-    "agent/runSubagent",
-    "serena/*",
-    "oraios/serena/*",
+    'read',
+    'search',
+    'execute',
+    'gitkraken/git_status',
+    'gitkraken/git_log_or_diff',
+    'agent/runSubagent',
+    'serena/*',
+    'oraios/serena/*',
   ]
 description: Wrapper prompt — draft a Conventional Commit message from STAGED changes using Git Commit Message Agent. Never commit/push.
 ---
