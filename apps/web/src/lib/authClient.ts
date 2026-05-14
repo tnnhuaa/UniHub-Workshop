@@ -1,3 +1,4 @@
+import { getJson, postJson } from './apiClient.ts';
 import { createAuthClient } from 'better-auth/client';
 
 export type AuthResult = Awaited<ReturnType<typeof authClient.signIn.email>>;
@@ -35,4 +36,8 @@ export const signUpWithEmail = (email: string, password: string) => {
 
 export const signOut = () => {
   return authClient.signOut();
+};
+
+export const fetchAuthSession = () => {
+  return getJson('/auth/get-session');
 };

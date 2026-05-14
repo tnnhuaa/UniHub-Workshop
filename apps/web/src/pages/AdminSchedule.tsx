@@ -1,5 +1,20 @@
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import type { ChangeEvent } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import AdminSidebar from '../components/AdminSidebar.tsx';
+import {
+  createWorkshop,
+  fetchDocumentSummary,
+  fetchWorkshop,
+  fetchWorkshopDocuments,
+  updateWorkshop,
+  uploadWorkshopDocument,
+} from '../lib/unihubApi.ts';
+import type {
+  DocumentSummaryApiDto,
+  WorkshopApiDto,
+  WorkshopDocumentApiDto,
+} from '../lib/unihubApi.ts';
 
 const imgBack =
   'https://www.figma.com/api/mcp/asset/b5782a50-bb86-4df4-ad5c-eae9bec1a501';
@@ -21,30 +36,475 @@ const imgTranscriptStatus =
   'https://www.figma.com/api/mcp/asset/f6847724-7a0a-44ff-9e88-efb2b6b813b7';
 const imgExport =
   'https://www.figma.com/api/mcp/asset/a8559913-825d-42b5-89ee-132355562ff3';
-const imgStudentA =
-  'https://www.figma.com/api/mcp/asset/6ba2d58a-f19f-4796-81d3-1f114b5889d7';
-const imgStudentB =
-  'https://www.figma.com/api/mcp/asset/eefbc52b-1ab0-45cf-9cc6-0a027b4aa065';
 
-const attendees = [
-  {
-    name: 'Elena Rostova',
-    email: 'elena.r@university.edu',
-    avatar: imgStudentA,
-  },
-  {
-    name: 'Michael Chen',
-    email: 'm.chen@university.edu',
-    avatar: imgStudentB,
-  },
-  {
-    name: 'Sarah Jenkins',
-    email: 's.jenkins@university.edu',
-    initials: 'SJ',
-  },
-];
+type WorkshopDraftForm = {
+  title: string;
+  description: string;
+  speaker: string;
+  room: string;
+  capacity: string;
+  price: string;
+  startDate: string;
+  startTime: string;
+  endDate: string;
+  endTime: string;
+  status: WorkshopApiDto['status'];
+  floorMapUrl: string;
+};
+
+const emptyWorkshopForm = (): WorkshopDraftForm => ({
+  title: '',
+  description: '',
+  speaker: '',
+  room: '',
+  capacity: '50',
+  price: '0',
+  startDate: '',
+  startTime: '',
+  endDate: '',
+  endTime: '',
+  status: 'draft',
+  floorMapUrl: '',
+});
+
+const toDateValue = (value: string) => value.slice(0, 10);
+const toTimeValue = (value: string) => value.slice(11, 16);
+const combineDateTime = (date: string, time: string) =>
+  `${date}T${time.length === 5 ? `${time}:00` : time}`;
+
+const normalizeOptionalString = (value: string) => {
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const formatUploadedAt = (value: string) =>
+  new Date(value).toLocaleString('en-US', {
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+const readFileAsBase64 = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== 'string') {
+        reject(new Error('Unable to read file.'));
+        return;
+      }
+
+      const [, base64] = result.split(',');
+      if (!base64) {
+        reject(new Error('Unable to parse file.'));
+        return;
+      }
+
+      resolve(base64);
+    };
+    reader.onerror = () => reject(new Error('Unable to read file.'));
+    reader.readAsDataURL(file);
+  });
+
+const getSummaryStatusLabel = (status: DocumentSummaryApiDto['status']) => {
+  if (status === 'completed') {
+    return 'Completed';
+  }
+
+  if (status === 'failed') {
+    return 'Failed';
+  }
+
+  if (status === 'running') {
+    return 'Running';
+  }
+
+  return 'Pending';
+};
 
 const AdminSchedule = () => {
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const isCreateMode = id === 'new';
+  const workshopId = !id || isCreateMode ? null : id;
+
+  const [workshop, setWorkshop] = useState<WorkshopApiDto | null>(null);
+  const [form, setForm] = useState<WorkshopDraftForm>(emptyWorkshopForm());
+  const [initialForm, setInitialForm] =
+    useState<WorkshopDraftForm>(emptyWorkshopForm());
+  const [documents, setDocuments] = useState<WorkshopDocumentApiDto[]>([]);
+  const [summary, setSummary] = useState<DocumentSummaryApiDto | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+
+  const latestDocument = documents[0] ?? null;
+
+  const registrationProgress = useMemo(() => {
+    if (!workshop || workshop.capacity === 0) {
+      return 0;
+    }
+
+    return Math.min(
+      Math.round((workshop.registeredCount / workshop.capacity) * 100),
+      100,
+    );
+  }, [workshop]);
+
+  const registrationLabel = useMemo(() => {
+    if (!workshop) {
+      return 'Registration Status';
+    }
+
+    if (workshop.status === 'cancelled') {
+      return 'Registration Closed';
+    }
+
+    if (workshop.registeredCount >= workshop.capacity) {
+      return 'Registration Full';
+    }
+
+    return 'Registration Open';
+  }, [workshop]);
+
+  useEffect(() => {
+    let active = true;
+
+    const load = async () => {
+      if (isCreateMode) {
+        setWorkshop(null);
+        setForm(emptyWorkshopForm());
+        setInitialForm(emptyWorkshopForm());
+        setDocuments([]);
+        setSummary(null);
+        setError(null);
+        setIsLoading(false);
+        return;
+      }
+
+      if (!workshopId) {
+        setError('Workshop ID is required.');
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+      setSummaryError(null);
+      setUploadError(null);
+
+      const workshopResult = await fetchWorkshop(workshopId);
+      if (!active) {
+        return;
+      }
+
+      if (!workshopResult.ok) {
+        setError(workshopResult.error);
+        setIsLoading(false);
+        return;
+      }
+
+      const workshopData = workshopResult.data;
+      const startDate = toDateValue(workshopData.startTime);
+      const nextForm: WorkshopDraftForm = {
+        title: workshopData.title,
+        description: workshopData.description ?? '',
+        speaker: workshopData.speaker ?? '',
+        room: workshopData.room ?? '',
+        capacity: String(workshopData.capacity),
+        price: String(Number(workshopData.price)),
+        startDate,
+        startTime: toTimeValue(workshopData.startTime),
+        endDate: startDate,
+        endTime: toTimeValue(workshopData.endTime),
+        status: workshopData.status,
+        floorMapUrl: workshopData.floorMapUrl ?? '',
+      };
+
+      setWorkshop(workshopData);
+      setForm(nextForm);
+      setInitialForm(nextForm);
+      localStorage.setItem('admin:lastWorkshopId', workshopData.id);
+
+      const documentsResult = await fetchWorkshopDocuments(workshopData.id);
+      if (!active) {
+        return;
+      }
+
+      if (!documentsResult.ok) {
+        setError(documentsResult.error);
+        setDocuments([]);
+        setSummary(null);
+        setIsLoading(false);
+        return;
+      }
+
+      setDocuments(documentsResult.data);
+
+      const firstDocument = documentsResult.data[0];
+      if (firstDocument) {
+        const summaryResult = await fetchDocumentSummary(
+          workshopData.id,
+          firstDocument.id,
+        );
+
+        if (!active) {
+          return;
+        }
+
+        if (summaryResult.ok) {
+          setSummary(summaryResult.data);
+        } else {
+          setSummaryError(summaryResult.error);
+          setSummary(null);
+        }
+      } else {
+        setSummary(null);
+      }
+
+      setIsLoading(false);
+    };
+
+    void load();
+
+    return () => {
+      active = false;
+    };
+  }, [isCreateMode, workshopId]);
+
+  const handleFieldChange = <K extends keyof WorkshopDraftForm>(
+    key: K,
+    value: WorkshopDraftForm[K],
+  ) => {
+    setForm((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  };
+
+  const handleDateChange = (value: string) => {
+    setForm((current) => ({
+      ...current,
+      startDate: value,
+      endDate: value,
+    }));
+  };
+
+  const handleSave = async () => {
+    console.log('[AdminSchedule] handleSave called', {
+      isCreateMode,
+      workshopId,
+    });
+    setSaveError(null);
+
+    if (!form.title.trim()) {
+      const error = 'Workshop title is required.';
+      console.warn('[AdminSchedule] Validation error:', error);
+      setSaveError(error);
+      return;
+    }
+
+    if (!form.startDate || !form.startTime || !form.endTime) {
+      const error = 'Start and end date/time are required.';
+      console.warn('[AdminSchedule] Validation error:', error);
+      setSaveError(error);
+      return;
+    }
+
+    const payload = {
+      title: form.title.trim(),
+      description: normalizeOptionalString(form.description),
+      speaker: normalizeOptionalString(form.speaker),
+      room: normalizeOptionalString(form.room),
+      capacity: Number(form.capacity),
+      price: Number(form.price),
+      startTime: combineDateTime(form.startDate, form.startTime),
+      endTime: combineDateTime(form.startDate, form.endTime),
+      floorMapUrl: normalizeOptionalString(form.floorMapUrl),
+      status: form.status,
+    };
+
+    console.log('[AdminSchedule] Payload:', payload);
+
+    if (!Number.isFinite(payload.capacity) || payload.capacity <= 0) {
+      const error = 'Capacity must be a positive number.';
+      console.warn('[AdminSchedule] Validation error:', error);
+      setSaveError(error);
+      return;
+    }
+
+    if (!Number.isFinite(payload.price) || payload.price < 0) {
+      const error = 'Price must be zero or greater.';
+      console.warn('[AdminSchedule] Validation error:', error);
+      setSaveError(error);
+      return;
+    }
+
+    if (
+      new Date(payload.endTime).getTime() <=
+      new Date(payload.startTime).getTime()
+    ) {
+      const error = 'End time must be after start time.';
+      console.warn('[AdminSchedule] Validation error:', error);
+      setSaveError(error);
+      return;
+    }
+
+    console.log('[AdminSchedule] Validation passed, saving...');
+    setIsSaving(true);
+
+    const result = isCreateMode
+      ? await createWorkshop(payload)
+      : await updateWorkshop(workshopId ?? '', payload);
+
+    console.log('[AdminSchedule] API response:', result);
+    setIsSaving(false);
+
+    if (!result.ok) {
+      console.error('[AdminSchedule] API error:', result.error);
+      setSaveError(result.error);
+      return;
+    }
+
+    setWorkshop(result.data);
+
+    const nextForm: WorkshopDraftForm = {
+      title: result.data.title,
+      description: result.data.description ?? '',
+      speaker: result.data.speaker ?? '',
+      room: result.data.room ?? '',
+      capacity: String(result.data.capacity),
+      price: String(Number(result.data.price)),
+      startDate: toDateValue(result.data.startTime),
+      startTime: toTimeValue(result.data.startTime),
+      endDate: toDateValue(result.data.startTime),
+      endTime: toTimeValue(result.data.endTime),
+      status: result.data.status,
+      floorMapUrl: result.data.floorMapUrl ?? '',
+    };
+
+    setForm(nextForm);
+    setInitialForm(nextForm);
+    localStorage.setItem('admin:lastWorkshopId', result.data.id);
+
+    if (isCreateMode) {
+      // After creating a workshop, return to dashboard per UX request.
+      navigate('/admin/dashboard', { replace: true });
+      return;
+    }
+
+    // For edits, also return to dashboard after successful save.
+    navigate('/admin/dashboard', { replace: true });
+  };
+
+  const handleDiscard = () => {
+    if (isCreateMode) {
+      navigate('/admin/dashboard');
+      return;
+    }
+
+    setForm(initialForm);
+    setSaveError(null);
+    setUploadError(null);
+    setSummaryError(null);
+  };
+
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file || !workshopId || isCreateMode) {
+      return;
+    }
+
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      setUploadError('Only PDF files are supported.');
+      return;
+    }
+
+    setUploadError(null);
+    setIsUploading(true);
+
+    try {
+      const base64 = await readFileAsBase64(file);
+      const result = await uploadWorkshopDocument(workshopId, {
+        fileName: file.name,
+        contentBase64: base64,
+        contentType: file.type || 'application/pdf',
+      });
+
+      if (!result.ok) {
+        setUploadError(result.error);
+        return;
+      }
+
+      const docsResult = await fetchWorkshopDocuments(workshopId);
+      if (docsResult.ok) {
+        setDocuments(docsResult.data);
+
+        const firstDocument = docsResult.data[0];
+        if (firstDocument) {
+          const summaryResult = await fetchDocumentSummary(
+            workshopId,
+            firstDocument.id,
+          );
+
+          if (summaryResult.ok) {
+            setSummary(summaryResult.data);
+          }
+        }
+      }
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const refreshSummary = async () => {
+    if (!latestDocument || !workshopId || isCreateMode) {
+      return;
+    }
+
+    setSummaryError(null);
+    const summaryResult = await fetchDocumentSummary(
+      workshopId,
+      latestDocument.id,
+    );
+
+    if (!summaryResult.ok) {
+      setSummaryError(summaryResult.error);
+      return;
+    }
+
+    setSummary(summaryResult.data);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="admin-page">
+        <AdminSidebar />
+        <main className="admin-main admin-schedule-main">
+          <p className="helper-text">Loading workshop details...</p>
+        </main>
+      </div>
+    );
+  }
+
+  if (error && !isCreateMode) {
+    return (
+      <div className="admin-page">
+        <AdminSidebar />
+        <main className="admin-main admin-schedule-main">
+          <p className="helper-text">{error}</p>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="admin-page">
       <AdminSidebar />
@@ -53,26 +513,62 @@ const AdminSchedule = () => {
         <div className="admin-schedule-shell">
           <header className="admin-schedule-header">
             <div className="admin-schedule-heading">
-              <Link to="/admin/dashboard" className="admin-back-link">
+              <button
+                type="button"
+                className="admin-back-link"
+                onClick={handleDiscard}
+              >
                 <img src={imgBack} alt="" aria-hidden="true" />
-                <span>Back to List</span>
-              </Link>
-              <h1>Edit Workshop</h1>
+                <span>
+                  {isCreateMode ? 'Back to Dashboard' : 'Back to List'}
+                </span>
+              </button>
+              <h1>{isCreateMode ? 'Create Workshop' : 'Edit Workshop'}</h1>
             </div>
 
             <div className="admin-schedule-header-actions">
-              <button type="button" className="admin-muted-button">
+              <button
+                type="button"
+                className="admin-muted-button"
+                onClick={handleDiscard}
+              >
                 Discard Changes
               </button>
-              <button type="button" className="admin-primary-button">
+              <button
+                type="button"
+                className="admin-primary-button"
+                onClick={() => void handleSave()}
+                disabled={isSaving}
+              >
                 <img src={imgSave} alt="" aria-hidden="true" />
-                <span>Save Workshop</span>
+                <span>
+                  {isSaving
+                    ? 'Saving...'
+                    : isCreateMode
+                      ? 'Create Workshop'
+                      : 'Save Workshop'}
+                </span>
               </button>
             </div>
           </header>
 
           <div className="admin-schedule-grid">
             <section className="admin-schedule-form-column">
+              {saveError ? (
+                <article
+                  className="admin-form-card"
+                  style={{
+                    backgroundColor: '#fee',
+                    borderLeft: '4px solid #c33',
+                    padding: '16px',
+                  }}
+                >
+                  <strong style={{ color: '#c33' }}>Error:</strong>
+                  <p className="helper-text" style={{ margin: '8px 0 0 0' }}>
+                    {saveError}
+                  </p>
+                </article>
+              ) : null}
               <article className="admin-form-card">
                 <h2>Core Information</h2>
 
@@ -81,8 +577,11 @@ const AdminSchedule = () => {
                     <span>Workshop Title</span>
                     <input
                       type="text"
-                      value="Advanced Machine Learning Methodologies"
-                      readOnly
+                      value={form.title}
+                      onChange={(event) =>
+                        handleFieldChange('title', event.target.value)
+                      }
+                      placeholder="Enter workshop title"
                     />
                   </label>
 
@@ -90,8 +589,11 @@ const AdminSchedule = () => {
                     <span>Description</span>
                     <textarea
                       rows={5}
-                      value="An in-depth exploration of modern neural network architectures, focusing on transformer models and their applications in natural language processing. Attendees should have a basic understanding of Python and PyTorch."
-                      readOnly
+                      value={form.description}
+                      onChange={(event) =>
+                        handleFieldChange('description', event.target.value)
+                      }
+                      placeholder="Describe the workshop"
                     />
                   </label>
 
@@ -100,7 +602,14 @@ const AdminSchedule = () => {
                       <span>Primary Speaker</span>
                       <div className="admin-input-with-icon">
                         <img src={imgSpeaker} alt="" aria-hidden="true" />
-                        <input type="text" value="Dr. Aris Thorne" readOnly />
+                        <input
+                          type="text"
+                          value={form.speaker}
+                          onChange={(event) =>
+                            handleFieldChange('speaker', event.target.value)
+                          }
+                          placeholder="Speaker name"
+                        />
                       </div>
                     </label>
 
@@ -110,8 +619,11 @@ const AdminSchedule = () => {
                         <img src={imgLocation} alt="" aria-hidden="true" />
                         <input
                           type="text"
-                          value="Engineering Bldg, Room 402"
-                          readOnly
+                          value={form.room}
+                          onChange={(event) =>
+                            handleFieldChange('room', event.target.value)
+                          }
+                          placeholder="Room or venue"
                         />
                       </div>
                     </label>
@@ -127,16 +639,34 @@ const AdminSchedule = () => {
                     <span>Date</span>
                     <div className="admin-input-with-icon">
                       <img src={imgDate} alt="" aria-hidden="true" />
-                      <input type="text" value="11/15/2023" readOnly />
+                      <input
+                        type="date"
+                        value={form.startDate}
+                        onChange={(event) =>
+                          handleDateChange(event.target.value)
+                        }
+                      />
                     </div>
                   </label>
 
                   <div className="admin-form-field">
                     <span>Time</span>
                     <div className="admin-time-row">
-                      <input type="text" value="02:00 PM" readOnly />
+                      <input
+                        type="time"
+                        value={form.startTime}
+                        onChange={(event) =>
+                          handleFieldChange('startTime', event.target.value)
+                        }
+                      />
                       <span>to</span>
-                      <input type="text" value="04:30 PM" readOnly />
+                      <input
+                        type="time"
+                        value={form.endTime}
+                        onChange={(event) =>
+                          handleFieldChange('endTime', event.target.value)
+                        }
+                      />
                     </div>
                   </div>
 
@@ -144,7 +674,14 @@ const AdminSchedule = () => {
                     <span>Max Capacity</span>
                     <div className="admin-input-with-icon">
                       <img src={imgCapacity} alt="" aria-hidden="true" />
-                      <input type="text" value="50" readOnly />
+                      <input
+                        type="number"
+                        min={1}
+                        value={form.capacity}
+                        onChange={(event) =>
+                          handleFieldChange('capacity', event.target.value)
+                        }
+                      />
                     </div>
                   </label>
 
@@ -152,34 +689,51 @@ const AdminSchedule = () => {
                     <span>Registration Price ($)</span>
                     <div className="admin-input-with-icon">
                       <img src={imgPrice} alt="" aria-hidden="true" />
-                      <input type="text" value="0.00" readOnly />
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={form.price}
+                        onChange={(event) =>
+                          handleFieldChange('price', event.target.value)
+                        }
+                      />
                     </div>
                     <small>Leave as 0.00 for free workshops.</small>
                   </label>
-                </div>
-              </article>
 
-              <article className="admin-form-card">
-                <h2>Course Materials</h2>
-                <p className="admin-card-description">
-                  Upload syllabus, reading lists, or prerequisite documents.
-                </p>
+                  <label className="admin-form-field">
+                    <span>Status</span>
+                    <select
+                      value={form.status}
+                      onChange={(event) =>
+                        handleFieldChange(
+                          'status',
+                          event.target.value as WorkshopApiDto['status'],
+                        )
+                      }
+                    >
+                      <option value="draft">Draft</option>
+                      <option value="published">Published</option>
+                      <option value="cancelled">Cancelled</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </label>
 
-                <div className="admin-upload-dropzone">
-                  <div className="admin-upload-icon">PDF</div>
-                  <strong>Click to upload or drag and drop</strong>
-                  <span>PDF, DOCX up to 10MB</span>
+                  <label className="admin-form-field">
+                    <span>Floor Map URL</span>
+                    <input
+                      type="url"
+                      value={form.floorMapUrl}
+                      onChange={(event) =>
+                        handleFieldChange('floorMapUrl', event.target.value)
+                      }
+                      placeholder="https://..."
+                    />
+                  </label>
                 </div>
 
-                <div className="admin-upload-file">
-                  <div>
-                    <strong>ML_Syllabus_Fall23.pdf</strong>
-                    <span>2.4 MB</span>
-                  </div>
-                  <button type="button" aria-label="Delete uploaded file">
-                    Delete
-                  </button>
-                </div>
+                {saveError ? <p className="helper-text">{saveError}</p> : null}
               </article>
             </section>
 
@@ -187,45 +741,69 @@ const AdminSchedule = () => {
               <article className="admin-side-card admin-transcript-card">
                 <div className="admin-side-title">
                   <img src={imgTranscript} alt="" aria-hidden="true" />
-                  <h2>AI Transcript</h2>
+                  <h2>AI Summary</h2>
                   <span className="admin-transcript-status">
                     <img src={imgTranscriptStatus} alt="" aria-hidden="true" />
-                    Pending
+                    {summary
+                      ? getSummaryStatusLabel(summary.status)
+                      : 'Pending'}
                   </span>
                 </div>
 
                 <p className="admin-transcript-copy">
-                  The recording is scheduled for automated transcription and
-                  summary generation after the event concludes.
+                  {isCreateMode
+                    ? 'Create the workshop first to enable document upload and AI summaries.'
+                    : summary?.summaryText
+                      ? summary.summaryText
+                      : latestDocument
+                        ? 'Summary is being prepared. Check back soon.'
+                        : 'Upload a PDF to start AI summarization.'}
                 </p>
 
-                <button type="button" className="admin-outline-button">
-                  Generate Summary Now
+                {summaryError ? (
+                  <p className="helper-text">{summaryError}</p>
+                ) : null}
+
+                <button
+                  type="button"
+                  className="admin-outline-button"
+                  onClick={refreshSummary}
+                  disabled={!latestDocument || isCreateMode}
+                >
+                  Refresh Summary
                 </button>
               </article>
 
               <article className="admin-side-card admin-registration-card">
                 <h2>Registration Status</h2>
 
-                <div className="admin-registration-stats">
-                  <div>
-                    <strong>45</strong>
-                    <span>Registered</span>
-                  </div>
-                  <div>
-                    <strong>50</strong>
-                    <span>Capacity</span>
-                  </div>
-                </div>
+                {workshop ? (
+                  <>
+                    <div className="admin-registration-stats">
+                      <div>
+                        <strong>{workshop.registeredCount}</strong>
+                        <span>Registered</span>
+                      </div>
+                      <div>
+                        <strong>{workshop.capacity}</strong>
+                        <span>Capacity</span>
+                      </div>
+                    </div>
 
-                <div className="admin-registration-bar">
-                  <span />
-                </div>
+                    <div className="admin-registration-bar">
+                      <span style={{ width: `${registrationProgress}%` }} />
+                    </div>
 
-                <div className="admin-registration-pill">
-                  <span />
-                  Registration Open
-                </div>
+                    <div className="admin-registration-pill">
+                      <span />
+                      {registrationLabel}
+                    </div>
+                  </>
+                ) : (
+                  <p className="helper-text">
+                    Save the workshop to view registration status.
+                  </p>
+                )}
               </article>
 
               <article className="admin-side-card admin-attendees-card">
@@ -234,29 +812,77 @@ const AdminSchedule = () => {
                   <a href="#">View All</a>
                 </div>
 
-                <div className="admin-attendees-list">
-                  {attendees.map((attendee) => (
-                    <div key={attendee.email} className="admin-attendee-row">
-                      {attendee.avatar ? (
-                        <img src={attendee.avatar} alt={attendee.name} />
-                      ) : (
-                        <div className="admin-attendee-initials">
-                          {attendee.initials}
-                        </div>
-                      )}
+                {isCreateMode ? (
+                  <p className="helper-text">
+                    Attendees will appear after the workshop is created.
+                  </p>
+                ) : (
+                  <div className="admin-attendees-list">
+                    <div className="admin-attendee-row">
+                      <div className="admin-attendee-initials">--</div>
                       <div>
-                        <strong>{attendee.name}</strong>
-                        <span>{attendee.email}</span>
+                        <strong>No attendee roster yet</strong>
+                        <span>Roster export is not configured.</span>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
 
-                <button type="button" className="admin-export-button">
+                <button
+                  type="button"
+                  className="admin-export-button"
+                  disabled={isCreateMode}
+                >
                   <img src={imgExport} alt="" aria-hidden="true" />
                   <span>Export Roster</span>
                 </button>
               </article>
+
+              {!isCreateMode ? (
+                <article className="admin-form-card">
+                  <h2>Course Materials</h2>
+                  <p className="admin-card-description">
+                    Upload syllabus, reading lists, or prerequisite documents.
+                  </p>
+
+                  <label className="admin-upload-dropzone">
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      onChange={handleFileChange}
+                      disabled={isUploading}
+                      style={{ display: 'none' }}
+                    />
+                    <div className="admin-upload-icon">PDF</div>
+                    <strong>
+                      {isUploading
+                        ? 'Uploading document...'
+                        : 'Click to upload or drag and drop'}
+                    </strong>
+                    <span>PDF up to 10MB</span>
+                  </label>
+
+                  {uploadError ? (
+                    <p className="helper-text">{uploadError}</p>
+                  ) : null}
+
+                  {documents.length === 0 ? (
+                    <p className="helper-text">No documents uploaded yet.</p>
+                  ) : (
+                    documents.map((doc) => (
+                      <div key={doc.id} className="admin-upload-file">
+                        <div>
+                          <strong>{doc.fileName}</strong>
+                          <span>{formatUploadedAt(doc.uploadedAt)}</span>
+                        </div>
+                        <button type="button" disabled>
+                          Delete
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </article>
+              ) : null}
             </aside>
           </div>
         </div>
