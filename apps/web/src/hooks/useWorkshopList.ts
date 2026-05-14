@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ComponentType } from 'react';
 import { mapWorkshopToCard } from '../lib/unihubAdapters.ts';
 import {
@@ -13,12 +13,15 @@ export type WorkshopBadgeTone = 'success' | 'warning' | 'neutral' | 'danger';
 export type WorkshopCardVariant = 'featured' | 'standard';
 export type WorkshopDateFilter = 'upcoming' | 'this-week' | 'next-month';
 export type WorkshopPriceFilter = 'free' | 'paid';
-export type WorkshopAvailabilityFilter = 'open' | 'almost-full';
+export type WorkshopAvailabilityFilter = 'all' | 'open' | 'almost-full';
+export type WorkshopSortFilter = 'event-date' | 'newest';
 
 export type WorkshopCardData = {
   id: string;
   variant: WorkshopCardVariant;
   className?: string;
+  isNew?: boolean;
+  isRegistered?: boolean;
   status: {
     label: string;
     tone: WorkshopBadgeTone;
@@ -53,27 +56,7 @@ export type WorkshopCardData = {
   metaFaded?: boolean;
 };
 
-const getDateRange = (filter: WorkshopDateFilter) => {
-  const now = new Date();
-  const start = now.toISOString();
-
-  if (filter === 'this-week') {
-    const end = new Date(now);
-    end.setDate(now.getDate() + 7);
-    return { startFrom: start, startTo: end.toISOString() };
-  }
-
-  if (filter === 'next-month') {
-    const startNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    const endNextMonth = new Date(now.getFullYear(), now.getMonth() + 2, 0);
-    return {
-      startFrom: startNextMonth.toISOString(),
-      startTo: endNextMonth.toISOString(),
-    };
-  }
-
-  return { startFrom: start, startTo: undefined };
-};
+const PAGE_SIZE = 9;
 
 const filterByPrice = (
   workshops: WorkshopApiDto[],
@@ -83,15 +66,29 @@ const filterByPrice = (
     return workshops;
   }
 
-  return workshops.filter((workshop) =>
-    filters.includes(workshop.price === 0 ? 'free' : 'paid'),
-  );
+  return workshops.filter((workshop) => {
+    const numericPrice = Number(workshop.price);
+    const priceType = numericPrice === 0 ? 'free' : 'paid';
+
+    return filters.includes(priceType);
+  });
 };
 
 const filterByAvailability = (
   workshops: WorkshopApiDto[],
   availability: WorkshopAvailabilityFilter,
 ) => {
+  if (availability === 'all') {
+    return workshops.filter((workshop) => {
+      const remainingSeats = Math.max(
+        workshop.capacity - workshop.registeredCount,
+        0,
+      );
+
+      return workshop.status === 'published' && remainingSeats > 0;
+    });
+  }
+
   return workshops.filter((workshop) => {
     const remainingSeats = Math.max(
       workshop.capacity - workshop.registeredCount,
@@ -106,7 +103,83 @@ const filterByAvailability = (
   });
 };
 
-const useWorkshopList = () => {
+const filterByDate = (
+  workshops: WorkshopApiDto[],
+  filter: WorkshopDateFilter,
+) => {
+  const now = new Date();
+
+  return workshops.filter((workshop) => {
+    const start = new Date(workshop.startTime);
+
+    if (filter === 'this-week') {
+      const end = new Date(now);
+      end.setDate(now.getDate() + 7);
+      return start >= now && start <= end;
+    }
+
+    if (filter === 'next-month') {
+      const startNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const endNextMonth = new Date(
+        now.getFullYear(),
+        now.getMonth() + 2,
+        0,
+        23,
+        59,
+        59,
+        999,
+      );
+      return start >= startNextMonth && start <= endNextMonth;
+    }
+
+    return start >= now;
+  });
+};
+
+const filterBySearch = (workshops: WorkshopApiDto[], searchTerm: string) => {
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+
+  if (!normalizedSearch) {
+    return workshops;
+  }
+
+  return workshops.filter((workshop) => {
+    const haystacks = [
+      workshop.title,
+      workshop.description ?? '',
+      workshop.speaker ?? '',
+      workshop.room ?? '',
+    ];
+
+    return haystacks.some((value) =>
+      value.toLowerCase().includes(normalizedSearch),
+    );
+  });
+};
+
+const sortWorkshops = (
+  workshops: WorkshopApiDto[],
+  sortBy: WorkshopSortFilter,
+) => {
+  const items = [...workshops];
+
+  items.sort((left, right) => {
+    if (sortBy === 'newest') {
+      return (
+        new Date(right.createdAt ?? right.startTime).getTime() -
+        new Date(left.createdAt ?? left.startTime).getTime()
+      );
+    }
+
+    return (
+      new Date(left.startTime).getTime() - new Date(right.startTime).getTime()
+    );
+  });
+
+  return items;
+};
+
+const useWorkshopList = (registeredWorkshopIds: string[] = []) => {
   const [rawWorkshops, setRawWorkshops] = useState<WorkshopApiDto[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState<WorkshopDateFilter>('upcoming');
@@ -115,22 +188,19 @@ const useWorkshopList = () => {
     'paid',
   ]);
   const [availability, setAvailability] =
-    useState<WorkshopAvailabilityFilter>('open');
+    useState<WorkshopAvailabilityFilter>('all');
+  const [sortBy, setSortBy] = useState<WorkshopSortFilter>('event-date');
+  const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadWorkshops = async () => {
     setIsLoading(true);
     setError(null);
-
-    const dateRange = getDateRange(dateFilter);
     const result = await fetchWorkshops({
-      q: searchTerm.trim() || undefined,
       status: 'published' satisfies WorkshopStatus,
-      startFrom: dateRange.startFrom,
-      startTo: dateRange.startTo,
       page: 1,
-      pageSize: 20,
+      pageSize: 100,
     });
 
     setIsLoading(false);
@@ -147,10 +217,59 @@ const useWorkshopList = () => {
     void loadWorkshops();
   }, []);
 
-  const workshops = filterByAvailability(
-    filterByPrice(rawWorkshops, priceFilters),
-    availability,
-  ).map((workshop, index) => mapWorkshopToCard(workshop, index));
+  const filteredWorkshops = useMemo(
+    () =>
+      sortWorkshops(
+        filterByAvailability(
+          filterByPrice(
+            filterByDate(filterBySearch(rawWorkshops, searchTerm), dateFilter),
+            priceFilters,
+          ),
+          availability,
+        ),
+        sortBy,
+      ),
+    [availability, dateFilter, priceFilters, rawWorkshops, searchTerm, sortBy],
+  );
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredWorkshops.length / PAGE_SIZE),
+  );
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
+
+  const newestWorkshopId = useMemo(() => {
+    if (filteredWorkshops.length === 0) {
+      return null;
+    }
+
+    return filteredWorkshops.reduce((latestWorkshop, workshop) => {
+      const latestTimestamp = new Date(
+        latestWorkshop.createdAt ?? latestWorkshop.startTime,
+      ).getTime();
+      const workshopTimestamp = new Date(
+        workshop.createdAt ?? workshop.startTime,
+      ).getTime();
+
+      return workshopTimestamp > latestTimestamp ? workshop : latestWorkshop;
+    }, filteredWorkshops[0]).id;
+  }, [filteredWorkshops]);
+
+  const paginatedWorkshops = useMemo(
+    () =>
+      filteredWorkshops
+        .slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+        .map((workshop, index) =>
+          mapWorkshopToCard(workshop, index, {
+            isNew: workshop.id === newestWorkshopId,
+            isRegistered: registeredWorkshopIds.includes(workshop.id),
+          }),
+        ),
+    [currentPage, filteredWorkshops, newestWorkshopId, registeredWorkshopIds],
+  );
 
   const togglePriceFilter = (price: WorkshopPriceFilter) => {
     setPriceFilters((current) => {
@@ -163,7 +282,12 @@ const useWorkshopList = () => {
   };
 
   return {
-    workshops,
+    workshops: paginatedWorkshops,
+    totalResults: filteredWorkshops.length,
+    currentPage,
+    totalPages,
+    pageSize: PAGE_SIZE,
+    setCurrentPage,
     isLoading,
     error,
     searchTerm,
@@ -174,7 +298,16 @@ const useWorkshopList = () => {
     togglePriceFilter,
     availability,
     setAvailability,
-    applyFilters: () => loadWorkshops(),
+    sortBy,
+    setSortBy,
+    resetFilters: () => {
+      setSearchTerm('');
+      setDateFilter('upcoming');
+      setPriceFilters(['free', 'paid']);
+      setAvailability('all');
+      setSortBy('event-date');
+      setCurrentPage(1);
+    },
   };
 };
 
