@@ -68,6 +68,16 @@ export type PaymentApiDto = {
   completedAt?: string | null;
 };
 
+export type PaymentMockActionInputDto = {
+  paymentId: string;
+  providerRef?: string;
+};
+
+export type PaymentActionResponseDto = {
+  payment: PaymentApiDto;
+  registration: RegistrationApiDto;
+};
+
 export type RegistrationCheckoutResponseDto = {
   registration: RegistrationApiDto;
   paymentRequired: boolean;
@@ -261,4 +271,14 @@ export const updateWorkshop = (workshopId: string, body: WorkshopUpdateInput) =>
 export const fetchDocumentSummary = (workshopId: string, documentId: string) =>
   getJson<DocumentSummaryApiDto>(
     `/admin/workshops/${workshopId}/documents/${documentId}/summary`,
+export const mockPaymentSuccess = (body: PaymentMockActionInputDto) =>
+  postJson<PaymentActionResponseDto, PaymentMockActionInputDto>(
+    '/payments/mock/success',
+    { body },
+  );
+
+export const mockPaymentFailure = (body: PaymentMockActionInputDto) =>
+  postJson<PaymentActionResponseDto, PaymentMockActionInputDto>(
+    '/payments/mock/failure',
+    { body },
   );

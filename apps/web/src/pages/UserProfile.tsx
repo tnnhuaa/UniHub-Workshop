@@ -9,12 +9,11 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import WorkshopHeader from '../components/WorkshopHeader.tsx';
+import LoadingSpinner from '../components/LoadingSpinner.tsx';
 import { signOut } from '../lib/authClient.ts';
 import { mapStudentToProfileViewModel } from '../lib/unihubAdapters.ts';
 import { fetchCurrentStudent } from '../lib/unihubApi.ts';
 
-const imgStudentProfile =
-  'https://www.figma.com/api/mcp/asset/3e16b081-8990-428b-bada-53ad0e6d75e8';
 const imgProfilePicture =
   'https://www.figma.com/api/mcp/asset/8b5490f6-451d-4c0e-b17e-9b43a0619761';
 
@@ -94,22 +93,38 @@ const UserProfile = () => {
     const result = await signOut();
     setIsSigningOut(false);
 
-    if (!result.ok) {
-      setError(result.error);
+    if (result.error) {
+      setError(result.error.message || 'An error occurred while signing out.');
       return;
     }
 
     void navigate('/sign-in');
   };
 
+  if (isLoading) {
+    return (
+      <div className="profile-page">
+        <WorkshopHeader
+          profileImage={imgStudentProfile}
+          profileLink="/profile"
+        />
+        <main className="profile-main">
+          <LoadingSpinner label="Loading profile..." />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="profile-page">
-      <WorkshopHeader profileImage={imgStudentProfile} profileLink="/profile" />
+      <WorkshopHeader
+        profileImage={avatar}
+        profileLink={error ? undefined : '/profile'}
+      />
 
       <main className="profile-main">
         <h1>Personal Profile</h1>
         {error ? <p className="helper-text">{error}</p> : null}
-        {isLoading ? <p className="helper-text">Loading profile...</p> : null}
 
         <section className="profile-card">
           <div className="profile-card-header">
