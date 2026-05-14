@@ -42,3 +42,10 @@ playwright-report/
 
 #yaml
 pnpm-lock.yaml
+
+# Mobile
+*.apk
+*.ipa
+.expo/
+expo-web-build/
+expo-env.d.ts

@@ -39,13 +39,19 @@ export class CheckinService {
     this.ensureRegistrationCheckinReady(registration);
     await this.ensureStaffAssignment(staffId, registration.workshopId);
 
-    return this.createCheckin({
+    const checkin = await this.createCheckin({
       mssv: registration.mssv,
       workshopId: registration.workshopId,
       registrationId: registration.id,
       staffId,
       deviceEventId: input.deviceEventId,
     });
+
+    console.log(
+      `Check-in scanned for registration ${registration.id} by staff ${staffId}`,
+      checkin,
+    );
+    return checkin;
   }
 
   async confirm(input: CheckinConfirmInput, staffId: string) {
@@ -64,22 +70,102 @@ export class CheckinService {
     this.ensureRegistrationCheckinReady(registration);
     await this.ensureStaffAssignment(staffId, registration.workshopId);
 
-    return this.createCheckin({
+    const checkin = await this.createCheckin({
       mssv: registration.mssv,
       workshopId: registration.workshopId,
       registrationId: registration.id,
       staffId,
       deviceEventId: input.deviceEventId,
     });
+
+    console.log(
+      `Check-in confirmed for registration ${input.registrationId} by staff ${staffId}`,
+      checkin,
+    );
+    return checkin;
   }
 
   async findByWorkshop(workshopId: string, staffId: string) {
     await this.ensureStaffAssignment(staffId, workshopId);
-    return this.prisma.checkin.findMany({
-      where: { workshopId },
-      include: { student: true },
-      orderBy: { checkedInAt: 'desc' },
+    console.log(
+      `Finding check-ins for workshop ${workshopId} by staff ${staffId}`,
+    );
+
+    const workshop = await this.prisma.workshop.findUnique({
+      where: { id: workshopId },
+      include: {
+        registrations: {
+          include: {
+            student: {
+              select: {
+                mssv: true,
+                fullName: true,
+                email: true,
+                phone: true,
+                faculty: true,
+                className: true,
+              },
+            },
+            checkins: {
+              include: {
+                checkinStaff: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
+              },
+              take: 1, // Lấy bản ghi checkin mới nhất (quan hệ 1-n trong schema nhưng thực tế thường là 1)
+              orderBy: {
+                checkedInAt: 'desc',
+              },
+            },
+          },
+        },
+      },
     });
+
+    if (!workshop) {
+      throw new Error('Workshop not found');
+    }
+
+    return {
+      workshopId: workshop.id,
+      title: workshop.title,
+      description: workshop.description,
+      status: workshop.status,
+      registrations: workshop.registrations.map((reg) => {
+        const checkin = reg.checkins.length > 0 ? reg.checkins[0] : null;
+
+        return {
+          id: reg.id,
+          registrationStatus: reg.status,
+          paymentStatus: reg.paymentStatus,
+
+          checkedInAt: checkin?.checkedInAt || null,
+          syncedAt: checkin?.syncedAt || null,
+          syncStatus: checkin?.syncStatus || 'pending',
+
+          student: {
+            mssv: reg.student.mssv,
+            fullName: reg.student.fullName,
+            email: reg.student.email,
+            phone: reg.student.phone,
+            faculty: reg.student.faculty,
+            className: reg.student.className,
+          },
+
+          checkinStaff: checkin?.checkinStaff
+            ? {
+                id: checkin.checkinStaff.id,
+                name: checkin.checkinStaff.name,
+                email: checkin.checkinStaff.email,
+              }
+            : null,
+        };
+      }),
+    };
   }
 
   async syncOffline(input: CheckinSyncInput, staffId: string) {
@@ -148,9 +234,18 @@ export class CheckinService {
           });
           continue;
         }
+        console.error(
+          `Error syncing check-in record with deviceEventId ${record.deviceEventId}:`,
+          error,
+        );
         throw error;
       }
     }
+
+    console.log(
+      `Sync completed for device ${input.deviceId} by staff ${staffId}`,
+      results,
+    );
 
     return {
       deviceId: input.deviceId,
