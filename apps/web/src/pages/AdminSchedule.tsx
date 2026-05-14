@@ -142,8 +142,10 @@ const AdminSchedule = () => {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [dateRangeWarning, setDateRangeWarning] = useState<string | null>(null);
 
   const latestDocument = documents[0] ?? null;
+  const hasCrossDayRange = Boolean(dateRangeWarning);
 
   const registrationProgress = useMemo(() => {
     if (!workshop || workshop.capacity === 0) {
@@ -182,6 +184,7 @@ const AdminSchedule = () => {
         setInitialForm(emptyWorkshopForm());
         setDocuments([]);
         setSummary(null);
+        setDateRangeWarning(null);
         setError(null);
         setIsLoading(false);
         return;
@@ -197,6 +200,7 @@ const AdminSchedule = () => {
       setError(null);
       setSummaryError(null);
       setUploadError(null);
+      setDateRangeWarning(null);
 
       const workshopResult = await fetchWorkshop(workshopId);
       if (!active) {
@@ -210,6 +214,8 @@ const AdminSchedule = () => {
       }
 
       const workshopData = workshopResult.data;
+      const startDate = toDateValue(workshopData.startTime);
+      const endDate = toDateValue(workshopData.endTime);
       const nextForm: WorkshopDraftForm = {
         title: workshopData.title,
         description: workshopData.description ?? '',
@@ -217,13 +223,19 @@ const AdminSchedule = () => {
         room: workshopData.room ?? '',
         capacity: String(workshopData.capacity),
         price: String(Number(workshopData.price)),
-        startDate: toDateValue(workshopData.startTime),
+        startDate,
         startTime: toTimeValue(workshopData.startTime),
-        endDate: toDateValue(workshopData.endTime),
+        endDate,
         endTime: toTimeValue(workshopData.endTime),
         status: workshopData.status,
         floorMapUrl: workshopData.floorMapUrl ?? '',
       };
+
+      if (startDate !== endDate) {
+        setDateRangeWarning(
+          'This workshop currently spans multiple days. The current form only supports same-day schedules, so date/time editing is disabled to avoid overwriting the saved range.',
+        );
+      }
 
       setWorkshop(workshopData);
       setForm(nextForm);
@@ -286,18 +298,41 @@ const AdminSchedule = () => {
     }));
   };
 
+  const handleDateChange = (value: string) => {
+    setForm((current) => ({
+      ...current,
+      startDate: value,
+      endDate: value,
+    }));
+  };
+
   const handleSave = async () => {
+    console.log('[AdminSchedule] handleSave called', { isCreateMode, workshopId });
     setSaveError(null);
 
     if (!form.title.trim()) {
-      setSaveError('Workshop title is required.');
+      const error = 'Workshop title is required.';
+      console.warn('[AdminSchedule] Validation error:', error);
+      setSaveError(error);
       return;
     }
 
-    if (!form.startDate || !form.startTime || !form.endDate || !form.endTime) {
-      setSaveError('Start and end date/time are required.');
+    if (hasCrossDayRange) {
+      const error =
+        'This workshop spans multiple days. Edit its schedule in a multi-day capable form before saving.';
+      console.warn('[AdminSchedule] Validation error:', error);
+      setSaveError(error);
       return;
     }
+
+    if (!form.startDate || !form.startTime || !form.endTime) {
+      const error = 'Start and end date/time are required.';
+      console.warn('[AdminSchedule] Validation error:', error);
+      setSaveError(error);
+      return;
+    }
+
+    const effectiveEndDate = form.endDate || form.startDate;
 
     const payload = {
       title: form.title.trim(),
@@ -307,18 +342,24 @@ const AdminSchedule = () => {
       capacity: Number(form.capacity),
       price: Number(form.price),
       startTime: combineDateTime(form.startDate, form.startTime),
-      endTime: combineDateTime(form.endDate, form.endTime),
+      endTime: combineDateTime(effectiveEndDate, form.endTime),
       floorMapUrl: normalizeOptionalString(form.floorMapUrl),
       status: form.status,
     };
 
+    console.log('[AdminSchedule] Payload:', payload);
+
     if (!Number.isFinite(payload.capacity) || payload.capacity <= 0) {
-      setSaveError('Capacity must be a positive number.');
+      const error = 'Capacity must be a positive number.';
+      console.warn('[AdminSchedule] Validation error:', error);
+      setSaveError(error);
       return;
     }
 
     if (!Number.isFinite(payload.price) || payload.price < 0) {
-      setSaveError('Price must be zero or greater.');
+      const error = 'Price must be zero or greater.';
+      console.warn('[AdminSchedule] Validation error:', error);
+      setSaveError(error);
       return;
     }
 
@@ -326,19 +367,24 @@ const AdminSchedule = () => {
       new Date(payload.endTime).getTime() <=
       new Date(payload.startTime).getTime()
     ) {
-      setSaveError('End time must be after start time.');
+      const error = 'End time must be after start time.';
+      console.warn('[AdminSchedule] Validation error:', error);
+      setSaveError(error);
       return;
     }
 
+    console.log('[AdminSchedule] Validation passed, saving...');
     setIsSaving(true);
 
     const result = isCreateMode
       ? await createWorkshop(payload)
       : await updateWorkshop(workshopId ?? '', payload);
 
+    console.log('[AdminSchedule] API response:', result);
     setIsSaving(false);
 
     if (!result.ok) {
+      console.error('[AdminSchedule] API error:', result.error);
       setSaveError(result.error);
       return;
     }
@@ -513,13 +559,49 @@ const AdminSchedule = () => {
                 disabled={isSaving}
               >
                 <img src={imgSave} alt="" aria-hidden="true" />
-                <span>{isSaving ? 'Saving...' : 'Save Workshop'}</span>
+                <span>
+                  {isSaving
+                    ? 'Saving...'
+                    : isCreateMode
+                      ? 'Create Workshop'
+                      : 'Save Workshop'}
+                </span>
               </button>
             </div>
           </header>
 
           <div className="admin-schedule-grid">
             <section className="admin-schedule-form-column">
+              {saveError ? (
+                <article
+                  className="admin-form-card"
+                  style={{
+                    backgroundColor: '#fee',
+                    borderLeft: '4px solid #c33',
+                    padding: '16px',
+                  }}
+                >
+                  <strong style={{ color: '#c33' }}>Error:</strong>
+                  <p className="helper-text" style={{ margin: '8px 0 0 0' }}>
+                    {saveError}
+                  </p>
+                </article>
+              ) : null}
+              {dateRangeWarning ? (
+                <article
+                  className="admin-form-card"
+                  style={{
+                    backgroundColor: '#fff8e8',
+                    borderLeft: '4px solid #d39b17',
+                    padding: '16px',
+                  }}
+                >
+                  <strong style={{ color: '#8a5a00' }}>Schedule warning:</strong>
+                  <p className="helper-text" style={{ margin: '8px 0 0 0' }}>
+                    {dateRangeWarning}
+                  </p>
+                </article>
+              ) : null}
               <article className="admin-form-card">
                 <h2>Core Information</h2>
 
@@ -593,9 +675,8 @@ const AdminSchedule = () => {
                       <input
                         type="date"
                         value={form.startDate}
-                        onChange={(event) =>
-                          handleFieldChange('startDate', event.target.value)
-                        }
+                        onChange={(event) => handleDateChange(event.target.value)}
+                        disabled={hasCrossDayRange}
                       />
                     </div>
                   </label>
@@ -609,6 +690,7 @@ const AdminSchedule = () => {
                         onChange={(event) =>
                           handleFieldChange('startTime', event.target.value)
                         }
+                        disabled={hasCrossDayRange}
                       />
                       <span>to</span>
                       <input
@@ -617,6 +699,7 @@ const AdminSchedule = () => {
                         onChange={(event) =>
                           handleFieldChange('endTime', event.target.value)
                         }
+                        disabled={hasCrossDayRange}
                       />
                     </div>
                   </div>
