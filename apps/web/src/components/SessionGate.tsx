@@ -20,20 +20,20 @@ const SessionGate = ({
 }: SessionGateProps) => {
   return (
     <div className="session-gate-shell">
-    <section className="session-gate-panel">
+      <section className="session-gate-panel">
         <header className="session-gate-header">
           <span className="session-gate-kicker">Login required</span>
           <h2 id="session-gate-title">{title}</h2>
           <p>{description}</p>
-            <div className="session-gate-actions">
+          <div className="session-gate-actions">
             <Link className="session-gate-button" to={primaryActionTo}>
-                <LogIn className="icon icon-sm" aria-hidden="true" />
-                <span>{primaryActionLabel}</span>
+              <LogIn className="icon icon-sm" aria-hidden="true" />
+              <span>{primaryActionLabel}</span>
             </Link>
             <Link className="session-gate-link" to={secondaryActionTo}>
-                {secondaryActionLabel}
+              {secondaryActionLabel}
             </Link>
-            </div>
+          </div>
         </header>
       </section>
     </div>
