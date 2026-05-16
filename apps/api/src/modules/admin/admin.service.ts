@@ -7,9 +7,7 @@ import type { AdminDashboardQuery } from './admin.schemas.js';
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getDashboard(
-    query: AdminDashboardQuery = { page: 1, pageSize: 10 },
-  ) {
+  async getDashboard(query: AdminDashboardQuery = { page: 1, pageSize: 10 }) {
     const workshopWhere: Prisma.WorkshopWhereInput = {};
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 10;
