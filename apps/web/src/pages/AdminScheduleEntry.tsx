@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import AdminSidebar from '../components/AdminSidebar.tsx';
+import LoadingSpinner from '../components/LoadingSpinner.tsx';
 import { fetchAdminDashboard } from '../lib/unihubApi.ts';
 
 const getLastWorkshopId = () => {
@@ -41,9 +43,19 @@ const AdminScheduleEntry = () => {
   }, [navigate]);
 
   return (
-    <main className="admin-main admin-schedule-main">
-      <p className="helper-text">{message}</p>
-    </main>
+    <div className="admin-page">
+      <AdminSidebar />
+      <main className="admin-main admin-schedule-main admin-entry-main">
+        <section className="admin-entry-card">
+          <span className="admin-panel-kicker">Workshop editor</span>
+          <h1>Preparing your workspace</h1>
+          <p>{message}</p>
+          <div className="admin-entry-spinner">
+            <LoadingSpinner label="Opening workshop editor..." size={28} />
+          </div>
+        </section>
+      </main>
+    </div>
   );
 };
 

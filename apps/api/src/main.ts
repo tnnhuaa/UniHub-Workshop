@@ -21,7 +21,11 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter(),
+    new FastifyAdapter({
+      // Document uploads are currently sent as JSON with base64 content,
+      // so the HTTP body needs headroom beyond the raw PDF size.
+      bodyLimit: 20 * 1024 * 1024,
+    }),
     { rawBody: true },
   );
 

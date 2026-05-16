@@ -1,4 +1,9 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RabbitMqService, EVENTS_KEYS } from '../rabbitmq/index.js';
 import {
@@ -19,6 +24,7 @@ import type { DocumentUploadInput } from './document.schemas.js';
 @Injectable()
 export class DocumentService {
   private readonly logger = new Logger(DocumentService.name);
+  private static readonly MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -34,6 +40,14 @@ export class DocumentService {
       where: { id: workshopId },
       select: { id: true },
     });
+
+    const fileSizeBytes = Buffer.byteLength(input.contentBase64, 'base64');
+    if (fileSizeBytes > DocumentService.MAX_DOCUMENT_SIZE_BYTES) {
+      throw new BadRequestException({
+        code: 'DOCUMENT_TOO_LARGE',
+        message: 'PDF must be 10MB or smaller.',
+      });
+    }
 
     const stored = await this.objectStorage.uploadWorkshopDocument({
       workshopId,

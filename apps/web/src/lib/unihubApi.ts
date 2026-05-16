@@ -31,6 +31,10 @@ export type WorkshopApiDto = {
   endTime: string;
   status: WorkshopStatus;
   floorMapUrl?: string | null;
+  aiSummary?: {
+    summaryText: string;
+    updatedAt: string;
+  } | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -194,6 +198,12 @@ export type AdminDashboardResponseDto = {
     registeredCount: number;
     status: WorkshopStatus;
   }>;
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
   systemHealth: {
     csvSync: {
       batches: AdminCsvSyncBatchDto[];
@@ -207,6 +217,8 @@ export type AdminDashboardResponseDto = {
 
 export type AdminDashboardQuery = {
   q?: string;
+  page?: number;
+  pageSize?: number;
 };
 
 export type NotificationDeliveryApiDto = {

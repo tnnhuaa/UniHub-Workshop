@@ -67,6 +67,74 @@ export class WorkshopService {
     });
   }
 
+  private async attachLatestAiSummary<T extends { id: string }>(
+    workshops: T[],
+  ) {
+    if (workshops.length === 0) {
+      return [];
+    }
+
+    const workshopIds = workshops.map((workshop) => workshop.id);
+    const completedSummaries = await this.prisma.aiSummaryJob.findMany({
+      where: {
+        status: 'completed',
+        document: {
+          workshopId: { in: workshopIds },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        summaryText: true,
+        updatedAt: true,
+        document: {
+          select: {
+            workshopId: true,
+          },
+        },
+      },
+    });
+
+    const latestSummaryByWorkshopId = new Map<
+      string,
+      { summaryText: string; updatedAt: Date }
+    >();
+
+    completedSummaries.forEach((summary) => {
+      const workshopId = summary.document.workshopId;
+      if (!workshopId || !summary.summaryText) {
+        return;
+      }
+
+      if (!latestSummaryByWorkshopId.has(workshopId)) {
+        latestSummaryByWorkshopId.set(workshopId, {
+          summaryText: summary.summaryText,
+          updatedAt: summary.updatedAt,
+        });
+      }
+    });
+
+    return workshops.map((workshop) => {
+      const latestSummary = latestSummaryByWorkshopId.get(workshop.id) ?? null;
+
+      return {
+        ...workshop,
+        aiSummary: latestSummary,
+      };
+    });
+  }
+
+  private async attachDerivedWorkshopData<
+    T extends {
+      id: string;
+      capacity: number;
+      registeredCount: number;
+      status: string;
+    },
+  >(workshops: T[]) {
+    const withAvailability = await this.attachAvailability(workshops);
+    return this.attachLatestAiSummary(withAvailability);
+  }
+
   async findAll(query: WorkshopListQuery) {
     const where: Prisma.WorkshopWhereInput = {};
 
@@ -107,7 +175,7 @@ export class WorkshopService {
       orderBy: { startTime: 'asc' },
     });
 
-    return this.attachAvailability(workshops);
+    return this.attachDerivedWorkshopData(workshops);
   }
 
   async findOne(id: string) {
@@ -115,7 +183,7 @@ export class WorkshopService {
       where: { id },
     });
 
-    const [withAvailability] = await this.attachAvailability([workshop]);
+    const [withAvailability] = await this.attachDerivedWorkshopData([workshop]);
     return withAvailability ?? workshop;
   }
 

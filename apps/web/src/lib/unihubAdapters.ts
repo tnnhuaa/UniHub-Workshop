@@ -383,7 +383,7 @@ export const mapWorkshopToDetailViewModel = (
     title: workshop.title,
     description: workshop.description ?? '',
     category: metadata.category,
-    summary: metadata.summary,
+    summary: workshop.aiSummary?.summaryText ?? metadata.summary,
     about: metadata.about,
     takeaways: metadata.takeaways,
     speaker: workshop.speaker ?? 'Guest Speaker',

@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '../components/AdminSidebar.tsx';
+import LoadingSpinner from '../components/LoadingSpinner.tsx';
 import { fetchAdminDashboard } from '../lib/unihubApi.ts';
 import type { AdminDashboardResponseDto } from '../lib/unihubApi.ts';
 
@@ -20,6 +21,7 @@ const imgJobPending = '/figma-mcp/9313d707-6643-4ed6-b6a9-ddcaa33345c3.svg';
 const imgAiDescription = '/figma-mcp/42b80789-2465-4f91-81dd-d5596dd8f5f5.svg';
 const imgAiOptimization = '/figma-mcp/ea93dad6-6c5e-4dee-850b-2ff14b192819.svg';
 const imgAiDone = '/figma-mcp/284ef3fe-cc12-4bc9-8b67-31ab681d3a57.svg';
+const DASHBOARD_PAGE_SIZE = 10;
 
 type TrendTone = 'up' | 'down' | 'neutral';
 
@@ -89,25 +91,36 @@ const AdminDashboard = () => {
     null,
   );
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isTableLoading, setIsTableLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     let isActive = true;
     const debounce = window.setTimeout(() => {
       const loadDashboard = async () => {
-        setIsLoading(true);
+        if (hasLoadedRef.current) {
+          setIsTableLoading(true);
+        } else {
+          setIsInitialLoading(true);
+        }
         setError(null);
 
         const result = await fetchAdminDashboard({
           q: searchTerm.trim() || undefined,
+          page: currentPage,
+          pageSize: DASHBOARD_PAGE_SIZE,
         });
 
         if (!isActive) {
           return;
         }
 
-        setIsLoading(false);
+        setIsInitialLoading(false);
+        setIsTableLoading(false);
+        hasLoadedRef.current = true;
 
         if (!result.ok) {
           setError(result.error);
@@ -124,7 +137,7 @@ const AdminDashboard = () => {
       isActive = false;
       window.clearTimeout(debounce);
     };
-  }, [searchTerm]);
+  }, [searchTerm, currentPage]);
 
   const kpiCards = useMemo(() => {
     if (!dashboard) {
@@ -164,17 +177,41 @@ const AdminDashboard = () => {
   }, [dashboard]);
 
   const workshops = dashboard?.workshops ?? [];
+  const pagination = dashboard?.pagination;
   const csvBatches = dashboard?.systemHealth.csvSync.batches ?? [];
   const aiSummary = dashboard?.systemHealth.aiSummary;
   const aiRunningCount = aiSummary?.counts.running ?? 0;
   const aiProgress = Math.min(aiRunningCount * 12, 100);
+  const totalWorkshopPages = pagination?.totalPages ?? 1;
+  const totalWorkshopResults = pagination?.total ?? 0;
+  const workshopRangeStart =
+    workshops.length === 0 || !pagination
+      ? 0
+      : (pagination.page - 1) * pagination.pageSize + 1;
+  const workshopRangeEnd =
+    workshops.length === 0 || !pagination
+      ? 0
+      : (pagination.page - 1) * pagination.pageSize + workshops.length;
+
+  if (isInitialLoading) {
+    return (
+      <div className="admin-page">
+        <AdminSidebar />
+        <main className="admin-main admin-loading-main">
+          <LoadingSpinner label="Loading dashboard..." />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="admin-page">
       <AdminSidebar />
 
       <main className="admin-main">
         <header className="admin-header">
-          <div>
+          <div className="admin-header-copy">
+            <span className="admin-panel-kicker">Admin workspace</span>
             <h1>Overview</h1>
             <p>Manage active workshops and monitor system health.</p>
           </div>
@@ -212,13 +249,15 @@ const AdminDashboard = () => {
             </div>
 
             {error ? <p className="helper-text">{error}</p> : null}
-            {isLoading ? (
-              <p className="helper-text">Loading dashboard...</p>
-            ) : null}
-
             <section className="admin-table-card">
               <div className="admin-table-toolbar">
-                <h2>Active Workshops</h2>
+                <div className="admin-table-heading">
+                  <h2>Active Workshops</h2>
+                  <p>
+                    Track workshop readiness, enrollment, and quick actions in
+                    one place.
+                  </p>
+                </div>
 
                 <div className="admin-table-actions">
                   <label className="admin-search-input" htmlFor="admin-search">
@@ -227,18 +266,30 @@ const AdminDashboard = () => {
                       id="admin-search"
                       type="search"
                       value={searchTerm}
-                      onChange={(event) => setSearchTerm(event.target.value)}
+                      onChange={(event) => {
+                        setSearchTerm(event.target.value);
+                        setCurrentPage(1);
+                      }}
                       placeholder="Search workshops..."
+                      disabled={isTableLoading}
                     />
                   </label>
 
-                  <button type="button" className="admin-filter-button">
+                  <button
+                    type="button"
+                    className="admin-filter-button"
+                    disabled={isTableLoading}
+                  >
                     <img src={imgFilter} alt="" aria-hidden="true" />
                   </button>
                 </div>
               </div>
 
-              <div className="admin-table-wrap">
+              <div
+                className={`admin-table-wrap${
+                  isTableLoading ? ' is-loading' : ''
+                }`}
+              >
                 <table className="admin-table">
                   <thead>
                     <tr>
@@ -324,13 +375,78 @@ const AdminDashboard = () => {
                   </tbody>
                 </table>
               </div>
+
+              {!isInitialLoading && !error ? (
+                <div className="admin-table-footer">
+                  <div className="admin-table-results">
+                    <p>
+                      Showing <strong>{workshopRangeStart}</strong> -
+                      <strong> {workshopRangeEnd}</strong> of
+                      <strong> {totalWorkshopResults}</strong> workshops
+                      {isTableLoading ? ' · Updating...' : ''}
+                    </p>
+                  </div>
+
+                  {totalWorkshopPages > 1 ? (
+                    <nav
+                      className="admin-pagination"
+                      aria-label="Active workshop pages"
+                    >
+                      <button
+                        type="button"
+                        className="admin-pagination-button"
+                        onClick={() => setCurrentPage(currentPage - 1)}
+                        disabled={currentPage === 1 || isTableLoading}
+                      >
+                        Previous
+                      </button>
+
+                      {Array.from(
+                        { length: totalWorkshopPages },
+                        (_, index) => index + 1,
+                      ).map((page) => (
+                        <button
+                          key={page}
+                          type="button"
+                          className={`admin-pagination-button${
+                            currentPage === page ? ' active' : ''
+                          }`}
+                          onClick={() => setCurrentPage(page)}
+                          disabled={isTableLoading}
+                          aria-current={
+                            currentPage === page ? 'page' : undefined
+                          }
+                        >
+                          {page}
+                        </button>
+                      ))}
+
+                      <button
+                        type="button"
+                        className="admin-pagination-button"
+                        onClick={() => setCurrentPage(currentPage + 1)}
+                        disabled={
+                          currentPage === totalWorkshopPages || isTableLoading
+                        }
+                      >
+                        Next
+                      </button>
+                    </nav>
+                  ) : null}
+                </div>
+              ) : null}
             </section>
           </section>
 
           <aside className="admin-side-card">
             <div className="admin-side-title">
               <img src={imgSystemHealth} alt="" aria-hidden="true" />
-              <h2>System Health</h2>
+              <div>
+                <h2>System Health</h2>
+                <p className="admin-section-meta">
+                  A quick snapshot of background jobs and AI activity.
+                </p>
+              </div>
             </div>
 
             <section className="admin-side-section">
