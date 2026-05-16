@@ -111,6 +111,7 @@ export class AuthController {
       session: session.session,
       user: session.user,
       roles,
+      role: this.authService.getPrimaryRole(roles),
     };
   }
 
