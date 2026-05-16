@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import AdminSidebar from '../components/AdminSidebar.tsx';
+import LoadingSpinner from '../components/LoadingSpinner.tsx';
 import type { CsvBatchDto } from '../lib/unihubApi.ts';
 import {
   fetchCsvBatches,
@@ -11,6 +12,7 @@ const AdminCsvSync = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isForceRunning, setIsForceRunning] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [batchList, setBatchList] = useState<CsvBatchDto[] | null>(null);
   const [selectedQueuedBatchId, setSelectedQueuedBatchId] = useState<
@@ -30,6 +32,7 @@ const AdminCsvSync = () => {
       if (listResult.ok) {
         setBatchList(listResult.data);
       }
+      setIsLoading(false);
     })();
   }, []);
 
@@ -63,6 +66,7 @@ const AdminCsvSync = () => {
   };
 
   const handleRefresh = async () => {
+    setIsLoading(true);
     const listResult = await fetchCsvBatches({ page: 1, pageSize: 5 });
     if (listResult.ok) {
       setBatchList(listResult.data);
@@ -70,6 +74,7 @@ const AdminCsvSync = () => {
     } else {
       setStatusMessage(listResult.error);
     }
+    setIsLoading(false);
   };
 
   const handleQueuedStatusClick = (batchId: string) => {
@@ -94,16 +99,29 @@ const AdminCsvSync = () => {
     const result = await processCsvBatch(selectedQueuedBatchId);
     if (result.ok) {
       setStatusMessage(`Batch force-run requested: ${selectedQueuedBatchId}`);
+      setIsLoading(true);
       const listResult = await fetchCsvBatches({ page: 1, pageSize: 5 });
       if (listResult.ok) {
         setBatchList(listResult.data);
       }
+      setIsLoading(false);
       setSelectedQueuedBatchId(null);
     } else {
       setStatusMessage(result.error);
     }
     setIsForceRunning(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="admin-page">
+        <AdminSidebar />
+        <main className="admin-main admin-loading-main">
+          <LoadingSpinner label="Loading CSV batches..." />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-page">

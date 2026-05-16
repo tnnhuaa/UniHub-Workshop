@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import AdminSidebar from '../components/AdminSidebar.tsx';
+import LoadingSpinner from '../components/LoadingSpinner.tsx';
 import {
   createWorkshop,
   fetchDocumentSummary,
@@ -494,8 +495,8 @@ const AdminSchedule = () => {
     return (
       <div className="admin-page">
         <AdminSidebar />
-        <main className="admin-main admin-schedule-main">
-          <p className="helper-text">Loading workshop details...</p>
+        <main className="admin-main admin-schedule-main admin-loading-main">
+          <LoadingSpinner label="Loading workshop details..." />
         </main>
       </div>
     );
@@ -530,7 +531,12 @@ const AdminSchedule = () => {
                   {isCreateMode ? 'Back to Dashboard' : 'Back to List'}
                 </span>
               </button>
+              <span className="admin-panel-kicker">Workshop editor</span>
               <h1>{isCreateMode ? 'Create Workshop' : 'Edit Workshop'}</h1>
+              <p className="admin-schedule-subtitle">
+                Shape the event details, materials, and attendee-facing
+                experience without leaving this workspace.
+              </p>
             </div>
 
             <div className="admin-schedule-header-actions">
@@ -562,22 +568,17 @@ const AdminSchedule = () => {
           <div className="admin-schedule-grid">
             <section className="admin-schedule-form-column">
               {saveError ? (
-                <article
-                  className="admin-form-card"
-                  style={{
-                    backgroundColor: '#fee',
-                    borderLeft: '4px solid #c33',
-                    padding: '16px',
-                  }}
-                >
-                  <strong style={{ color: '#c33' }}>Error:</strong>
-                  <p className="helper-text" style={{ margin: '8px 0 0 0' }}>
-                    {saveError}
-                  </p>
+                <article className="admin-form-card admin-form-card-alert">
+                  <strong>Unable to save</strong>
+                  <p className="helper-text">{saveError}</p>
                 </article>
               ) : null}
               <article className="admin-form-card">
                 <h2>Core Information</h2>
+                <p className="admin-card-description">
+                  Set the workshop identity and the primary details students
+                  will recognize first.
+                </p>
 
                 <div className="admin-form-stack">
                   <label className="admin-form-field">
@@ -640,6 +641,10 @@ const AdminSchedule = () => {
 
               <article className="admin-form-card">
                 <h2>Logistics & Capacity</h2>
+                <p className="admin-card-description">
+                  Define timing, capacity, pricing, and publishing state for
+                  this session.
+                </p>
 
                 <div className="admin-form-grid two gap-lg">
                   <label className="admin-form-field">
@@ -747,6 +752,9 @@ const AdminSchedule = () => {
             <aside className="admin-schedule-side-column">
               <article className="admin-side-card">
                 <h2>Workshop QR</h2>
+                <p className="admin-card-description">
+                  Generate a shareable scan code after the workshop is saved.
+                </p>
                 {workshopQrCodeUrl && workshop ? (
                   <div style={{ textAlign: 'center' }}>
                     <img
@@ -790,6 +798,12 @@ const AdminSchedule = () => {
                   <p className="helper-text">{summaryError}</p>
                 ) : null}
 
+                {!isCreateMode && latestDocument ? (
+                  <p className="admin-inline-meta">
+                    Latest source: {latestDocument.fileName}
+                  </p>
+                ) : null}
+
                 <button
                   type="button"
                   className="admin-outline-button"
@@ -802,6 +816,9 @@ const AdminSchedule = () => {
 
               <article className="admin-side-card admin-registration-card">
                 <h2>Registration Status</h2>
+                <p className="admin-card-description">
+                  Keep an eye on fill rate before the workshop goes live.
+                </p>
 
                 {workshop ? (
                   <>
@@ -834,7 +851,12 @@ const AdminSchedule = () => {
 
               <article className="admin-side-card admin-attendees-card">
                 <div className="admin-attendees-header">
-                  <h2>Attendees</h2>
+                  <div>
+                    <h2>Attendees</h2>
+                    <p className="admin-section-meta">
+                      Roster preview and export state.
+                    </p>
+                  </div>
                   <Link to="#">View All</Link>
                 </div>
 

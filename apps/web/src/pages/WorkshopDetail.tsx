@@ -42,7 +42,7 @@ const WorkshopDetail = () => {
         : workshop?.isSoldOut
           ? 'Sold Out'
           : workshop?.price && workshop.price > 0
-            ? 'Reserve Seat'
+            ? 'Register Now'
             : 'Register Now';
   const showPaidHoldNote =
     (workshop?.price ?? 0) > 0 &&

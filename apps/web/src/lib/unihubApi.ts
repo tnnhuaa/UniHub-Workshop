@@ -198,6 +198,12 @@ export type AdminDashboardResponseDto = {
     registeredCount: number;
     status: WorkshopStatus;
   }>;
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
   systemHealth: {
     csvSync: {
       batches: AdminCsvSyncBatchDto[];
@@ -211,6 +217,8 @@ export type AdminDashboardResponseDto = {
 
 export type AdminDashboardQuery = {
   q?: string;
+  page?: number;
+  pageSize?: number;
 };
 
 export type NotificationDeliveryApiDto = {

@@ -7,8 +7,12 @@ import type { AdminDashboardQuery } from './admin.schemas.js';
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getDashboard(query: AdminDashboardQuery = {}) {
+  async getDashboard(
+    query: AdminDashboardQuery = { page: 1, pageSize: 10 },
+  ) {
     const workshopWhere: Prisma.WorkshopWhereInput = {};
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 10;
 
     if (query.q) {
       workshopWhere.OR = [
@@ -21,6 +25,7 @@ export class AdminService {
 
     const [
       totalWorkshops,
+      matchingWorkshopCount,
       totalRegistrations,
       paymentAggregate,
       workshops,
@@ -29,6 +34,9 @@ export class AdminService {
       lastCompletedSummary,
     ] = await Promise.all([
       this.prisma.workshop.count(),
+      this.prisma.workshop.count({
+        where: workshopWhere,
+      }),
       this.prisma.registration.count(),
       this.prisma.payment.aggregate({
         _sum: { amount: true },
@@ -37,7 +45,8 @@ export class AdminService {
       this.prisma.workshop.findMany({
         where: workshopWhere,
         orderBy: { startTime: 'asc' },
-        take: 10,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
         select: {
           id: true,
           title: true,
@@ -80,6 +89,7 @@ export class AdminService {
     });
 
     const grossRevenue = Number(paymentAggregate._sum.amount ?? 0);
+    const totalPages = Math.max(1, Math.ceil(matchingWorkshopCount / pageSize));
 
     return {
       kpis: {
@@ -88,6 +98,12 @@ export class AdminService {
         grossRevenue,
       },
       workshops,
+      pagination: {
+        page,
+        pageSize,
+        total: matchingWorkshopCount,
+        totalPages,
+      },
       systemHealth: {
         csvSync: {
           batches: csvBatches.map((batch) => ({
