@@ -48,7 +48,7 @@ async function bootstrap() {
 
   app.useGlobalFilters(new HttpExceptionFilter(app.get(HttpAdapterHost)));
 
-  const port = Number(4001);
+  const port = Number(process.env.PORT ?? 4001);
   await app.listen({ port, host: '0.0.0.0' });
 
   logger.log(`Application running on ${await app.getUrl()}`);

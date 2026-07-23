@@ -80,7 +80,7 @@ export const createBetterAuthInstance = (prisma: PrismaService, env: Env) => {
     plugins: [bearer()],
     advanced: {
       defaultCookieAttributes: {
-        sameSite: 'strict',
+        sameSite: secureCookies ? 'none' : 'lax',
         secure: secureCookies,
       },
     },
