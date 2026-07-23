@@ -73,16 +73,96 @@ const STUDENTS = [
 ];
 
 const MORE_STUDENTS = [
-  { mssv: '21127005', email: 'le.van.e@unihub.local', fullName: 'Le Van E', phone: '0901000005', faculty: 'Information Technology', className: 'SE2026', status: 'active' },
-  { mssv: '21127006', email: 'hoang.thi.f@unihub.local', fullName: 'Hoang Thi F', phone: '0901000006', faculty: 'Information Technology', className: 'SE2026', status: 'active' },
-  { mssv: '21127007', email: 'ngo.quoc.g@unihub.local', fullName: 'Ngo Quoc G', phone: '0901000007', faculty: 'Business Administration', className: 'BA2026', status: 'active' },
-  { mssv: '21127008', email: 'vu.thanh.h@unihub.local', fullName: 'Vu Thanh H', phone: '0901000008', faculty: 'Computer Science', className: 'CS2026', status: 'active' },
-  { mssv: '21127009', email: 'do.minh.i@unihub.local', fullName: 'Do Minh I', phone: '0901000009', faculty: 'Design', className: 'DS2026', status: 'active' },
-  { mssv: '21127010', email: 'dang.quang.j@unihub.local', fullName: 'Dang Quang J', phone: '0901000010', faculty: 'Information Technology', className: 'SE2026', status: 'active' },
-  { mssv: '21127011', email: 'bui.huu.k@unihub.local', fullName: 'Bui Huu K', phone: '0901000011', faculty: 'Business Administration', className: 'BA2026', status: 'active' },
-  { mssv: '21127012', email: 'ly.gia.l@unihub.local', fullName: 'Ly Gia L', phone: '0901000012', faculty: 'Computer Science', className: 'CS2026', status: 'active' },
-  { mssv: '21127013', email: 'truong.an.m@unihub.local', fullName: 'Truong An M', phone: '0901000013', faculty: 'Design', className: 'DS2026', status: 'active' },
-  { mssv: '21127014', email: 'phan.hoang.n@unihub.local', fullName: 'Phan Hoang N', phone: '0901000014', faculty: 'Information Technology', className: 'SE2026', status: 'active' },
+  {
+    mssv: '21127005',
+    email: 'le.van.e@unihub.local',
+    fullName: 'Le Van E',
+    phone: '0901000005',
+    faculty: 'Information Technology',
+    className: 'SE2026',
+    status: 'active',
+  },
+  {
+    mssv: '21127006',
+    email: 'hoang.thi.f@unihub.local',
+    fullName: 'Hoang Thi F',
+    phone: '0901000006',
+    faculty: 'Information Technology',
+    className: 'SE2026',
+    status: 'active',
+  },
+  {
+    mssv: '21127007',
+    email: 'ngo.quoc.g@unihub.local',
+    fullName: 'Ngo Quoc G',
+    phone: '0901000007',
+    faculty: 'Business Administration',
+    className: 'BA2026',
+    status: 'active',
+  },
+  {
+    mssv: '21127008',
+    email: 'vu.thanh.h@unihub.local',
+    fullName: 'Vu Thanh H',
+    phone: '0901000008',
+    faculty: 'Computer Science',
+    className: 'CS2026',
+    status: 'active',
+  },
+  {
+    mssv: '21127009',
+    email: 'do.minh.i@unihub.local',
+    fullName: 'Do Minh I',
+    phone: '0901000009',
+    faculty: 'Design',
+    className: 'DS2026',
+    status: 'active',
+  },
+  {
+    mssv: '21127010',
+    email: 'dang.quang.j@unihub.local',
+    fullName: 'Dang Quang J',
+    phone: '0901000010',
+    faculty: 'Information Technology',
+    className: 'SE2026',
+    status: 'active',
+  },
+  {
+    mssv: '21127011',
+    email: 'bui.huu.k@unihub.local',
+    fullName: 'Bui Huu K',
+    phone: '0901000011',
+    faculty: 'Business Administration',
+    className: 'BA2026',
+    status: 'active',
+  },
+  {
+    mssv: '21127012',
+    email: 'ly.gia.l@unihub.local',
+    fullName: 'Ly Gia L',
+    phone: '0901000012',
+    faculty: 'Computer Science',
+    className: 'CS2026',
+    status: 'active',
+  },
+  {
+    mssv: '21127013',
+    email: 'truong.an.m@unihub.local',
+    fullName: 'Truong An M',
+    phone: '0901000013',
+    faculty: 'Design',
+    className: 'DS2026',
+    status: 'active',
+  },
+  {
+    mssv: '21127014',
+    email: 'phan.hoang.n@unihub.local',
+    fullName: 'Phan Hoang N',
+    phone: '0901000014',
+    faculty: 'Information Technology',
+    className: 'SE2026',
+    status: 'active',
+  },
 ];
 
 STUDENTS.push(...MORE_STUDENTS);
@@ -297,7 +377,7 @@ const MORE_REGISTRATIONS = [
   {
     id: '778e72c8-8f83-4a61-9c6a-685b3068e804',
     mssv: '21127008',
-    workshopId: 'c3d4e5f6-a7b8-4c7d-0e1f-2a3b4c5d6e7f', // Public Speaking
+    workshopId: 'c3d4e5f6-a7b8-4c7d-8e1f-2a3b4c5d6e7f', // Public Speaking
     status: 'confirmed',
     paymentStatus: 'pending',
     qrCode: 'QR-21127008-SPEAKING',
@@ -308,7 +388,7 @@ const MORE_REGISTRATIONS = [
   {
     id: '778e72c8-8f83-4a61-9c6a-685b3068e805',
     mssv: '21127009',
-    workshopId: 'd4e5f6a7-b8c9-4d8e-1f2a-3b4c5d6e7f8a', // Docker & K8s
+    workshopId: 'd4e5f6a7-b8c9-4d8e-9f2a-3b4c5d6e7f8a', // Docker & K8s
     status: 'pending',
     paymentStatus: 'pending',
     qrCode: null,
@@ -319,7 +399,7 @@ const MORE_REGISTRATIONS = [
   {
     id: '778e72c8-8f83-4a61-9c6a-685b3068e806',
     mssv: '21127010',
-    workshopId: 'e5f6a7b8-c9d0-4e9f-2a3b-4c5d6e7f8a9b', // Digital Marketing
+    workshopId: 'e5f6a7b8-c9d0-4e9f-aa3b-4c5d6e7f8a9b', // Digital Marketing
     status: 'confirmed',
     paymentStatus: 'pending',
     qrCode: 'QR-21127010-MARKETING',
@@ -330,7 +410,7 @@ const MORE_REGISTRATIONS = [
   {
     id: '778e72c8-8f83-4a61-9c6a-685b3068e807',
     mssv: '21127011',
-    workshopId: 'a7b8c9d0-e1f2-4a1b-4c5d-6e7f8a9b0c1d', // Agile & Scrum
+    workshopId: 'a7b8c9d0-e1f2-4a1b-8c5d-6e7f8a9b0c1d', // Agile & Scrum
     status: 'confirmed',
     paymentStatus: 'pending',
     qrCode: 'QR-21127011-AGILE',
@@ -341,7 +421,7 @@ const MORE_REGISTRATIONS = [
   {
     id: '778e72c8-8f83-4a61-9c6a-685b3068e808',
     mssv: '21127012',
-    workshopId: 'b8c9d0e1-f2a3-4b2c-5d6e-7f8a9b0c1d2e', // Blockchain
+    workshopId: 'b8c9d0e1-f2a3-4b2c-9d6e-7f8a9b0c1d2e', // Blockchain
     status: 'confirmed',
     paymentStatus: 'pending',
     qrCode: 'QR-21127012-BLOCKCHAIN',
@@ -352,7 +432,7 @@ const MORE_REGISTRATIONS = [
   {
     id: '778e72c8-8f83-4a61-9c6a-685b3068e809',
     mssv: '21127013',
-    workshopId: 'c9d0e1f2-a3b4-4c3d-6e7f-8a9b0c1d2e3f', // Data Science
+    workshopId: 'c9d0e1f2-a3b4-4c3d-ae7f-8a9b0c1d2e3f', // Data Science
     status: 'cancelled',
     paymentStatus: 'pending',
     qrCode: null,
@@ -363,7 +443,7 @@ const MORE_REGISTRATIONS = [
   {
     id: '778e72c8-8f83-4a61-9c6a-685b3068e810',
     mssv: '21127014',
-    workshopId: 'd0e1f2a3-b4c5-4d4e-7f8a-9b0c1d2e3f4a', // Flutter
+    workshopId: 'd0e1f2a3-b4c5-4d4e-bf8a-9b0c1d2e3f4a', // Flutter
     status: 'confirmed',
     paymentStatus: 'pending',
     qrCode: 'QR-21127014-FLUTTER',
@@ -392,7 +472,8 @@ const MORE_WORKSHOPS = [
   {
     id: 'b2c3d4e5-f6a7-4b6c-9d0e-1f2a3b4c5d6e',
     title: 'Cybersecurity Essentials',
-    description: 'Protecting your data and understanding common attack vectors.',
+    description:
+      'Protecting your data and understanding common attack vectors.',
     speaker: 'Phan Minh',
     room: 'B105',
     capacity: 100,
@@ -404,9 +485,10 @@ const MORE_WORKSHOPS = [
     floorMapUrl: null,
   },
   {
-    id: 'c3d4e5f6-a7b8-4c7d-0e1f-2a3b4c5d6e7f',
+    id: 'c3d4e5f6-a7b8-4c7d-8e1f-2a3b4c5d6e7f',
     title: 'Public Speaking for Engineers',
-    description: 'How to present technical ideas to non-technical stakeholders.',
+    description:
+      'How to present technical ideas to non-technical stakeholders.',
     speaker: 'Elena Trinh',
     room: 'C401',
     capacity: 30,
@@ -418,7 +500,7 @@ const MORE_WORKSHOPS = [
     floorMapUrl: 'https://cdn.unihub.local/maps/c401-floor-map.png',
   },
   {
-    id: 'd4e5f6a7-b8c9-4d8e-1f2a-3b4c5d6e7f8a',
+    id: 'd4e5f6a7-b8c9-4d8e-9f2a-3b4c5d6e7f8a',
     title: 'Docker & Kubernetes 101',
     description: 'Containerization basics for modern web applications.',
     speaker: 'Tran Long',
@@ -432,7 +514,7 @@ const MORE_WORKSHOPS = [
     floorMapUrl: null,
   },
   {
-    id: 'e5f6a7b8-c9d0-4e9f-2a3b-4c5d6e7f8a9b',
+    id: 'e5f6a7b8-c9d0-4e9f-aa3b-4c5d6e7f8a9b',
     title: 'Digital Marketing for Startups',
     description: 'Growth hacking and SEO strategies for new ventures.',
     speaker: 'Bui Anh Tuan',
@@ -446,7 +528,7 @@ const MORE_WORKSHOPS = [
     floorMapUrl: null,
   },
   {
-    id: 'f6a7b8c9-d0e1-4f0a-3b4c-5d6e7f8a9b0c',
+    id: 'f6a7b8c9-d0e1-4f0a-bb4c-5d6e7f8a9b0c',
     title: 'Figma for Beginners',
     description: 'Learn the basics of UI design with Figma.',
     speaker: 'Le Vy',
@@ -460,7 +542,7 @@ const MORE_WORKSHOPS = [
     floorMapUrl: null,
   },
   {
-    id: 'a7b8c9d0-e1f2-4a1b-4c5d-6e7f8a9b0c1d',
+    id: 'a7b8c9d0-e1f2-4a1b-8c5d-6e7f8a9b0c1d',
     title: 'Agile & Scrum Masterclass',
     description: 'Working effectively in modern software teams.',
     speaker: 'Kevin Pham',
@@ -474,7 +556,7 @@ const MORE_WORKSHOPS = [
     floorMapUrl: null,
   },
   {
-    id: 'b8c9d0e1-f2a3-4b2c-5d6e-7f8a9b0c1d2e',
+    id: 'b8c9d0e1-f2a3-4b2c-9d6e-7f8a9b0c1d2e',
     title: 'Blockchain & Web3 Apps',
     description: 'Understanding smart contracts and decentralized web.',
     speaker: 'Ngo Gia Bao',
@@ -488,7 +570,7 @@ const MORE_WORKSHOPS = [
     floorMapUrl: null,
   },
   {
-    id: 'c9d0e1f2-a3b4-4c3d-6e7f-8a9b0c1d2e3f',
+    id: 'c9d0e1f2-a3b4-4c3d-ae7f-8a9b0c1d2e3f',
     title: 'Data Science with Python',
     description: 'Hands-on Pandas, Numpy and Matplotlib.',
     speaker: 'Dr. Nguyen Duc',
@@ -502,7 +584,7 @@ const MORE_WORKSHOPS = [
     floorMapUrl: null,
   },
   {
-    id: 'd0e1f2a3-b4c5-4d4e-7f8a-9b0c1d2e3f4a',
+    id: 'd0e1f2a3-b4c5-4d4e-bf8a-9b0c1d2e3f4a',
     title: 'Mobile App with Flutter',
     description: 'Build cross-platform apps from a single codebase.',
     speaker: 'Pham Quoc',
