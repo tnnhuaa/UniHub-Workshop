@@ -1004,62 +1004,89 @@ async function main() {
     });
   }
 
-  await prisma.notificationDelivery.upsert({
-    where: { dedupeKey: 'seed-notify-student-workshop-confirmed' },
-    update: {
+  const notificationSeeds = [
+    {
+      eventKey: 'seed-notify-student-workshop-confirmed',
       userId: studentUser.id,
+      type: 'workshop_registration_confirmed',
+      title: 'Workshop registration confirmed',
+      body: 'Your registration for AI for Career Growth is confirmed.',
+      data: {
+        registrationId: '9b5ef0f0-3e22-4b66-90e0-65c4c413b6b4',
+        workshopId: '2b22c9a4-7a6c-4b04-a1c2-3f9efb8a1142',
+        workshopTitle: 'AI for Career Growth',
+      },
       channel: 'email',
-      templateCode: 'registration_confirmed',
       status: 'sent',
       sentAt: new Date('2026-05-13T04:00:00Z'),
     },
-    create: {
-      userId: studentUser.id,
-      channel: 'email',
-      templateCode: 'registration_confirmed',
-      status: 'sent',
-      dedupeKey: 'seed-notify-student-workshop-confirmed',
-      sentAt: new Date('2026-05-13T04:00:00Z'),
-    },
-  });
-
-  await prisma.notificationDelivery.upsert({
-    where: { dedupeKey: 'seed-notify-organizer-summary-ready' },
-    update: {
+    {
+      eventKey: 'seed-notify-organizer-summary-ready',
       userId: organizer.id,
+      type: 'custom',
+      title: 'Workshop summary ready',
+      body: 'The AI summary for AI for Career Growth is ready to review.',
+      data: {
+        documentId: '658c67df-17b0-46a8-bfff-f92de85d3355',
+        workshopId: '2b22c9a4-7a6c-4b04-a1c2-3f9efb8a1142',
+      },
       channel: 'in_app',
-      templateCode: 'summary_ready',
       status: 'pending',
       sentAt: null,
     },
-    create: {
-      userId: organizer.id,
-      channel: 'in_app',
-      templateCode: 'summary_ready',
-      status: 'pending',
-      dedupeKey: 'seed-notify-organizer-summary-ready',
+    {
+      eventKey: 'seed-notify-staff-sync-failed',
+      userId: checkinStaff.id,
+      type: 'custom',
+      title: 'Check-in sync failed',
+      body: 'A check-in synchronization event requires attention.',
+      data: {
+        checkinId: '3a2c9e1a-52b7-4f6f-9e06-6d52af48e5a6',
+        workshopId: '2b22c9a4-7a6c-4b04-a1c2-3f9efb8a1142',
+      },
+      channel: 'telegram',
+      status: 'failed',
       sentAt: null,
     },
-  });
+  ];
 
-  await prisma.notificationDelivery.upsert({
-    where: { dedupeKey: 'seed-notify-staff-sync-failed' },
-    update: {
-      userId: checkinStaff.id,
-      channel: 'telegram',
-      templateCode: 'checkin_sync_failed',
-      status: 'failed',
-      sentAt: null,
-    },
-    create: {
-      userId: checkinStaff.id,
-      channel: 'telegram',
-      templateCode: 'checkin_sync_failed',
-      status: 'failed',
-      dedupeKey: 'seed-notify-staff-sync-failed',
-      sentAt: null,
-    },
-  });
+  for (const notificationSeed of notificationSeeds) {
+    const notification = await prisma.notification.upsert({
+      where: { eventKey: notificationSeed.eventKey },
+      update: {
+        userId: notificationSeed.userId,
+        type: notificationSeed.type,
+        title: notificationSeed.title,
+        body: notificationSeed.body,
+        data: notificationSeed.data,
+      },
+      create: {
+        userId: notificationSeed.userId,
+        type: notificationSeed.type,
+        title: notificationSeed.title,
+        body: notificationSeed.body,
+        data: notificationSeed.data,
+        eventKey: notificationSeed.eventKey,
+      },
+    });
+
+    await prisma.notificationDelivery.upsert({
+      where: { dedupeKey: notificationSeed.eventKey },
+      update: {
+        notificationId: notification.id,
+        channel: notificationSeed.channel,
+        status: notificationSeed.status,
+        sentAt: notificationSeed.sentAt,
+      },
+      create: {
+        notificationId: notification.id,
+        channel: notificationSeed.channel,
+        status: notificationSeed.status,
+        dedupeKey: notificationSeed.eventKey,
+        sentAt: notificationSeed.sentAt,
+      },
+    });
+  }
 
   const auditLogs = [
     {
