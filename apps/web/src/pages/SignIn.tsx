@@ -10,6 +10,9 @@ import { saveStoredStudentSession } from '../lib/studentSessionStore.ts';
 import { mapStudentToProfileViewModel } from '../lib/unihubAdapters.ts';
 import { fetchCurrentStudent } from '../lib/unihubApi.ts';
 
+const DEMO_STUDENT_EMAIL = 'student@unihub.local';
+const DEMO_STUDENT_PASSWORD = 'Test@123456';
+
 const SignIn = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -19,6 +22,14 @@ const SignIn = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const useDemoStudentAccount = () => {
+    setEmail(DEMO_STUDENT_EMAIL);
+    setPassword(DEMO_STUDENT_PASSWORD);
+    setRemember(true);
+    setError(null);
+    setSuccess(false);
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -107,6 +118,40 @@ const SignIn = () => {
         </div>
       ) : null}
       <form onSubmit={handleSubmit}>
+        <aside className="demo-account" aria-label="Demo student account">
+          <div className="demo-account-heading">
+            <span className="demo-account-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path
+                  d="M5 20a7 7 0 0 1 14 0M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
+            <div>
+              <strong>Demo student account</strong>
+              <span>Use these credentials to explore the workshop portal.</span>
+            </div>
+          </div>
+          <dl className="demo-account-credentials">
+            <div>
+              <dt>Email</dt>
+              <dd>{DEMO_STUDENT_EMAIL}</dd>
+            </div>
+            <div>
+              <dt>Password</dt>
+              <dd>{DEMO_STUDENT_PASSWORD}</dd>
+            </div>
+          </dl>
+          <button
+            className="demo-account-button"
+            type="button"
+            onClick={useDemoStudentAccount}
+          >
+            Use demo account
+          </button>
+        </aside>
         <div className="form-group">
           <label htmlFor="signin-email">Email Address</label>
           <div className="input-wrap">

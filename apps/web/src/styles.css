@@ -181,6 +181,110 @@ button {
   margin-bottom: 16px;
 }
 
+.demo-account {
+  margin-bottom: 18px;
+  padding: 14px;
+  border: 1px solid #c8d9c5;
+  border-radius: 14px;
+  background: #edf4e9;
+  color: var(--ink-700);
+}
+
+.demo-account-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.demo-account-heading strong,
+.demo-account-heading span {
+  display: block;
+}
+
+.demo-account-heading strong {
+  color: var(--ink-900);
+  font-size: 0.88rem;
+  line-height: 1.3;
+}
+
+.demo-account-heading span {
+  margin-top: 2px;
+  color: var(--ink-500);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.demo-account-icon {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background: #dbead7;
+  color: var(--accent-700);
+}
+
+.demo-account-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.demo-account-credentials {
+  display: grid;
+  gap: 5px;
+  margin: 12px 0;
+}
+
+.demo-account-credentials > div {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+}
+
+.demo-account-credentials dt {
+  color: var(--ink-500);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.demo-account-credentials dd {
+  overflow-wrap: anywhere;
+  color: var(--ink-900);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.demo-account-button {
+  width: 100%;
+  border: 1px solid rgba(23, 97, 61, 0.35);
+  border-radius: 9px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.65);
+  color: var(--accent-700);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.demo-account-button:hover {
+  border-color: rgba(23, 97, 61, 0.55);
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.demo-account-button:focus-visible {
+  outline: 3px solid rgba(31, 122, 79, 0.18);
+  outline-offset: 2px;
+}
+
 .form-group {
   margin-bottom: 16px;
 }
