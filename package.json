@@ -1,5 +1,7 @@
 {
+  "name": "unihub-workshop",
   "private": true,
+  "packageManager": "pnpm@9.15.4",
   "devDependencies": {
     "@babel/eslint-parser": "^7.28.6",
     "@types/react": "18.3.28",
