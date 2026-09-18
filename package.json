@@ -16,7 +16,7 @@
     "prisma": "6.19.3"
   },
   "scripts": {
-    "prepare": "husky",
+    "prepare": "node scripts/prepare.js",
     "format": "pnpm -r --parallel format",
     "build": "pnpm -r --parallel build",
     "dev": "pnpm -r --parallel dev",
